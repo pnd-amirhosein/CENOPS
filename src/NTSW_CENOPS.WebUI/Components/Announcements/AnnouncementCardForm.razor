@@ -1,0 +1,28 @@
+@using NTSW_CENOPS.Application.Announcements
+@using NTSW_CENOPS.Application.Knowledge
+@using NTSW_CENOPS.Components.Knowledge
+<div class="announcement-inline" dir="rtl">
+    <textarea rows="4" maxlength="4000" placeholder="متن اطلاعیه را بنویسید..." aria-label="متن اطلاعیه" @bind="Model.Content" @bind:event="oninput"></textarea>
+    <div class="announcement-author-row">
+        <label>نویسنده
+            <select @bind="Model.UserId" disabled="@(!CanChooseAuthor)">
+                @foreach (var author in Authors) { <option value="@author.Id">@author.DisplayName (@author.Username)</option> }
+            </select>
+        </label>
+        <KnowledgeVisibilitySwitch @bind-Value="Model.Visibility" />
+    </div>
+    @if (!string.IsNullOrWhiteSpace(Error)) { <p class="knowledge-form-error" role="alert">@Error</p> }
+    <div class="announcement-buttons">
+        <button class="knowledge-button primary" disabled="@Saving" type="button" @onclick="OnSave">ذخیره</button>
+        <button class="knowledge-button secondary" disabled="@Saving" type="button" @onclick="OnCancel">انصراف</button>
+    </div>
+</div>
+@code {
+    [Parameter, EditorRequired] public AnnouncementModel Model { get; set; } = new();
+    [Parameter] public IReadOnlyList<KnowledgeAuthorModel> Authors { get; set; } = [];
+    [Parameter] public bool CanChooseAuthor { get; set; }
+    [Parameter] public bool Saving { get; set; }
+    [Parameter] public string Error { get; set; } = string.Empty;
+    [Parameter] public EventCallback OnSave { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+}

@@ -1,0 +1,8 @@
+@page "/wiki/curls/new"
+@page "/wiki/curls/edit/{Id:int}"
+@attribute [AccessAuthorize(AccessKeys.Curls)]
+@using NTSW_CENOPS.Components.Knowledge
+<PageTitle>ویرایش درخواست cURL</PageTitle>
+<KnowledgeEditor DraftToken="@DraftToken" IsCurl="true" ItemId="@(Id ?? 0)" />
+@code { [Parameter] public int? Id { get; set; }
+    [SupplyParameterFromQuery(Name = "draft")] public string? DraftToken { get; set; } }

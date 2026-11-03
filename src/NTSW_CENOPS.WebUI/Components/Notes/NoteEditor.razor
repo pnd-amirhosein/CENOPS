@@ -1,0 +1,380 @@
+@using System.Security.Claims
+@implements IAsyncDisposable
+@using NTSW_CENOPS.Application.Notes
+@using NTSW_CENOPS.Application.Knowledge
+@using NTSW_CENOPS.Components.Files
+@using NTSW_CENOPS.Components.Knowledge
+@using NTSW_CENOPS.Components.Common
+@using NTSW_CENOPS.Components.Common.Loading
+@using NTSW_CENOPS.Components.Common.Notices
+@inject INoteService Notes
+@inject AuthenticationStateProvider AuthState
+@inject NavigationManager Navigation
+@inject AppBusyService Busy
+@inject AppNoticeService Notices
+@inject IJSRuntime JS
+
+<div class="note-editor" dir="rtl" @ref="_editorRoot">
+    @if (_loaded)
+    {
+        <header class="note-editor-meta">
+            <div class="note-editor-title-field">
+                <label for="note-editor-title-label">عنوان یادداشت <em>*</em></label>
+                <NoteTextBox Id="note-editor-title-label" Required="true" @bind-Value="_model.Title" CssClass="note-editor-title" Label="عنوان یادداشت" Placeholder="عنوان یادداشت را بنویسید..." />
+            </div>
+            <KnowledgeVisibilitySwitch @bind-Value="_model.Visibility" />
+            <div class="knowledge-field knowledge-author-field note-author">
+                <label for="note-author-select">نویسنده</label>
+                <select id="note-author-select" @bind="_model.UserId" disabled="@(!_canChooseAuthor)">
+                    @foreach (var author in _authors)
+                    {
+                        <option value="@author.Id">@author.DisplayName (@author.Username)</option>
+                    }
+                </select>
+                <button type="button" class="knowledge-current-user" @onclick="SelectCurrentUser">انتخاب کاربر فعلی</button>
+            </div>
+        </header>
+
+        <div class="note-editor-canvas" data-note-spatial="true" @ref="_canvas">
+            @foreach (var row in Rows())
+            {
+                var slot = _model.Blocks.IndexOf(row[0]);
+                <div class="note-insert-row @(_pickerAt == slot ? "note-insert-active" : "")" @key="InsertRowKey(row[0])">
+                    <span class="note-insert-line" aria-hidden="true"></span>
+                    <div class="note-insert-control">
+                        <button class="note-add-button" type="button" title="افزودن بخش بالای ردیف" aria-label="افزودن بخش بالای ردیف" aria-expanded="@(_pickerAt == slot)" @onclick="() => TogglePicker(slot)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg></button>
+                        @if (_pickerAt == slot) { <div class="note-block-picker cenops-liquid-glass"><NoteInsertMenu OnSelect="kind => Insert(slot, kind)" /></div> }
+                    </div>
+                    <span class="note-insert-line" aria-hidden="true"></span>
+                </div>
+                <div class="note-layout-row @(row.Count > 1 ? "note-inline-row" : "")" style="--note-cols:@row.Count" @key="row[0].Key">
+                    @foreach (var block in row)
+                    {
+                        <div class="note-block-row @(_sidePickerKey == block.Key ? (_sidePickerBefore ? "note-side-right-open" : "note-side-left-open") : "")" data-note-block="@block.Key" @key="block.Key">
+                            <div class="note-block-outside-controls" aria-label="کنترل‌های این بخش">
+                                <button type="button" class="note-drag-handle" draggable="true" data-note-drag="@block.Key" title="کشیدن بخش" aria-label="جابجایی بخش"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 5h.01M15 5h.01M9 12h.01M15 12h.01M9 19h.01M15 19h.01" stroke-width="3.2" stroke-linecap="round"/></svg></button>
+                                <button type="button" class="note-remove-block" title="حذف بخش" aria-label="حذف بخش" @onclick="() => RemoveByKey(block.Key)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M10 4h4M7 7l.7 13h8.6L17 7M10 11v5M14 11v5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                            </div>
+                            <button class="note-side-add note-side-right" type="button" title="افزودن بخش سمت راست" aria-label="افزودن بخش سمت راست" @onclick="() => ToggleSidePicker(block.Key, true)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg></button>
+                            <button class="note-side-add note-side-left" type="button" title="افزودن بخش سمت چپ" aria-label="افزودن بخش سمت چپ" @onclick="() => ToggleSidePicker(block.Key, false)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg></button>
+                            @if (_sidePickerKey == block.Key)
+                            {
+                                <div class="note-block-picker cenops-liquid-glass note-side-picker @(_sidePickerBefore ? "right" : "left")">
+                                    <NoteInsertMenu OnSelect="kind => InsertInline(block.Key, kind)" />
+                                </div>
+                            }
+                            <section class="note-edit-block">
+                                @switch (block.Kind)
+                                {
+                                    case NoteBlockKind.Heading:
+                                        <NoteTextBox @bind-Value="block.Content" CssClass="note-heading-input" Label="عنوان فرعی" Placeholder="عنوان این بخش..." />
+                                        break;
+                                    case NoteBlockKind.Paragraph:
+                                        <NoteTextArea @bind-Value="block.Content" CssClass="note-paragraph-input" Label="متن پاراگراف" Placeholder="توضیحات خود را بنویسید..." Rows="5" />
+                                        break;
+                                    case NoteBlockKind.Code:
+                                        <NoteSnippetBox @bind-Value="block.Content" @bind-Language="block.Language" />
+                                        break;
+                                    case NoteBlockKind.Table:
+                                        <NoteTableEditor @bind-Value="block.Content" />
+                                        break;
+                                    case NoteBlockKind.File:
+                                        <AppFileBlock @bind-Value="block.Content" Mode="FileBlockMode.Edit" NoteId="_model.Id" />
+                                        break;
+                                }
+                            </section>
+                        </div>
+                    }
+                </div>
+            }
+            <div class="note-insert-row @(_pickerAt == _model.Blocks.Count ? "note-insert-active" : "")">
+                <span class="note-insert-line" aria-hidden="true"></span>
+                <div class="note-insert-control">
+                    <button class="note-add-button" type="button" title="افزودن بخش انتهای یادداشت" aria-label="افزودن بخش انتهای یادداشت" @onclick="() => TogglePicker(_model.Blocks.Count)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg></button>
+                    @if (_pickerAt == _model.Blocks.Count) { <div class="note-block-picker cenops-liquid-glass"><NoteInsertMenu OnSelect="kind => Insert(_model.Blocks.Count, kind)" /></div> }
+                </div>
+                <span class="note-insert-line" aria-hidden="true"></span>
+            </div>
+            @if (_model.Blocks.Count == 0)
+            { <div class="note-start-hint"><span class="note-start-icon" aria-hidden="true">✎</span><strong>ایده‌هایت را اینجا بنویس</strong><p>با دکمه +، محتوا یا جدول به یادداشت اضافه کن.</p></div> }
+
+        </div>
+        @if (!string.IsNullOrWhiteSpace(_error)) { <p class="knowledge-form-error" role="alert">@_error</p> }
+        <div class="note-editor-actions">
+            <button class="knowledge-button primary" type="button" disabled="@_saving" @onclick="AskSave">ذخیره یادداشت</button>
+            <button class="knowledge-button secondary" type="button" disabled="@_saving" @onclick="() => _confirmCancel = true">انصراف</button>
+            <span class="note-block-counter">@_model.Blocks.Count بخش</span>
+        </div>
+    }
+</div>
+
+<AppModal IsOpen="_confirmSave" Title="تأیید ذخیره یادداشت" Description="آیا اطلاعات یادداشت ذخیره شود؟" MaxWidth="420px" OnClose="() => _confirmSave = false">
+    <ChildContent><p>عنوان، نویسنده و بخش‌های یادداشت ثبت یا به‌روزرسانی می‌شوند.</p></ChildContent>
+    <Footer>
+        <button class="knowledge-button primary" type="button" disabled="@_saving" @onclick="SaveAsync">@(_saving ? "در حال ذخیره..." : "تأیید و ذخیره")</button>
+        <button class="knowledge-button secondary" type="button" disabled="@_saving" @onclick="() => _confirmSave = false">بازگشت</button>
+    </Footer>
+</AppModal>
+<AppModal IsOpen="_confirmCancel" Title="خروج بدون ذخیره" Description="آیا از انصراف مطمئن هستید؟" MaxWidth="420px" OnClose="() => _confirmCancel = false">
+    <ChildContent><p>تغییرات ذخیره‌نشده از دست می‌روند.</p></ChildContent>
+    <Footer>
+        <button class="knowledge-button danger" type="button" @onclick="GoBack">خروج بدون ذخیره</button>
+        <button class="knowledge-button secondary" type="button" @onclick="() => _confirmCancel = false">ادامه ویرایش</button>
+    </Footer>
+</AppModal>
+
+@code {
+    [Parameter] public int ItemId { get; set; }
+    [Parameter] public string? DraftToken { get; set; }
+    private string? _usedDraft;
+    private NoteModel _model = new();
+    private IReadOnlyList<KnowledgeAuthorModel> _authors = [];
+    private int _currentUserId;
+    private bool _canChooseAuthor, _loaded, _saving, _confirmSave, _confirmCancel;
+    private int? _pickerAt;
+    private Guid? _sidePickerKey;
+    private bool _sidePickerBefore;
+    private static string InsertRowKey(NoteBlockModel block) => "insert-" + block.Key;
+
+    private List<List<NoteBlockModel>> Rows()
+    {
+        var rows = new List<List<NoteBlockModel>>();
+        foreach (var block in _model.Blocks)
+        {
+            if (block.RowGroup is { } group && rows.Count > 0 && rows[^1][0].RowGroup == group)
+                rows[^1].Add(block);
+            else rows.Add([block]);
+        }
+        return rows;
+    }
+
+    private void ToggleSidePicker(Guid key, bool before)
+    {
+        if (_sidePickerKey == key && _sidePickerBefore == before) _sidePickerKey = null;
+        else { _sidePickerKey = key; _sidePickerBefore = before; }
+        _pickerAt = null;
+    }
+    private void InsertInline(Guid key, NoteBlockKind kind)
+    {
+        var index = _model.Blocks.FindIndex(b => b.Key == key);
+        if (index < 0) return;
+        var target = _model.Blocks[index];
+        var size = target.RowGroup is { } g ? _model.Blocks.Count(b => b.RowGroup == g) : 1;
+        if (_model.Blocks.Count >= 120) { _error = "حداکثر ۱۲۰ بخش مجاز است."; return; }
+        if (size >= 4) { _error = "حداکثر چهار بخش در یک ردیف مجاز است."; return; }
+        var group = target.RowGroup ?? Guid.NewGuid();
+        target.RowGroup = group;
+        _model.Blocks.Insert(index + (_sidePickerBefore ? 0 : 1),
+            CreateBlock(kind, group));
+        _sidePickerKey = null;
+        _error = string.Empty;
+    }
+    private static NoteBlockModel CreateBlock(NoteBlockKind kind, Guid? group = null) => new()
+    { Kind = kind, RowGroup = group, Content = kind == NoteBlockKind.Table ? new NoteTableData().Serialize() : "" };
+
+    private ElementReference _canvas, _editorRoot;
+    private DotNetObjectReference<NoteEditor>? _dragBridge;
+    private bool _dragAttached;
+    private string _error = string.Empty;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _loaded = false;
+        try
+        {
+            using var lease = Busy.Begin("در حال آماده‌سازی یادداشت...");
+            var actor = (await AuthState.GetAuthenticationStateAsync()).User;
+            _currentUserId = int.TryParse(actor.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var id) ? id : 0;
+            _canChooseAuthor = await Notes.CanChooseAuthorAsync(actor);
+            _authors = await Notes.AuthorsAsync(actor);
+            if (ItemId > 0)
+            {
+                var existing = await Notes.FindAsync(ItemId, actor);
+                if (existing is null || !await Notes.CanManageAsync(existing, actor))
+                {
+                    Notices.Error("این یادداشت پیدا نشد یا اجازه ویرایش ندارید.");
+                    Navigation.NavigateTo("/wiki/notes");
+                    return;
+                }
+                _model = existing;
+            }
+            else _model = new NoteModel { UserId = _currentUserId };
+            _loaded = true;
+        }
+        catch { Notices.Error("بارگذاری یادداشت انجام نشد."); Navigation.NavigateTo("/wiki/notes"); }
+    }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // Bind after the async note load; the first render may show no editor.
+        if (!_loaded) return;
+        if (ItemId == 0 && !string.IsNullOrWhiteSpace(DraftToken) && _usedDraft != DraftToken)
+        {
+            _usedDraft = DraftToken;
+            try
+            {
+                var draft = await JS.InvokeAsync<SnippetDraft?>("cenopsSnippetDraft.take", DraftToken);
+                if (draft?.Kind == "note" && !string.IsNullOrEmpty(draft.Content))
+                {
+                    var blockKind = draft.BlockKind switch { "heading" => NoteBlockKind.Heading,
+                        "text" or "paragraph" => NoteBlockKind.Paragraph, _ => NoteBlockKind.Code };
+                    _model.Blocks.Add(new NoteBlockModel { Kind = blockKind, Content = draft.Content,
+                        Language = NoteCodeFormatter.Normalize(draft.Language) });
+                    await InvokeAsync(StateHasChanged);
+                }
+            }
+            catch (JSDisconnectedException) { }
+        catch (JSException) { }
+        }
+        if (_dragAttached) return;
+        _dragBridge ??= DotNetObjectReference.Create(this);
+        try
+        {
+            await JS.InvokeVoidAsync("cenopsNoteDrag.attach", _canvas, _dragBridge);
+            await JS.InvokeVoidAsync("cenopsWikiShortcuts.attach", _editorRoot, _dragBridge, "note");
+            _dragAttached = true;
+        }
+        catch (JSDisconnectedException) { }
+        catch (JSException) { }
+    }
+
+    private void TogglePicker(int position)
+    {
+        _pickerAt = _pickerAt == position ? null : position;
+        _sidePickerKey = null;
+    }
+
+    // Called by the delegated outside-click/Escape controller. Never closes save dialogs.
+    [JSInvokable]
+    public Task DismissInsertMenusAsync()
+    {
+        if (_pickerAt is null && _sidePickerKey is null) return Task.CompletedTask;
+        _pickerAt = null;
+        _sidePickerKey = null;
+        return InvokeAsync(StateHasChanged);
+    }
+    private void Insert(int position, NoteBlockKind kind)
+    {
+        if (_model.Blocks.Count >= 120) { _error = "حداکثر ۱۲۰ بخش مجاز است."; return; }
+        _model.Blocks.Insert(position, CreateBlock(kind));
+        _pickerAt = null;
+        _sidePickerKey = null;
+        _error = string.Empty;
+    }
+    private void RemoveByKey(Guid key)
+    {
+        var index = _model.Blocks.FindIndex(x => x.Key == key);
+        if (index >= 0) _model.Blocks.RemoveAt(index);
+        _pickerAt = null;
+        _sidePickerKey = null;
+    }
+    [JSInvokable]
+    public async Task MoveBlockAsync(string sourceKey, string targetKey, bool insertAfter)
+    {
+        if (!Guid.TryParse(sourceKey, out var source) || !Guid.TryParse(targetKey, out var target) || source == target) return;
+        var fromIndex = _model.Blocks.FindIndex(x => x.Key == source);
+        var toIndex = _model.Blocks.FindIndex(x => x.Key == target);
+        if (fromIndex < 0 || toIndex < 0) return;
+        var item = _model.Blocks[fromIndex];
+        _model.Blocks.RemoveAt(fromIndex);
+        // Insertion point is before/after target in the *original* list.
+        var newIndex = toIndex + (insertAfter ? 1 : 0);
+        if (fromIndex < newIndex) newIndex--;
+        _model.Blocks.Insert(Math.Clamp(newIndex, 0, _model.Blocks.Count), item);
+        _pickerAt = null;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    [JSInvokable]
+    public Task MoveBlockSpatialAsync(string sourceKey, string targetKey, string side)
+    {
+        if (!Guid.TryParse(sourceKey, out var source) || !Guid.TryParse(targetKey, out var target) || source == target) return Task.CompletedTask;
+        var from = _model.Blocks.FindIndex(x => x.Key == source);
+        var to = _model.Blocks.FindIndex(x => x.Key == target);
+        if (from < 0 || to < 0) return Task.CompletedTask;
+        var moving = _model.Blocks[from];
+        var destination = _model.Blocks[to];
+        var inline = side is "left" or "right";
+        if (inline)
+        {
+            var count = destination.RowGroup is { } group ? _model.Blocks.Count(x => x.RowGroup == group) : 1;
+            if (count >= 4 && moving.RowGroup != destination.RowGroup)
+            { _error = "حداکثر چهار بخش در یک ردیف مجاز است."; return InvokeAsync(StateHasChanged); }
+        }
+        _model.Blocks.RemoveAt(from);
+        to = _model.Blocks.IndexOf(destination);
+        if (inline)
+        {
+            var group = destination.RowGroup ?? Guid.NewGuid();
+            destination.RowGroup = group;
+            moving.RowGroup = group;
+            _model.Blocks.Insert(to + (side == "left" ? 1 : 0), moving);
+        }
+        else
+        {
+            var related = destination.RowGroup;
+            var index = side == "above" ?
+                (related.HasValue ? _model.Blocks.FindIndex(x => x.RowGroup == related) : to) :
+                (related.HasValue ? _model.Blocks.FindLastIndex(x => x.RowGroup == related) + 1 : to + 1);
+            moving.RowGroup = null;
+            _model.Blocks.Insert(index, moving);
+        }
+        _pickerAt = null; _sidePickerKey = null; _error = "";
+        return InvokeAsync(StateHasChanged);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            if (_dragAttached)
+            {
+                await JS.InvokeVoidAsync("cenopsWikiShortcuts.detach", _editorRoot);
+                await JS.InvokeVoidAsync("cenopsNoteDrag.detach", _canvas);
+            }
+        }
+        catch (JSDisconnectedException) { }
+        catch (JSException) { }
+        catch (InvalidOperationException) { }
+        _dragBridge?.Dispose();
+    }
+
+    private void SelectCurrentUser() => _model.UserId = _currentUserId;
+    private void GoBack() => Navigation.NavigateTo("/wiki/notes");
+    [JSInvokable]
+    public Task RequestShortcutSaveAsync()
+    {
+        if (!_saving && !_confirmSave && !_confirmCancel) AskSave();
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private void AskSave()
+    {
+        _error = string.Empty;
+        if (string.IsNullOrWhiteSpace(_model.Title)) { _error = "عنوان یادداشت الزامی است."; return; }
+        _confirmSave = true;
+    }
+    private async Task SaveAsync()
+    {
+        if (_saving) return;
+        _saving = true;
+        try
+        {
+            using var lease = Busy.Begin("در حال ذخیره یادداشت...");
+            var result = await Notes.SaveAsync(_model, (await AuthState.GetAuthenticationStateAsync()).User);
+            if (!result.Succeeded)
+            {
+                _error = result.Message; _confirmSave = false; Notices.Error(result.Message); return;
+            }
+            _confirmSave = false;
+            Notices.Success("یادداشت با موفقیت ذخیره شد.");
+            GoBack();
+        }
+        catch (Exception ex)
+        {
+            _confirmSave = false;
+            _error = ex is KeyNotFoundException ? "یادداشت دیگر وجود ندارد." : "خطا در ذخیره یادداشت.";
+            Notices.Error(_error);
+        }
+        finally { _saving = false; }
+    }
+}

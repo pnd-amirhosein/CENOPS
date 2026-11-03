@@ -1,0 +1,42 @@
+@* Stateful, bindable, reusable expanding tabs; first RTL item is the default. *@
+<div class="app-tabs" role="tablist" aria-label="@AriaLabel" dir="rtl">
+    @foreach (var item in Items)
+    {
+        var selected = string.Equals(item.Key, _selectedKey, StringComparison.Ordinal);
+        <button @key="item.Key" type="button" role="tab"
+                class="app-tab @(selected ? "app-tab--active" : "")"
+                aria-label="@item.Title" aria-selected="@selected"
+                tabindex="0" title="@item.Title"
+                @onclick="() => SelectAsync(item.Key)">
+            @if (!string.IsNullOrWhiteSpace(item.IconSvg))
+            {
+                <span class="app-tab-icon" aria-hidden="true">@((MarkupString)item.IconSvg)</span>
+            }
+            <span class="app-tab-title" aria-hidden="@(!selected)">@item.Title</span>
+        </button>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<AppTabItem> Items { get; set; } = Array.Empty<AppTabItem>();
+    [Parameter] public string AriaLabel { get; set; } = "بخش‌ها";
+    [Parameter] public string ActiveKey { get; set; } = string.Empty;
+    [Parameter] public EventCallback<string> ActiveKeyChanged { get; set; }
+
+    private string _selectedKey = string.Empty;
+
+    protected override void OnParametersSet()
+    {
+        // The parent is the source of truth; ensure a usable first-tab default.
+        _selectedKey = Items.Any(item => item.Key == ActiveKey)
+            ? ActiveKey
+            : Items.FirstOrDefault()?.Key ?? string.Empty;
+    }
+
+    private async Task SelectAsync(string key)
+    {
+        if (!Items.Any(item => item.Key == key) || key == _selectedKey) return;
+        _selectedKey = key; // Immediate visual response, even before the parent finishes.
+        await ActiveKeyChanged.InvokeAsync(key);
+    }
+}

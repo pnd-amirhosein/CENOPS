@@ -1,0 +1,146 @@
+@using System.Security.Claims
+@using NTSW_CENOPS.Application.Notes
+@using NTSW_CENOPS.Application.Knowledge
+@using NTSW_CENOPS.Components.Common
+@using NTSW_CENOPS.Components.Common.Loading
+@using NTSW_CENOPS.Components.Common.Notices
+@inject INoteService Notes
+@inject AuthenticationStateProvider AuthState
+@inject NavigationManager Navigation
+@inject AppBusyService Busy
+@inject AppNoticeService Notices
+
+<div class="knowledge-library note-library" dir="rtl">
+    <SectionContent SectionName="cenops-page-actions">
+        <PageHeaderSearch @bind-Value="_search" Label="جستجو در یادداشت‌ها" Placeholder="جستجو در عنوان، خلاصه یا نویسنده..." />
+    </SectionContent>
+    <div class="knowledge-grid note-grid">
+        <button class="knowledge-create-card note-create-card" type="button" @onclick="CreateNew">
+            <span class="knowledge-create-symbol" aria-hidden="true">+</span>
+            <strong>یادداشت جدید</strong>
+            <small>ساخت یادداشت با متن، عنوان و کد</small>
+        </button>
+        @foreach (var item in Filtered)
+        {
+            <article class="knowledge-card note-card" @key="item.Id">
+                <div class="knowledge-card-top">
+                    <span class="knowledge-type-mark">NOTE / DOCUMENT</span>
+                    @if (item.Visibility == KnowledgeVisibility.Private) { <span class="knowledge-private-pill">خصوصی 🔒</span> }
+                    @if (_editableIds.Contains(item.Id))
+                    {
+                        <div class="knowledge-card-actions">
+                            <button class="knowledge-more" type="button" title="عملیات" aria-expanded="@(_openMenuId == item.Id)" aria-label="عملیات یادداشت" @onclick="() => ToggleMenu(item.Id)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="5" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="12" cy="19" r="1" fill="currentColor"/></svg></button>
+                            @if (_openMenuId == item.Id)
+                            {
+                                <button class="knowledge-menu-scrim" aria-label="بستن منو" @onclick="() => _openMenuId = null"></button>
+                                <div class="knowledge-card-menu cenops-liquid-glass" role="menu" aria-label="عملیات کارت">
+                                    <button type="button" role="menuitem" class="knowledge-menu-edit" @onclick="() => Edit(item.Id)"><svg class="knowledge-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15.5 5.5 3 3M4.75 19.25l4.5-.9L19 8.6a2.12 2.12 0 0 0-3-3L6.25 15.35l-1.5 3.9Z"/></svg><span>ویرایش</span></button>
+                                    <button type="button" role="menuitem" class="knowledge-menu-delete danger" @onclick="() => AskDelete(item)"><svg class="knowledge-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 7h15M9 7V4.5h6V7M7 7l.75 12.5h8.5L17 7M10 10.5v5.5M14 10.5v5.5"/></svg><span>حذف</span></button>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+                <button class="knowledge-card-open" type="button" @onclick="() => PreviewAsync(item.Id)">
+                    <span class="note-card-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M7 3h8l4 4v14H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM14 3v5h5M9 12h6M9 16h6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                    <h3>@item.Title</h3>
+                    <p>@(string.IsNullOrWhiteSpace(item.Excerpt) ? "یادداشت بدون متن؛ برای مشاهده باز کنید." : item.Excerpt)</p>
+                    
+                </button>
+                <div class="knowledge-card-author knowledge-card-author-outside"><span class="knowledge-avatar" aria-hidden="true">@Initial(item.AuthorDisplayName)</span><UserHoverName DisplayName="@item.AuthorDisplayName" /><button type="button" class="knowledge-view knowledge-author-view" @onclick="() => PreviewAsync(item.Id)">مشاهده ←</button></div>
+            </article>
+        }
+    </div>
+    @if (_items.Count == 0) { <p class="knowledge-empty">هنوز یادداشتی ثبت نشده است؛ از کارت «یادداشت جدید» شروع کنید.</p> }
+    else if (!Filtered.Any()) { <p class="knowledge-empty">یادداشتی با این عبارت پیدا نشد.</p> }
+</div>
+
+<AppModal IsOpen="_preview is not null" Title="@_preview?.Title" Description="@_preview?.AuthorDisplayName" MaxWidth="930px" OnClose="ClosePreview">
+    <ChildContent>
+        @if (_preview is not null)
+        {
+            <NoteContent Blocks="_preview.Blocks" NoteId="_preview.Id" />
+        }
+    </ChildContent>
+    <Footer>
+        @if (_preview is not null && _editableIds.Contains(_preview.Id))
+        {
+            <button class="knowledge-button primary" type="button" @onclick="() => Edit(_preview.Id)">ویرایش یادداشت</button>
+        }
+        <button class="knowledge-button secondary" type="button" @onclick="ClosePreview">بستن</button>
+    </Footer>
+</AppModal>
+
+<AppModal IsOpen="_deleteCandidate is not null" Title="حذف یادداشت" Description="آیا از حذف این یادداشت مطمئن هستید؟" MaxWidth="420px" OnClose="CancelDelete">
+    <ChildContent><p>«@_deleteCandidate?.Title» از فهرست یادداشت‌ها حذف خواهد شد.</p></ChildContent>
+    <Footer>
+        <button class="knowledge-button danger" type="button" disabled="@_deleting" @onclick="DeleteAsync">@(_deleting ? "در حال حذف..." : "حذف")</button>
+        <button class="knowledge-button secondary" type="button" disabled="@_deleting" @onclick="CancelDelete">انصراف</button>
+    </Footer>
+</AppModal>
+
+@code {
+    private List<NoteModel> _items = [];
+    private HashSet<int> _editableIds = [];
+    private string _search = string.Empty;
+    private int? _openMenuId;
+    private NoteModel? _preview, _deleteCandidate;
+    private bool _deleting;
+    private IEnumerable<NoteModel> Filtered => _items.Where(x => string.IsNullOrWhiteSpace(_search) ||
+        x.Title.Contains(_search.Trim(), StringComparison.OrdinalIgnoreCase) ||
+        x.Excerpt.Contains(_search.Trim(), StringComparison.OrdinalIgnoreCase) ||
+        x.AuthorDisplayName.Contains(_search.Trim(), StringComparison.OrdinalIgnoreCase) ||
+        x.AuthorUsername.Contains(_search.Trim(), StringComparison.OrdinalIgnoreCase));
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+    private async Task LoadAsync()
+    {
+        try
+        {
+            using var lease = Busy.Begin("در حال دریافت یادداشت‌ها...");
+            var actor = (await AuthState.GetAuthenticationStateAsync()).User;
+            _items = (await Notes.ListAsync(actor)).ToList();
+            var actorId = int.TryParse(actor.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var id) ? id : 0;
+            var manager = await Notes.CanChooseAuthorAsync(actor);
+            _editableIds = _items.Where(x => manager || x.UserId == actorId).Select(x => x.Id).ToHashSet();
+        }
+        catch { Notices.Error("دریافت فهرست یادداشت‌ها انجام نشد."); }
+    }
+    private void CreateNew() => Navigation.NavigateTo("/wiki/notes/new");
+    private void Edit(int id) => Navigation.NavigateTo($"/wiki/notes/edit/{id}");
+    private void ToggleMenu(int id) => _openMenuId = _openMenuId == id ? null : id;
+    private static string Initial(string text) => string.IsNullOrWhiteSpace(text) ? "؟" : text.Trim()[0].ToString();
+    private async Task PreviewAsync(int id)
+    {
+        try
+        {
+            using var lease = Busy.Begin("در حال نمایش یادداشت...");
+            _openMenuId = null;
+            _preview = await Notes.FindAsync(id, (await AuthState.GetAuthenticationStateAsync()).User);
+        }
+        catch { Notices.Error("نمایش یادداشت انجام نشد."); }
+    }
+    private void ClosePreview() => _preview = null;
+    private void AskDelete(NoteModel item) { _openMenuId = null; _deleteCandidate = item; }
+    private void CancelDelete() => _deleteCandidate = null;
+    private async Task DeleteAsync()
+    {
+        if (_deleteCandidate is null || _deleting) return;
+        _deleting = true;
+        try
+        {
+            using var lease = Busy.Begin("در حال حذف یادداشت...");
+            var result = await Notes.DeleteAsync(_deleteCandidate.Id, (await AuthState.GetAuthenticationStateAsync()).User);
+            if (!result.Succeeded) { Notices.Error(result.Message); return; }
+            var deletedId = _deleteCandidate.Id;
+            _items.RemoveAll(x => x.Id == deletedId);
+            _editableIds.Remove(deletedId);
+            if (_preview?.Id == deletedId) _preview = null;
+            _openMenuId = null;
+            _deleteCandidate = null;
+            Notices.Success("یادداشت حذف شد.");
+            await LoadAsync();
+        }
+        catch { Notices.Error("حذف یادداشت انجام نشد."); }
+        finally { _deleting = false; }
+    }
+}

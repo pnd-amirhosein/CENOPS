@@ -1,0 +1,171 @@
+@using NTSW_CENOPS.Application.Knowledge
+@using NTSW_CENOPS.Components.Common
+@using NTSW_CENOPS.Components.Common.Loading
+@using NTSW_CENOPS.Components.Common.Notices
+@using System.Security.Claims
+@inject ICurlService CurlService
+@inject ISqlQueryService QueryService
+@inject AuthenticationStateProvider AuthState
+@inject NavigationManager Navigation
+@inject AppBusyService Busy
+@inject AppNoticeService Notices
+
+<div class="knowledge-library @(_isCurl ? "knowledge-curl" : "knowledge-sql")" dir="rtl">
+    @* <header class="knowledge-heading"> *@
+    @*     <div> *@
+    @*         <span class="knowledge-overline">DEVELOPER LIBRARY / @(_isCurl ? "API REQUESTS" : "DATABASE")</span> *@
+    @*         $1$ <h2>@(_isCurl ? "درخواست‌های cURL" : "پرس‌وجوهای SQL")</h2> #1# *@
+    @*         <p>@(_isCurl ? "نمونه درخواست‌ها، هدرها و بدنه‌های API؛ آماده برای استفاده دوباره." : "قطعه‌کدهای SQL و دستورهای کاربردی برای توسعه و تحلیل داده.")</p> *@
+    @*     </div> *@
+    @*     <span class="knowledge-counter">@_items.Count مورد ثبت‌شده</span> *@
+    @* </header> *@
+
+    <SectionContent SectionName="cenops-page-actions">
+        <PageHeaderSearch @bind-Value="_search" Label="جستجو در کتابخانه" Placeholder="جستجو در عنوان، توضیحات یا نویسنده..." />
+    </SectionContent>
+
+    <div class="knowledge-grid">
+        <button class="knowledge-create-card" type="button" @onclick="CreateNew">
+            <span class="knowledge-create-symbol" aria-hidden="true">+</span>
+            <strong>@(_isCurl ? "درخواست cURL جدید" : "پرس‌وجوی SQL جدید")</strong>
+            <small>ایجاد و ثبت یک نمونه تازه</small>
+        </button>
+        @foreach (var item in FilteredItems)
+        {
+            <article class="knowledge-card" @key="item.Id">
+                <div class="knowledge-card-top">
+                    <span class="knowledge-type-mark">@(_isCurl ? "API / CURL" : "SQL / QUERY")</span>
+                    @if (item.Visibility == KnowledgeVisibility.Private) { <span class="knowledge-private-pill">خصوصی 🔒</span> }
+                    @if (_editableIds.Contains(item.Id))
+                    {
+                        <div class="knowledge-card-actions">
+                            <button class="knowledge-more" type="button" title="عملیات" aria-label="عملیات مربوط به @item.Title" aria-expanded="@(_openMenuId == item.Id)" @onclick="() => ToggleMenu(item.Id)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="5" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="12" cy="19" r="1" fill="currentColor"/></svg></button>
+                            @if (_openMenuId == item.Id)
+                            {
+                                <button class="knowledge-menu-scrim" aria-label="بستن منو" @onclick="() => _openMenuId = null"></button>
+                                <div class="knowledge-card-menu cenops-liquid-glass" role="menu" aria-label="عملیات کارت">
+                                    <button type="button" role="menuitem" class="knowledge-menu-edit" @onclick="() => Edit(item.Id)"><svg class="knowledge-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15.5 5.5 3 3M4.75 19.25l4.5-.9L19 8.6a2.12 2.12 0 0 0-3-3L6.25 15.35l-1.5 3.9Z"/></svg><span>ویرایش</span></button>
+                                    <button type="button" role="menuitem" class="knowledge-menu-delete danger" @onclick="() => AskDelete(item)"><svg class="knowledge-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 7h15M9 7V4.5h6V7M7 7l.75 12.5h8.5L17 7M10 10.5v5.5M14 10.5v5.5"/></svg><span>حذف</span></button>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+                <button class="knowledge-card-open" type="button" @onclick="() => OpenPreviewAsync(item.Id)">
+                    <h3>@item.Title</h3>
+                    <p>@(string.IsNullOrWhiteSpace(item.Description) ? "توضیحی ثبت نشده است." : item.Description)</p>
+                    
+                </button>
+                <div class="knowledge-card-author knowledge-card-author-outside"><span class="knowledge-avatar" aria-hidden="true">@Initial(item.AuthorDisplayName)</span><UserHoverName DisplayName="@item.AuthorDisplayName" /><button type="button" class="knowledge-view knowledge-author-view" @onclick="() => OpenPreviewAsync(item.Id)">مشاهده ←</button></div>
+            </article>
+        }
+    </div>
+    @if (_items.Count == 0)
+    {
+        <p class="knowledge-empty">هنوز موردی ثبت نشده است؛ از کارت «جدید» شروع کنید.</p>
+    }
+    else if (!FilteredItems.Any())
+    {
+        <p class="knowledge-empty">نتیجه‌ای برای جستجوی شما پیدا نشد.</p>
+    }
+</div>
+
+<AppModal IsOpen="_preview is not null" Title="@_preview?.Title" Description="@_preview?.AuthorDisplayName" MaxWidth="820px" OnClose="ClosePreview">
+    <ChildContent>
+        @if (_preview is not null)
+        {
+            <div class="knowledge-preview" dir="rtl">
+                <p>@_preview.Description</p>
+                <pre dir="ltr"><code>@_preview.Value</code></pre>
+            </div>
+        }
+    </ChildContent>
+    <Footer>
+        <button type="button" class="knowledge-button secondary" @onclick="ClosePreview">بستن</button>
+    </Footer>
+</AppModal>
+
+<AppModal IsOpen="_deleteCandidate is not null" Title="حذف مورد" Description="آیا از حذف این مورد مطمئن هستید؟" MaxWidth="420px" OnClose="CancelDelete">
+    <ChildContent><p>«@_deleteCandidate?.Title» از فهرست حذف می‌شود. این عمل قابل بازگشت از رابط کاربری نیست.</p></ChildContent>
+    <Footer>
+        <button type="button" class="knowledge-button danger" disabled="@_deleting" @onclick="ConfirmDeleteAsync">@(_deleting ? "در حال حذف..." : "حذف")</button>
+        <button type="button" class="knowledge-button secondary" disabled="@_deleting" @onclick="CancelDelete">انصراف</button>
+    </Footer>
+</AppModal>
+
+@code {
+    [Parameter] public bool IsCurl { get; set; }
+    private bool _isCurl => IsCurl;
+    private IKnowledgeService Service => IsCurl ? CurlService : QueryService;
+    private string Root => IsCurl ? "/wiki/curls" : "/wiki/queries";
+    private List<KnowledgeItemModel> _items = [];
+    private HashSet<int> _editableIds = [];
+    private string _search = "";
+    private int? _openMenuId;
+    private KnowledgeItemModel? _preview;
+    private KnowledgeItemModel? _deleteCandidate;
+    private bool _deleting;
+    private IEnumerable<KnowledgeItemModel> FilteredItems => _items.Where(x =>
+        string.IsNullOrWhiteSpace(_search) ||
+        x.Title.Contains(_search.Trim(), StringComparison.OrdinalIgnoreCase) ||
+        x.Description.Contains(_search.Trim(), StringComparison.OrdinalIgnoreCase) ||
+        x.AuthorDisplayName.Contains(_search.Trim(), StringComparison.OrdinalIgnoreCase));
+
+    protected override async Task OnParametersSetAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            using var lease = Busy.Begin("در حال دریافت اطلاعات کتابخانه...");
+            var actor = (await AuthState.GetAuthenticationStateAsync()).User;
+            _items = (await Service.ListAsync(actor)).ToList();
+            // One role lookup for the page; never query the database separately for every card.
+            var currentUserId = int.TryParse(actor.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var id) ? id : 0;
+            var canManageAll = await Service.CanChooseAuthorAsync(actor);
+            _editableIds = _items.Where(x => canManageAll || x.UserId == currentUserId)
+                .Select(x => x.Id).ToHashSet();
+        }
+        catch { Notices.Error("دریافت اطلاعات کتابخانه انجام نشد."); }
+    }
+
+    private void CreateNew() => Navigation.NavigateTo(Root + "/new");
+    private void Edit(int id) => Navigation.NavigateTo(Root + "/edit/" + id);
+    private void ToggleMenu(int id) => _openMenuId = _openMenuId == id ? null : id;
+    private static string Initial(string text) => string.IsNullOrWhiteSpace(text) ? "؟" : text.Trim()[0].ToString();
+    private async Task OpenPreviewAsync(int id)
+    {
+        try
+        {
+            using var lease = Busy.Begin("در حال دریافت کد...");
+            _openMenuId = null;
+            _preview = await Service.FindAsync(id, (await AuthState.GetAuthenticationStateAsync()).User);
+        }
+        catch { Notices.Error("نمایش جزئیات ممکن نشد."); }
+    }
+    private void ClosePreview() => _preview = null;
+    private void AskDelete(KnowledgeItemModel item) { _openMenuId = null; _deleteCandidate = item; }
+    private void CancelDelete() => _deleteCandidate = null;
+    private async Task ConfirmDeleteAsync()
+    {
+        if (_deleteCandidate is null || _deleting) return;
+        _deleting = true;
+        try
+        {
+            using var lease = Busy.Begin("در حال حذف...");
+            var result = await Service.DeleteAsync(_deleteCandidate.Id, (await AuthState.GetAuthenticationStateAsync()).User);
+            if (!result.Succeeded) { Notices.Error(result.Message); return; }
+            // Remove immediately to avoid leaving a stale, non-interactive card.
+            var deletedId = _deleteCandidate.Id;
+            _items.RemoveAll(x => x.Id == deletedId);
+            _editableIds.Remove(deletedId);
+            if (_preview?.Id == deletedId) _preview = null;
+            _openMenuId = null;
+            _deleteCandidate = null;
+            Notices.Success("مورد انتخاب‌شده حذف شد.");
+            await LoadAsync();
+        }
+        catch (Exception) { Notices.Error("حذف انجام نشد. لطفاً دوباره تلاش کنید."); }
+        finally { _deleting = false; }
+    }
+}

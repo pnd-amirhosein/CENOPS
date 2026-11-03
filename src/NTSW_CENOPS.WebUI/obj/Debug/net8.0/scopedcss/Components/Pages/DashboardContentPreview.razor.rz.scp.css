@@ -1,0 +1,33 @@
+/* Nested read-only preview and discard confirmation, inside the dashboard picker. */
+.dcp-overlay[b-xv8nzhbzy3]{position:fixed;inset:0;z-index:13000;display:flex;align-items:center;justify-content:center;padding:16px;background:#142b3db6;backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+.dcp-detail-modal[b-xv8nzhbzy3]{display:flex;flex-direction:column;box-sizing:border-box;width:min(990px,96vw);max-height:calc(100% - 24px);min-height:170px;overflow:hidden;border-radius:18px;background:#fff;box-shadow:0 24px 70px #0b233966;color:#264453}
+.dcp-detail-header[b-xv8nzhbzy3]{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;padding:20px 24px 16px;border-bottom:1px solid #e3ecef}
+.dcp-detail-heading[b-xv8nzhbzy3]{min-width:0}.dcp-detail-kicker[b-xv8nzhbzy3]{display:block;color:#079bb3;font-size:11px;font-weight:800}.dcp-detail-header h3[b-xv8nzhbzy3]{font-size:20px;line-height:1.5;font-weight:850;margin:6px 0 0;overflow-wrap:anywhere}
+.dcp-detail-body[b-xv8nzhbzy3]{padding:22px 24px;min-height:0;overflow-y:auto;overscroll-behavior:contain;line-height:1.85;font-size:13px}
+.dcp-detail-footer[b-xv8nzhbzy3]{display:flex;justify-content:flex-end;gap:10px;padding:14px 24px;border-top:1px solid #e3ecef;flex:none}
+.dcp-detail-message[b-xv8nzhbzy3]{text-align:center;color:#849caa;margin:20px}.dcp-detail-text[b-xv8nzhbzy3]{white-space:pre-wrap;overflow-wrap:anywhere}
+.dcp-detail-code[b-xv8nzhbzy3]{padding:18px;max-width:100%;overflow:auto;max-height:55dvh;border-radius:12px;background:#102638;color:#d8f5f1;direction:ltr;text-align:left;white-space:pre;font:12px/1.75 Consolas,monospace}
+.dcp-detail-todos[b-xv8nzhbzy3]{display:flex;flex-direction:column;gap:8px}
+.dcp-detail-todo-row[b-xv8nzhbzy3]{display:flex;align-items:flex-start;gap:10px;padding:10px 13px;border:1px solid #d8ebe0;border-radius:10px;background:#f7fcf8;white-space:pre-wrap;overflow-wrap:anywhere}
+.dcp-detail-todo-row input[type=checkbox][b-xv8nzhbzy3]{box-sizing:border-box;flex:none;width:17px;height:17px;aspect-ratio:1;margin-top:5px;accent-color:#2d9b68}
+.dcp-detail-todo-row span[b-xv8nzhbzy3]{min-width:0}.dcp-detail-todo-row .done[b-xv8nzhbzy3]{text-decoration:line-through;color:#829e90}
+.dcp-report-facts[b-xv8nzhbzy3]{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:16px}
+.dcp-report-facts>div[b-xv8nzhbzy3]{display:flex;flex-direction:column;gap:3px;background:#f3f9fb;border:1px solid #dcecf2;border-radius:10px;padding:11px}
+.dcp-report-facts span[b-xv8nzhbzy3]{font-size:10px;color:#7998a7}.dcp-report-facts strong[b-xv8nzhbzy3]{font-size:12px;overflow-wrap:anywhere}
+
+.dcp-detail-modal:has(.dcp-detail-heading) .dcp-detail-heading[b-xv8nzhbzy3]{max-width:100%}
+
+.dcp-detail-modal .dcp-detail-heading:has(.dcp-detail-kicker) h3[b-xv8nzhbzy3]{overflow-wrap:anywhere}
+
+.dcp-detail-modal .dcp-detail-heading:has(.dcp-detail-kicker) .dcp-detail-kicker[b-xv8nzhbzy3]{margin-bottom:4px}
+
+@media(max-width:780px){.dcp-detail-header[b-xv8nzhbzy3],.dcp-detail-body[b-xv8nzhbzy3],.dcp-detail-footer[b-xv8nzhbzy3]{padding:12px 14px}.dcp-report-facts[b-xv8nzhbzy3]{grid-template-columns:1fr}}
+
+.dcp-close[b-xv8nzhbzy3]{box-sizing:border-box;display:grid;place-items:center;flex:none;width:36px;height:36px;padding:0;border:1px solid #dce9ee;border-radius:10px;background:#f5f9fa;color:#688493;cursor:pointer}.dcp-close svg[b-xv8nzhbzy3]{display:block;width:17px;height:17px}.dcp-close:hover[b-xv8nzhbzy3]{background:#fff0f3;color:#bc526b}
+.dcp-btn[b-xv8nzhbzy3]{display:inline-flex;align-items:center;justify-content:center;padding:0 16px;min-height:41px;border:1px solid #079eb2;border-radius:10px;background:#079eb2;color:white;cursor:pointer;font-size:12px;font-weight:800}.dcp-btn:disabled[b-xv8nzhbzy3]{opacity:.5}
+
+.announcement-detail[b-xv8nzhbzy3]{width:min(760px,94vw);min-height:unset}.announcement-detail .dcp-detail-header[b-xv8nzhbzy3]{border-bottom:0;padding:28px 30px;align-items:flex-start}.announcement-detail .dcp-detail-heading[b-xv8nzhbzy3]{flex:1}.announcement-detail .dcp-detail-kicker[b-xv8nzhbzy3]{color:#cd527d}.announcement-detail .dcp-detail-header h3[b-xv8nzhbzy3]{font-size:clamp(19px,2.2vw,27px);font-weight:900;line-height:1.8;text-align:center;white-space:pre-wrap}
+
+.dcp-detail-message.dcp-error[b-xv8nzhbzy3]{color:#bd4b63}
+
+.dcp-detail-modal:has(.user-hover-root:hover)[b-xv8nzhbzy3],.dcp-detail-modal:has(.user-hover-root:focus-within)[b-xv8nzhbzy3]{overflow:visible}

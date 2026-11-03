@@ -1,0 +1,301 @@
+.account-shell {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    z-index: 60;
+}
+
+.account-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    min-height: 2.4rem;
+    padding: 0.35rem 0.55rem;
+    border: 0;
+    border-radius: 0.75rem;
+    background: transparent;
+    color: #0f172a;
+    font: inherit;
+    cursor: pointer;
+    transition: background-color 140ms ease, color 140ms ease;
+}
+
+.account-trigger:hover,
+.account-trigger:focus-visible {
+    background: rgba(255, 255, 255, 0.7);
+    outline: none;
+}
+
+.account-display-name {
+    max-width: 15rem;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-weight: 400;
+}
+
+.account-chevron {
+    display: inline-flex;
+    align-items: center;
+    color: #0f172a;
+    transition: transform 150ms ease;
+}
+
+.account-chevron--open {
+    transform: rotate(180deg);
+}
+
+.menu-page-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 61;
+    width: 100vw;
+    height: 100vh;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    cursor: default;
+}
+
+.account-menu {
+    position: absolute;
+    z-index: 62;
+    top: calc(100% + 0.5rem);
+    right: 0;
+    width: 16rem;
+    padding: 0.55rem;
+
+
+
+
+    color: #0f172a;
+}
+
+.account-menu-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    padding: 0.45rem 0.65rem 0.55rem;
+}
+
+.account-menu-name {
+    overflow: hidden;
+    color: #0f172a;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.account-username {
+    overflow: hidden;
+    color: #94a3b8;
+    font-size: 0.72rem;
+    direction: ltr;
+    text-align: right;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.account-menu-separator {
+    height: 1px;
+    margin: 0.25rem 0.4rem;
+    background: #f1f5f9;
+}
+
+.account-menu-option {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 0.65rem;
+    min-height: 2.55rem;
+    padding: 0.5rem 0.65rem;
+    border: 0;
+    border-radius: 0.7rem;
+    background: transparent;
+    color: #334155;
+    font: inherit;
+    font-size: 0.84rem;
+    text-align: right;
+    cursor: pointer;
+    transition: background-color 120ms ease, color 120ms ease;
+}
+
+.account-menu-option:hover,
+.account-menu-option:focus-visible {
+    background: #f8fafc;
+    color: #0f172a;
+    outline: none;
+}
+
+.menu-option-icon {
+    display: inline-flex;
+    width: 1.1rem;
+    height: 1.1rem;
+    flex: 0 0 1.1rem;
+    color: #64748b;
+}
+
+.menu-option-icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+.profile-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.profile-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.profile-field label {
+    color: #475569;
+    font-size: 0.78rem;
+    font-weight: 500;
+}
+
+.profile-field input {
+    width: 100%;
+    height: 2.85rem;
+    box-sizing: border-box;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.85rem;
+    background: #ffffff;
+    color: #0f172a;
+    padding: 0 0.85rem;
+    outline: none;
+    font: inherit;
+    font-size: 0.9rem;
+    transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.profile-field input:hover {
+    border-color: #cbd5e1;
+}
+
+.profile-field input:focus {
+    border-color: #19b5de;
+    box-shadow: 0 0 0 3px rgba(25, 181, 222, 0.11);
+}
+
+.username-input-wrap {
+    position: relative;
+}
+
+.username-input-wrap input {
+    padding-left: 2.25rem;
+    text-align: left;
+}
+
+.username-prefix {
+    position: absolute;
+    z-index: 1;
+    left: 0.85rem;
+    top: 50%;
+    color: #94a3b8;
+    font-size: 0.82rem;
+    transform: translateY(-50%);
+    pointer-events: none;
+}
+
+.profile-error {
+    padding: 0.65rem 0.8rem;
+    border-radius: 0.75rem;
+    background: #fff1f2;
+    color: #e11d48;
+    font-size: 0.78rem;
+    line-height: 1.65;
+}
+
+.profile-save,
+.profile-cancel {
+    min-width: 5.75rem;
+    height: 2.65rem;
+    padding: 0 1rem;
+    border-radius: 0.85rem;
+    font: inherit;
+    font-size: 0.84rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 100ms ease, background-color 130ms ease, border-color 130ms ease;
+}
+
+.profile-save {
+    border: 1px solid #19b5de;
+    background: #19b5de;
+    color: #ffffff;
+    box-shadow: 0 7px 18px rgba(25, 181, 222, 0.18);
+}
+
+.profile-save:hover:not(:disabled) {
+    background: #12a7cf;
+    border-color: #12a7cf;
+}
+
+.profile-cancel {
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    color: #475569;
+}
+
+.profile-cancel:hover:not(:disabled) {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+}
+
+.profile-save:active:not(:disabled),
+.profile-cancel:active:not(:disabled) {
+    transform: translateY(1px);
+}
+
+.profile-save:disabled,
+.profile-cancel:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+    .account-menu {
+        width: 14.5rem;
+    }
+
+    .account-display-name {
+        max-width: 9rem;
+    }
+}
+
+.password-change-warning {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.8rem;
+    padding: 0.9rem 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 1rem;
+    background: #f8fafc;
+    color: #475569;
+}
+
+.password-change-warning p {
+    margin: 0;
+    font-size: 0.84rem;
+    line-height: 1.9;
+}
+
+.password-change-warning-icon {
+    display: inline-flex;
+    width: 1.35rem;
+    height: 1.35rem;
+    flex: 0 0 1.35rem;
+    margin-top: 0.1rem;
+    color: #19b5de;
+}
+
+.password-change-warning-icon svg {
+    width: 100%;
+    height: 100%;
+}

@@ -1,0 +1,164 @@
+@using NTSW_CENOPS.Application.Knowledge
+@using NTSW_CENOPS.Components.Common
+@using NTSW_CENOPS.Components.Common.Loading
+@using NTSW_CENOPS.Components.Common.Notices
+@using System.Security.Claims
+@inject ICurlService CurlService
+@inject ISqlQueryService QueryService
+@inject AuthenticationStateProvider AuthState
+@inject NavigationManager Navigation
+@inject AppBusyService Busy
+@inject AppNoticeService Notices
+@inject IJSRuntime JS
+@using NTSW_CENOPS.Components.Notes
+
+<div class="knowledge-editor @(_isCurl ? "knowledge-curl" : "knowledge-sql")" dir="rtl">
+    <div class="knowledge-editor-heading">
+        <span class="knowledge-overline">@(_isCurl ? "API / CURL" : "DATABASE / SQL")</span>
+        <h2>@(ItemId > 0 ? "ویرایش" : "ثبت") @(_isCurl ? "درخواست cURL" : "پرس‌وجوی SQL")</h2>
+        <p>عنوان، نویسنده، توضیحات و کد را وارد کنید و سپس تغییرات را تأیید کنید.</p>
+    </div>
+    @if (_loaded)
+    {
+        <div class="knowledge-form">
+            <div class="knowledge-inputs-row">
+                <label class="knowledge-field knowledge-title-field"><span>عنوان <em>*</em></span><input maxlength="250" aria-label="عنوان" placeholder="عنوانی روشن و کاربردی بنویسید" @bind="_model.Title" @bind:event="oninput" /></label>
+                <KnowledgeVisibilitySwitch @bind-Value="_model.Visibility" />
+                <div class="knowledge-field knowledge-author-field">
+                    <label for="knowledge-author-select">نویسنده</label>
+                    <select id="knowledge-author-select" @bind="_model.UserId" disabled="@(!_canChooseAuthor)">
+                        @foreach (var author in _authors)
+                        {
+                            <option value="@author.Id">@author.DisplayName (@author.Username)</option>
+                        }
+                    </select>
+                    <button type="button" class="knowledge-current-user" @onclick="SelectCurrentUser">انتخاب کاربر فعلی</button>
+                </div>
+            </div>
+            <label class="knowledge-field"><span>توضیحات</span><textarea rows="5" maxlength="4000" placeholder="کاربرد، پیش‌نیازها و نکاتی که دیگر توسعه‌دهندگان باید بدانند..." @bind="_model.Description" @bind:event="oninput"></textarea></label>
+            <label class="knowledge-field"><span>@(_isCurl ? "دستور cURL" : "کد SQL") <em>*</em></span>
+                <div class="knowledge-code-surface">
+                    <div class="knowledge-code-bar"><span class="knowledge-code-dots" aria-hidden="true">● ● ●</span><strong>@(_isCurl ? "request.sh" : "query.sql")</strong><span>@(_isCurl ? "cURL" : "T-SQL")</span></div>
+                    <textarea dir="ltr" spellcheck="false" aria-label="کد" placeholder="@(_isCurl ? "curl --request GET ..." : "SELECT ... FROM ...;")" @bind="_model.Value" @bind:event="oninput"></textarea>
+                </div>
+            </label>
+            @if (!string.IsNullOrEmpty(_error)) { <p class="knowledge-form-error" role="alert">@_error</p> }
+            <div class="knowledge-form-actions">
+                <button class="knowledge-button primary" type="button" @onclick="AskSave" disabled="@_saving">ذخیره تغییرات</button>
+                <button class="knowledge-button secondary" type="button" @onclick="AskCancel" disabled="@_saving">انصراف</button>
+            </div>
+        </div>
+    }
+</div>
+
+<AppModal IsOpen="_confirmSave" Title="تأیید ذخیره" Description="از ثبت اطلاعات و تغییرات مطمئن هستید؟" MaxWidth="410px" OnClose="() => _confirmSave = false">
+    <ChildContent><p>پس از تأیید، اطلاعات در کتابخانه ذخیره خواهد شد.</p></ChildContent>
+    <Footer>
+        <button class="knowledge-button primary" type="button" disabled="@_saving" @onclick="SaveAsync">@(_saving ? "در حال ذخیره..." : "تأیید و ذخیره")</button>
+        <button class="knowledge-button secondary" type="button" disabled="@_saving" @onclick="() => _confirmSave = false">بازگشت</button>
+    </Footer>
+</AppModal>
+<AppModal IsOpen="_confirmCancel" Title="انصراف از ویرایش" Description="از خروج بدون ذخیره مطمئن هستید؟" MaxWidth="410px" OnClose="() => _confirmCancel = false">
+    <ChildContent><p>تغییرات ذخیره‌نشده از دست می‌روند.</p></ChildContent>
+    <Footer>
+        <button class="knowledge-button danger" type="button" @onclick="GoBack">خروج بدون ذخیره</button>
+        <button class="knowledge-button secondary" type="button" @onclick="() => _confirmCancel = false">ادامه ویرایش</button>
+    </Footer>
+</AppModal>
+
+@code {
+    [Parameter] public bool IsCurl { get; set; }
+    [Parameter] public int ItemId { get; set; }
+    [Parameter] public string? DraftToken { get; set; }
+    private string? _usedDraft;
+    private bool _isCurl => IsCurl;
+    private IKnowledgeService Service => IsCurl ? CurlService : QueryService;
+    private string Root => IsCurl ? "/wiki/curls" : "/wiki/queries";
+    private KnowledgeItemModel _model = new();
+    private IReadOnlyList<KnowledgeAuthorModel> _authors = [];
+    private int _currentUserId;
+    private bool _canChooseAuthor, _loaded, _saving, _confirmSave, _confirmCancel;
+    private string _error = "";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _loaded = false;
+        try
+        {
+            using var lease = Busy.Begin("در حال آماده‌سازی فرم...");
+            var actor = (await AuthState.GetAuthenticationStateAsync()).User;
+            _currentUserId = int.TryParse(actor.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var id) ? id : 0;
+            _canChooseAuthor = await Service.CanChooseAuthorAsync(actor);
+            _authors = await Service.AuthorsAsync(actor);
+            if (ItemId > 0)
+            {
+                var item = await Service.FindAsync(ItemId, actor);
+                if (item is null || !await Service.CanManageAsync(item, actor))
+                {
+                    Notices.Error("این مورد پیدا نشد یا اجازه ویرایش آن را ندارید.");
+                    Navigation.NavigateTo(Root);
+                    return;
+                }
+                _model = item;
+            }
+            else _model = new KnowledgeItemModel { UserId = _currentUserId };
+            _loaded = true;
+        }
+        catch { Notices.Error("دریافت اطلاعات فرم انجام نشد."); Navigation.NavigateTo(Root); }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_loaded || ItemId != 0 || string.IsNullOrWhiteSpace(DraftToken) || _usedDraft == DraftToken) return;
+        _usedDraft = DraftToken;
+        try
+        {
+            var draft = await JS.InvokeAsync<SnippetDraft?>("cenopsSnippetDraft.take", DraftToken);
+            if (draft is not null && draft.Kind == (IsCurl ? "curl" : "sql") && !string.IsNullOrEmpty(draft.Content))
+            {
+                _model.Value = draft.Content;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (JSDisconnectedException) { }
+        catch (JSException) { }
+    }
+
+    private void SelectCurrentUser() => _model.UserId = _currentUserId;
+    private void AskCancel() => _confirmCancel = true;
+    private void GoBack() => Navigation.NavigateTo(Root);
+    private void AskSave()
+    {
+        _error = "";
+        if (_model.Title.Trim().Length < 3) { _error = "عنوان باید حداقل ۳ نویسه داشته باشد."; return; }
+        if (string.IsNullOrWhiteSpace(_model.Value)) { _error = "وارد کردن کد الزامی است."; return; }
+        _confirmSave = true;
+    }
+    private async Task SaveAsync()
+    {
+        if (_saving) return;
+        _saving = true;
+        try
+        {
+            using var lease = Busy.Begin("در حال ذخیره اطلاعات...");
+            var result = await Service.SaveAsync(_model, (await AuthState.GetAuthenticationStateAsync()).User);
+            if (!result.Succeeded)
+            {
+                _error = result.Message;
+                _confirmSave = false;
+                Notices.Error(result.Message);
+                return;
+            }
+            _confirmSave = false;
+            Notices.Success("اطلاعات با موفقیت ذخیره شد.");
+            Navigation.NavigateTo(Root);
+        }
+        catch (Exception ex)
+        {
+            _confirmSave = false;
+            _error = ex is KeyNotFoundException ? "مورد انتخاب‌شده دیگر وجود ندارد." : "خطا در ذخیره اطلاعات.";
+            Notices.Error(_error);
+        }
+        finally { _saving = false; }
+    }
+}

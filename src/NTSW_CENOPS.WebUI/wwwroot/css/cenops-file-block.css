@@ -1,0 +1,93 @@
+/* GLASSWORK 2.65 — reusable file block, lazy viewer, and paginated metadata lists. */
+.cenops-file-block{font:inherit;color:#1d4050;direction:rtl;min-width:0}
+.cenops-file-drop{position:relative;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;min-height:128px;padding:18px 12px;border:1.5px dashed #9dcedb;border-radius:14px;background:#f3fafc;transition:border-color .16s,background .16s;overflow:hidden;text-align:center}
+.cenops-file-drop:hover,.cenops-file-drop:focus-within,.cenops-file-drop.is-over{background:#e6f7fb;border-color:#0798b8}
+.cenops-file-drop svg{height:29px;width:29px;color:#1398b3}
+.cenops-file-drop strong{font-size:13px;font-weight:750;color:#265369}
+.cenops-file-drop>span{font-size:11px;color:#708d99}
+.cenops-file-native-input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:1;font-size:0}
+/* Retained native inputs must stay mounted to keep Blazor file handles alive, but never intercept clicks. */
+.cenops-file-native-input--retained{visibility:hidden;pointer-events:none;z-index:-1}
+.cenops-file-queue{display:flex;flex-direction:row;align-items:stretch;gap:6px;margin-top:6px;min-height:31px;max-width:100%}
+.cenops-file-pending-list{flex:1;min-width:0;overflow-x:auto;display:flex;gap:5px;align-items:center;scrollbar-width:thin;border:1px solid #ddebf0;border-radius:9px;background:#fff;padding:3px 6px}
+.cenops-file-pending{position:relative;min-width:0;max-width:255px;flex:none;display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:750;color:#335468;white-space:nowrap;padding:2px 5px;border-radius:6px;transition:background .14s ease}
+.cenops-file-pending:hover,.cenops-file-pending:focus-within{background:#e8f5f9}
+.cenops-file-pending.invalid{color:#b03e48}
+.cenops-file-pending-remove{flex:none;display:grid;place-items:center;height:17px;width:17px;border:1px solid #d8e6ea;border-radius:5px;padding:0;background:#fff;color:#a74955;cursor:pointer;opacity:0;transform:scale(.92);transition:opacity .12s,transform .12s}
+.cenops-file-pending:hover .cenops-file-pending-remove,.cenops-file-pending:focus-within .cenops-file-pending-remove{opacity:1;transform:none}
+.cenops-file-pending-remove svg{display:block;width:11px;height:11px;flex:none;stroke-width:2.25}
+.cenops-file-pending-remove:hover{background:#fff0f2;border-color:#e8b5be}
+.cenops-file-pending-remove:disabled{cursor:default;opacity:.3}
+@media(hover:none){.cenops-file-pending-remove{opacity:1;transform:none}}
+.cenops-file-pending>.cenops-file-truncate{max-width:120px}
+.cenops-file-mini-icon{font:800 8px/1 monospace;border-radius:4px;background:#e0f3f7;color:#078ca8;padding:5px 3px}
+.cenops-file-upload-button{position:relative;flex:none;display:inline-flex;gap:6px;align-items:center;justify-content:center;border:1px solid #1594ad;border-radius:9px;background:#0796b3;color:#fff;font-size:11px;font-weight:800;padding:4px 12px;cursor:pointer}
+.cenops-file-upload-button svg{height:14px;width:14px}
+.cenops-file-upload-count{position:absolute;right:-6px;top:-7px;min-width:18px;height:18px;display:grid;place-items:center;padding:0 4px;border:1.5px solid #fff;border-radius:100px;background:#11697d;color:#fff;font-family:inherit;font-size:10px;font-weight:800;line-height:1;box-shadow:0 2px 5px #17495b26}
+.cenops-file-upload-button:disabled{opacity:.45;cursor:default}
+.cenops-file-feedback{font-size:11px;color:#608392;margin:5px 2px}
+.cenops-file-uploaded-head{font-size:11px;font-weight:750;color:#527889;display:flex;align-items:center;gap:8px;margin:12px 0 6px}
+.cenops-file-uploaded-head span{background:#def3f8;border-radius:99px;padding:1px 7px;color:#1485a1}
+.cenops-file-uploaded-list{display:flex;overflow-x:auto;gap:8px;padding:0 0 8px;scrollbar-width:thin;max-width:100%;min-width:0}
+.cenops-file-square{position:relative;flex:0 0 94px;width:94px;min-height:102px;border:1px solid #d7e9ed;border-radius:12px;background:#f8fcfd;text-align:center}
+.cenops-file-square-main{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:transparent;border:0;padding:12px 7px;color:#365b6b;cursor:pointer}
+.cenops-file-large-icon{display:grid;place-items:center;width:46px;height:45px;border:1px solid #c5e9f2;background:#e4f5f9;color:#078daa;border-radius:10px;font:800 13px/1 monospace}
+.cenops-file-square-name{font-size:10px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cenops-file-remove{position:absolute;top:3px;left:3px;display:grid;place-items:center;height:20px;width:20px;padding:0;border:1px solid #eec9d0;background:#fff1f2;border-radius:6px;color:#b74154;font-size:16px;line-height:1;cursor:pointer}
+.cenops-file-truncate{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right}
+.cenops-file-view-switch{display:flex;align-items:center;gap:4px;margin:0 0 8px}
+.cenops-file-view-switch button{border:1px solid #d7e6eb;background:#f6fafb;border-radius:7px;padding:5px 11px;color:#537482;font-size:11px;cursor:pointer}
+.cenops-file-view-switch button.active{background:#e1f6fa;border-color:#65bece;color:#077e9b;font-weight:800}
+/* List and gallery share a fixed-height, reusable viewing canvas. */
+.cenops-file-view-canvas{height:clamp(330px,39vh,365px);min-width:0;overflow:hidden}
+.cenops-file-list-pane{display:flex;flex-direction:column;min-width:0;height:100%;gap:6px}
+.cenops-file-view-list{display:grid;align-content:start;gap:3px;min-width:0;min-height:0;flex:1;overflow-y:auto;scrollbar-width:thin}
+.cenops-file-pagination{flex:none;display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:38px;padding:4px 5px;border-top:1px solid #d9eaee;flex-wrap:wrap}
+.cenops-file-page-summary{font-size:10px;font-weight:750;color:#688593;white-space:nowrap}
+.cenops-file-page-actions{display:flex;align-items:center;gap:3px;direction:rtl}
+.cenops-file-page-actions button{display:grid;place-items:center;min-width:27px;height:27px;padding:3px 6px;border:1px solid #d9e8ed;border-radius:7px;background:#fff;color:#3e687b;cursor:pointer;font-size:11px;font-weight:700;font-family:inherit}
+.cenops-file-page-actions button.active{background:#dff5f9;border-color:#8bccda;color:#087e9b}
+.cenops-file-page-actions button:hover:not(:disabled){background:#e9f8fb}
+.cenops-file-page-actions button:disabled{opacity:.35;cursor:default}
+.cenops-file-page-actions button svg{width:13px;height:13px}
+.cenops-file-view-row{display:grid;grid-template-columns:29px minmax(0,1fr) 80px 56px;align-items:center;text-align:right;gap:8px;padding:5px 8px;min-height:33px;border:1px solid #e0edf0;border-radius:8px;background:#f9fcfd;color:#315365;cursor:pointer;font-size:11px;width:100%}
+.cenops-file-view-row:hover{background:#edf9fc;border-color:#a8d9e2}
+.cenops-file-view-row>span:nth-child(n+3){text-align:left;color:#78909b;font-size:10px}
+.cenops-file-row-icon{display:grid;place-items:center;height:25px;border-radius:5px;background:#e2f5f8;font:800 9px monospace;color:#0786a4}
+/* Gallery: no outer box outline; the preview uses the entire reserved canvas. */
+.cenops-file-gallery{display:flex;flex-direction:column;height:100%;min-width:0;background:transparent;border:0;outline:0;padding:0}
+.cenops-file-gallery-main{position:relative;display:block;width:100%;height:auto;flex:1;min-height:0;min-width:0;overflow:hidden;border:0;outline:0;border-radius:11px;background:#edf6f8}
+.cenops-file-gallery-caption{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:11px;font-weight:700;color:#4c7182;padding:5px 3px 1px;flex:none}
+.cenops-file-gallery-strip{display:flex;justify-content:flex-start;gap:6px;overflow-x:auto;max-width:100%;padding:5px 0 1px;flex:none;min-height:60px}
+.cenops-file-gallery-tile{flex:0 0 55px;display:grid;place-items:center;height:53px;border:1px solid #d5e4e9;border-radius:8px;background:#fff;color:#0d86a3;font:800 11px monospace;cursor:pointer;overflow:hidden}
+.cenops-file-gallery-tile.active{outline:0;background:#e4f7fa;border-color:#8dcfdb;box-shadow:inset 0 0 0 1px #8dcfdb}
+.cenops-file-gallery-tile:focus-visible,.cenops-file-view-row:focus-visible,.cenops-file-pending-remove:focus-visible{outline:2px solid #078aa8;outline-offset:2px}
+/* The same self-contained viewer is used inside both gallery and modal. */
+/* Only the large file preview opts into these modal dimensions. */
+.cenops-file-preview-dialog.app-modal-surface{display:flex;flex-direction:column;max-height:calc(100dvh - 24px);height:min(92dvh,1020px);overflow:hidden}
+.cenops-file-preview-dialog > .app-modal-heading,.cenops-file-preview-dialog > .app-modal-footer{flex:none}
+.cenops-file-preview-dialog > .app-modal-body{flex:1;display:flex;min-height:0;overflow:hidden}
+.cenops-file-modal-preview{width:100%;height:100%;flex:1;min-height:0;min-width:0;overflow:hidden;background:#f5fafc;border:0;border-radius:12px}
+.cenops-file-preview{display:flex;flex-direction:column;width:100%;height:100%;min-width:0;min-height:0;overflow:hidden;background:#f1f7f9;color:#2a5365}
+.cenops-file-preview--compact{background:transparent}
+.cenops-file-preview-image{display:block;width:100%;height:100%;object-fit:contain;min-height:0;min-width:0}
+.cenops-file-preview-pdf{display:block;flex:1;width:100%;height:100%;min-height:0;border:0;background:#fff}
+.cenops-file-preview-text{flex:1;width:100%;height:100%;overflow:auto;min-height:0;margin:0;padding:17px 19px;white-space:pre-wrap;overflow-wrap:anywhere;tab-size:4;text-align:start;font:500 12px/1.75 Consolas,'Courier New',monospace;color:#254f64}
+.cenops-file-preview-book{display:flex;flex-direction:column;flex:1;min-height:0;min-width:0;overflow:hidden}
+.cenops-file-preview-sheet-tabs{display:flex;flex:none;gap:4px;overflow-x:auto;scrollbar-width:thin;padding:5px 7px;border-bottom:1px solid #cfdee5;background:#eaf4f8}
+.cenops-file-preview-sheet-tabs button{flex:none;border:1px solid transparent;border-radius:6px;padding:4px 9px;background:transparent;color:#5f8493;cursor:pointer;font-size:11px}
+.cenops-file-preview-sheet-tabs button.active{background:#fff;border-color:#c2dce3;color:#096c84;font-weight:750}
+.cenops-file-preview-grid-scroll{width:100%;flex:1;min-height:0;overflow:auto;direction:ltr;scrollbar-width:thin}
+.cenops-file-preview-grid{border-collapse:separate;border-spacing:0;table-layout:auto;min-width:100%;font:500 11px/1.45 Tahoma,Arial,sans-serif;color:#37576a;text-align:start;direction:ltr}
+.cenops-file-preview-grid th,.cenops-file-preview-grid td{max-width:270px;min-width:70px;padding:6px 9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border-left:1px solid #e2ebef;border-bottom:1px solid #e2ebef;background:#fff}
+.cenops-file-preview-grid thead th{position:sticky;top:0;z-index:1;background:#eaf2f6;color:#3f7184;font-weight:800}
+.cenops-file-preview-grid tbody th{position:sticky;left:0;z-index:1;min-width:38px;background:#eaf2f6;color:#688292;font-weight:750}
+.cenops-file-preview-grid tbody tr:nth-child(even) td{background:#f9fcfd}
+.cenops-file-preview-state{flex:1;display:flex;justify-content:center;align-items:center;flex-direction:column;gap:12px;min-width:0;padding:25px;text-align:center;color:#6c8b99;font-size:12px}
+.cenops-file-preview-fallback{display:grid;place-items:center;width:75px;height:85px;border-radius:13px;background:#e1f2f7;color:#11819b;font:800 16px/1 Consolas,monospace}
+.cenops-file-preview-state p{margin:0;line-height:1.7}
+.cenops-file-empty{font-size:12px;color:#738d99;text-align:center}
+.cenops-file-download{text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+@media(max-width:520px){.cenops-file-view-row{grid-template-columns:25px minmax(0,1fr) 65px 40px;gap:4px}.cenops-file-drop strong{font-size:12px}.cenops-file-preview-text{padding:12px;font-size:11px}}
+
+@media(max-height:550px){.cenops-file-preview-dialog.app-modal-surface{height:calc(100dvh - 12px);padding:10px}.cenops-file-preview-dialog .app-modal-heading{margin-bottom:5px}.cenops-file-preview-dialog .app-modal-footer{margin-top:5px}}

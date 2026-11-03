@@ -1,0 +1,43 @@
+@using NTSW_CENOPS.Components.Notes
+@using NTSW_CENOPS.Application.Dashboards
+@using NTSW_CENOPS.Application.Reports
+@using NTSW_CENOPS.Application.Events
+@using NTSW_CENOPS.Components.Profile
+<section class="dash-smart-slide dashboard-tile @Item.Type" dir="rtl">
+                        @if (Item.IsRestricted)
+                        { <div class="dash-restricted"><strong>🔒 دسترسی به این محتوا ندارید</strong><small>این مورد خصوصی یا حذف‌شده است.</small></div> }
+                        else if (Item.Type == "announcement")
+                        { <div class="dash-announcement"><div class="dash-announcement-meta">اطلاعیه · <UserHoverName DisplayName="@Item.Author" /></div><h3>@Item.Title</h3></div> }
+                        else if (Item.Type == "report")
+                        {
+                            @if (Charts is not null && Charts.TryGetValue(Item.Id, out var chart))
+                            { <div class="dash-chart"><MonitoringReportChart Data="chart" DashboardMode="true" /></div> }
+                            else { <div class="dash-smart-empty">نمودار در دسترس نیست.</div> }
+                        }
+                        else if (Item.Type is "event" or "events-day" or "events-week" or "events-month")
+                        { <DashboardEventCard Item="Item" Layout="@(new DashboardContentReference(Item.Type,Item.Id))" Actor="Actor" OnDetailsRequested="OnEventDetails" /> }
+                        else
+                        {
+                            <div class="dash-card-topline"><span class="dash-card-byline">@Item.Author</span><button type="button" class="dash-card-preview" @onclick="() => OnPreview.InvokeAsync(Item)">مشاهده محتوا ↗</button></div>
+                            <div class="dash-card-heading"><h3>@Item.Title</h3></div>
+                            @if (Item.Type == "todo")
+                            {
+                                <div class="dash-tasks">
+                                @foreach (var task in Item.TodoItems?.Take(3) ?? [])
+                                { <div class="dash-task"><span class="dash-check">@if (task.IsCompleted) { <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m3.5 8 3.1 3.1 5.9-6"/></svg> }</span><span>@task.Text</span></div> }
+                                </div>
+                            }
+                            else if (Item.Type == "note" && Item.NoteBlocks is { Count: > 0 })
+                            { <div class="dash-note-content"><NoteContent Blocks="Item.NoteBlocks" /></div> }
+                            else if (Item.Type is "sql" or "curl")
+                            { <p class="dash-description">@Item.Summary</p><pre class="dash-snippet" dir="ltr">@Item.CodePreview</pre> }
+                            else { <p class="dash-description">@Item.Summary</p> }
+                        }
+</section>
+@code {
+    [Parameter, EditorRequired] public DashboardContentItem Item { get; set; } = default!;
+    [Parameter, EditorRequired] public System.Security.Claims.ClaimsPrincipal Actor { get; set; } = default!;
+    [Parameter] public IReadOnlyDictionary<long, MonitoringChartData>? Charts { get; set; }
+    [Parameter] public EventCallback<DashboardContentItem> OnPreview { get; set; }
+    [Parameter] public EventCallback<CalendarOccurrence> OnEventDetails { get; set; }
+}

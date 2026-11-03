@@ -1,0 +1,13 @@
+<input id="@Id" class="@CssClass" type="text" value="@Value" maxlength="@MaxLength" placeholder="@Placeholder" aria-label="@Label" required="@Required"
+       @oninput="OnInput" autocomplete="off" />
+@code {
+    [Parameter] public string? Id { get; set; }
+    [Parameter] public bool Required { get; set; }
+    [Parameter] public string Value { get; set; } = string.Empty;
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+    [Parameter] public string CssClass { get; set; } = string.Empty;
+    [Parameter] public string Label { get; set; } = "عنوان";
+    [Parameter] public string Placeholder { get; set; } = string.Empty;
+    [Parameter] public int MaxLength { get; set; } = 250;
+    private Task OnInput(ChangeEventArgs e) => ValueChanged.InvokeAsync(e.Value?.ToString() ?? string.Empty);
+}

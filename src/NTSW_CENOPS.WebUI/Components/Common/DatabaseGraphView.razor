@@ -1,0 +1,262 @@
+@using NTSW_CENOPS.Application.DatabaseInspector
+@using NTSW_CENOPS.Components.Common.Menus
+@using Microsoft.JSInterop
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+@inject NTSW_CENOPS.Components.Common.Notices.AppNoticeService Notices
+
+<div class="dbi-graph" @ref="_root" dir="rtl">
+    <GraphWorkspace StageClass="dbi-graph-stage" StageLabel="نمودار ارتباط جداول پایگاه داده"
+                    ShowFullscreenNotices="true" ShowExport="true" ShowPathTools="true" PathToolsEnabled="@(_selectedIds.Count == 2)" FocusToolsEnabled="@(_selectedIds.Count == 1)"
+                    ShowHistoryTools="true" CanUndo="@_canUndo" CanRedo="@_canRedo" OnUndo="UndoAsync" OnRedo="RedoAsync"
+                    HistoryEntries="@_historyEntries" HistoryCursor="@_historyCursor" HistoryOpen="@_historyOpen"
+                    OnToggleHistory="ToggleHistory" OnNavigateHistory="NavigateHistoryAsync"
+                    ShowClearWorkspace="true" OnClearWorkspace="ClearWorkspaceAsync" OnExportSelected="HandleExportSelectedAsync" ExportMenuItems="@ExportActions"
+                    OnReset="ResetAsync" OnZoomIn="ZoomInAsync" OnZoomOut="ZoomOutAsync"
+                    OnHighlightPath="HighlightPathAsync" OnFocusBranch="FocusBranchAsync"
+                    OnFullscreen="FullscreenAsync">
+        <StageContent></StageContent>
+        <InspectorContent>
+    @if (SelectedDesign is not null)
+    {
+        <aside class="dbi-design" aria-label="طراحی جدول">
+            <header class="dbi-design-head">
+                <div>
+                    <span class="dbi-eyebrow">TABLE DESIGN · SQL SERVER</span>
+                    <strong dir="ltr">@SelectedDesign.Table.FullName</strong>
+                    <small>@SelectedDesign.Columns.Count ستون · @SelectedDesign.ForeignKeys.Count کلید خارجی · @SelectedDesign.Indexes.Count ایندکس</small>
+                </div>
+                <button type="button" class="dbi-icon-button" aria-label="بستن مشخصات جدول" @onclick="() => OnCloseDetails.InvokeAsync()">×</button>
+            </header>
+            <div class="dbi-design-tabs" role="tablist" aria-label="اطلاعات طراحی جدول">
+                <button type="button" class="@(_tab == "columns" ? "active" : "")" @onclick='() => _tab = "columns"'>Columns</button>
+                <button type="button" class="@(_tab == "keys" ? "active" : "")" @onclick='() => _tab = "keys"'>Foreign keys</button>
+                <button type="button" class="@(_tab == "indexes" ? "active" : "")" @onclick='() => _tab = "indexes"'>Indexes</button>
+            </div>
+            <div class="dbi-design-body">
+                @if (_tab == "columns")
+                {
+                    <table dir="ltr" class="dbi-design-table">
+                        <thead><tr><th>Column Name</th><th>Data Type</th><th>Allow Nulls</th></tr></thead>
+                        <tbody>
+                        @foreach (var col in SelectedDesign.Columns)
+                        {
+                            <tr>
+                                <td><span class="dbi-column-name">@col.Name</span>
+                                    @if (col.PrimaryKey) { <span class="dbi-tag dbi-pk">PK</span> }
+                                    @if (col.ForeignKeys.Count > 0) { <span class="dbi-tag dbi-fk">FK</span> }
+                                    @if (col.Identity) { <span class="dbi-tag">IDENTITY</span> }
+                                    @if (col.Computed) { <span class="dbi-tag">ƒ</span> }
+                                </td>
+                                <td>@col.DataType</td><td class="dbi-null-check">@(col.Nullable ? "☑" : "☐")</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                    <div class="dbi-design-properties">
+                        <strong>Column properties</strong>
+                        @foreach (var col in SelectedDesign.Columns.Where(x => x.DefaultValue is not null || x.ComputedExpression is not null || x.Collation is not null))
+                        {
+                            <div dir="ltr"><b>@col.Name</b>
+                                @if (col.DefaultValue is not null) { <span>Default: @col.DefaultValue</span> }
+                                @if (col.ComputedExpression is not null) { <span>Computed: @col.ComputedExpression</span> }
+                                @if (col.Collation is not null) { <span>Collation: @col.Collation</span> }
+                            </div>
+                        }
+                        @if (!SelectedDesign.Columns.Any(x => x.DefaultValue is not null || x.ComputedExpression is not null || x.Collation is not null))
+                        { <small>هیچ مقدار پیش‌فرضی تعریف نشده است.</small> }
+                    </div>
+                }
+                else if (_tab == "keys")
+                {
+                    @if (SelectedDesign.ForeignKeys.Count == 0) { <div class="dbi-design-empty">این جدول کلید خارجی تعریف‌شده ندارد.</div> }
+                    @foreach (var fk in SelectedDesign.ForeignKeys)
+                    {
+                        <div class="dbi-constraint">
+                            <strong dir="ltr">@fk.Name</strong>
+                            <small dir="ltr">@fk.Child.FullName → @fk.Parent.FullName</small>
+                            @foreach (var col in fk.Columns)
+                            { <div class="dbi-mapping" dir="ltr">@col.ChildColumn <span>→</span> @col.ParentColumn</div> }
+                            <small dir="ltr">ON DELETE @fk.OnDelete · ON UPDATE @fk.OnUpdate</small>
+                        </div>
+                    }
+                }
+                else
+                {
+                    @if (SelectedDesign.Indexes.Count == 0) { <div class="dbi-design-empty">ایندکسی برای این جدول نمایش داده نشد.</div> }
+                    @foreach (var index in SelectedDesign.Indexes)
+                    {
+                        <div class="dbi-constraint">
+                            <strong dir="ltr">@index.Name</strong>
+                            <small dir="ltr">@index.Type · @(index.PrimaryKey ? "PRIMARY KEY" : index.Unique ? "UNIQUE" : "INDEX")</small>
+                            <div class="dbi-mapping" dir="ltr">@string.Join(", ", index.Columns)</div>
+                        </div>
+                    }
+                }
+            </div>
+        </aside>
+    }
+        </InspectorContent>
+        <LegendContent>Ctrl + Drag · انتخاب گروهی <span>│</span> Backspace · حذف <span>│</span> Ctrl + Z / Y · تاریخچه <span>│</span> Ctrl + Wheel · Zoom</LegendContent>
+        <ModalContent>@ModalContent</ModalContent>
+    </GraphWorkspace>
+</div>
+
+@code {
+    [Parameter] public IReadOnlyList<DatabaseGraphNode> Nodes { get; set; } = [];
+    [Parameter] public IReadOnlyList<DatabaseGraphEdge> Edges { get; set; } = [];
+    [Parameter] public DatabaseTableDesign? SelectedDesign { get; set; }
+    [Parameter] public int? MenuTableId { get; set; }
+    [Parameter] public bool MenuIsPrimary { get; set; }
+    [Parameter] public IReadOnlyCollection<int> FocusedRootIds { get; set; } = [];
+    [Parameter] public EventCallback<DatabaseGraphSnapshot> OnRestoreGraph { get; set; }
+    [Parameter] public EventCallback<DatabaseGraphSnapshot> OnReplaceGraph { get; set; }
+    [Parameter] public EventCallback<int> OnPrimary { get; set; }
+    [Parameter] public EventCallback<int> OnForeign { get; set; }
+    [Parameter] public EventCallback<int> OnSelect { get; set; }
+    [Parameter] public EventCallback OnCloseDetails { get; set; }
+    [Parameter] public EventCallback OnCloseForeign { get; set; }
+    [Parameter] public RenderFragment? ModalContent { get; set; }
+    [Parameter] public EventCallback<DatabaseQueryExportRequest> OnQueryExport { get; set; }
+
+    // The same graph selection drives toolbar availability and the query request.
+    private IReadOnlyList<AppNestedMenuItem> ExportActions =>
+    [
+        new("image", "خروجی تصویر", Children:
+        [
+            new("image:png", "PNG", "دقیق"),
+            new("image:svg", "SVG", "برداری"),
+            new("image:webp", "WebP", "کم‌حجم")
+        ]),
+        new("query", "خروجی کوئری",
+            Children:
+            [
+                new("query:select", "SELECT query"),
+                new("query:join", "INNER JOIN query")
+            ], Disabled: _selectedIds.Count == 0, Count: _selectedIds.Count)
+    ];
+
+    private ElementReference _root;
+    private IJSObjectReference? _module;
+    private DotNetObjectReference<DatabaseGraphView>? _self;
+    private bool _refresh = true;
+    private IReadOnlyList<DatabaseGraphNode>? _previousNodes;
+    private IReadOnlyList<DatabaseGraphEdge>? _previousEdges;
+    private string _tab = "columns";
+    private int? _lastDesign;
+    private readonly List<int> _selectedIds = [];
+    private bool _canUndo;
+    private bool _canRedo;
+    private bool _historyOpen;
+    private int _historyCursor;
+    private IReadOnlyList<GraphHistoryItem> _historyEntries = [];
+
+    protected override void OnParametersSet()
+    {
+        if (!ReferenceEquals(Nodes, _previousNodes) || !ReferenceEquals(Edges, _previousEdges))
+        {
+            _refresh = true; _previousNodes = Nodes; _previousEdges = Edges;
+        }
+        if (SelectedDesign?.Table.Id != _lastDesign)
+        {
+            _tab = "columns";
+            _lastDesign = SelectedDesign?.Table.Id;
+        }
+    }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        _module ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/database-inspector-graph.js?v=2.67");
+        _self ??= DotNetObjectReference.Create(this);
+        if (firstRender) await _module.InvokeVoidAsync("mount", _root, Nodes, Edges, _self, FocusedRootIds);
+        else if (_refresh) await _module.InvokeVoidAsync("update", _root, Nodes, Edges, FocusedRootIds);
+        _refresh = false;
+        if (MenuTableId is int id) await _module.InvokeVoidAsync("positionMenu", _root, id, MenuIsPrimary);
+    }
+    [JSInvokable] public Task ExpandPrimary(int id) => OnPrimary.InvokeAsync(id);
+    [JSInvokable] public Task ExpandForeign(int id) => OnForeign.InvokeAsync(id);
+    [JSInvokable] public Task SelectTable(int id) => OnSelect.InvokeAsync(id);
+    [JSInvokable] public Task DismissForeignMenu() => OnCloseForeign.InvokeAsync();
+    [JSInvokable] public Task DismissDetails() => OnCloseDetails.InvokeAsync();
+    [JSInvokable] public Task RestoreGraph(DatabaseGraphNode[] nodes, DatabaseGraphEdge[] edges) =>
+        OnRestoreGraph.InvokeAsync(new DatabaseGraphSnapshot(nodes, edges));
+    [JSInvokable] public Task ReplaceGraph(DatabaseGraphNode[] nodes, DatabaseGraphEdge[] edges) =>
+        OnReplaceGraph.InvokeAsync(new DatabaseGraphSnapshot(nodes, edges));
+    [JSInvokable] public Task HistoryChanged(bool canUndo, bool canRedo, GraphHistoryItem[] entries, int cursor)
+    {
+        _canUndo = canUndo;
+        _canRedo = canRedo;
+        _historyEntries = entries;
+        _historyCursor = cursor;
+        return InvokeAsync(StateHasChanged);
+    }
+    [JSInvokable] public Task DismissHistory()
+    {
+        if (!_historyOpen) return Task.CompletedTask;
+        _historyOpen = false;
+        return InvokeAsync(StateHasChanged);
+    }
+    // Image actions are handled immediately on the browser's click event so popup
+    // blockers cannot discard the new preview tab during a Blazor round-trip.
+    // This callback remains available for non-image commands in future versions.
+    private Task HandleExportSelectedAsync(string value)
+    {
+        if (value is not ("query:select" or "query:join") || _selectedIds.Count == 0)
+            return Task.CompletedTask;
+        // Snapshot at click time; selection can change during metadata loading.
+        return ExportQueryAsync(value);
+    }
+    private async Task ExportQueryAsync(string value)
+    {
+        if (_module is not null)
+            await _module.InvokeVoidAsync("leaveFullscreenForDialog", _root);
+        await OnQueryExport.InvokeAsync(new DatabaseQueryExportRequest(
+            value == "query:join" ? "join" : "select", _selectedIds.Distinct().ToArray()));
+    }
+    [JSInvokable] public Task ExportFailed(string message)
+    {
+        Notices.Error(message);
+        return Task.CompletedTask;
+    }
+    private void ToggleHistory() => _historyOpen = !_historyOpen;
+    private async Task NavigateHistoryAsync(int index)
+    {
+        if (_module is not null) await _module.InvokeVoidAsync("goToHistory", _root, index);
+    }
+    private async Task ClearWorkspaceAsync()
+    {
+        if (_module is not null) await _module.InvokeVoidAsync("clearWorkspace", _root);
+    }
+    [JSInvokable] public Task SelectionChanged(int[] ids)
+    {
+        _selectedIds.Clear();
+        _selectedIds.AddRange(ids);
+        return InvokeAsync(StateHasChanged);
+    }
+    private async Task ResetAsync() { if (_module is not null) await _module.InvokeVoidAsync("reset", _root); }
+    private async Task UndoAsync() { if (_module is not null) await _module.InvokeVoidAsync("undo", _root); }
+    private async Task RedoAsync() { if (_module is not null) await _module.InvokeVoidAsync("redo", _root); }
+    private Task ZoomInAsync() => ZoomAsync(1.2);
+    private Task ZoomOutAsync() => ZoomAsync(1 / 1.2);
+    private async Task HighlightPathAsync(Microsoft.AspNetCore.Components.Web.MouseEventArgs args)
+    {
+        if (_module is null || _selectedIds.Count != 2) return;
+        var found = await _module.InvokeAsync<bool>("highlightPath", _root, args.ShiftKey);
+        if (!found) Notices.Error("بین دو جدول انتخاب‌شده مسیری در نمودار بارگذاری‌شده وجود ندارد.");
+    }
+    private async Task FocusBranchAsync(Microsoft.AspNetCore.Components.Web.MouseEventArgs args)
+    {
+        if (_module is not null && _selectedIds.Count == 1)
+            await _module.InvokeVoidAsync("focusBranch", _root, args.ShiftKey);
+    }
+    private async Task ZoomAsync(double factor) { if (_module is not null) await _module.InvokeVoidAsync("zoom", _root, factor); }
+    private async Task FullscreenAsync() { if (_module is not null) await _module.InvokeVoidAsync("fullscreen", _root); }
+    public async ValueTask DisposeAsync()
+    {
+        if (_module is not null)
+        {
+            try { await _module.InvokeVoidAsync("unmount", _root); await _module.DisposeAsync(); }
+            catch (JSDisconnectedException) { }
+        }
+        _self?.Dispose();
+    }
+}

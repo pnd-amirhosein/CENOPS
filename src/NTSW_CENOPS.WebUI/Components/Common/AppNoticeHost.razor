@@ -1,0 +1,31 @@
+@using NTSW_CENOPS.Components.Common.Notices
+@using NTSW_CENOPS.Components.Chat
+@inject AppNoticeService Notices
+@inject ChatWorkspaceState Chat
+@implements IDisposable
+
+@if (_items.Count > 0)
+{
+    <div class="app-notice-stack" dir="rtl" aria-label="اعلان‌های سامانه">
+        @foreach (var notice in _items)
+        {
+            <AppNoticeMessage @key="notice.Id" Notice="notice" Compact="@(notice.Id != _items[^1].Id)"
+                OnClose="() => Notices.Dismiss(notice.Id)" OnOpen="() => OpenNotice(notice)" />
+        }
+    </div>
+}
+
+@code {
+    private IReadOnlyList<AppNotice> _items = [];
+    protected override void OnInitialized() { _items = Notices.Items; Notices.Changed += OnNotice; }
+    private void OnNotice() => _ = InvokeAsync(() => { _items = Notices.Items; StateHasChanged(); });
+    private void OpenNotice(AppNotice notice)
+    {
+        if (notice.IsChat && notice.RoomId is long roomId)
+        {
+            Chat.OpenRoom(roomId);
+            Notices.Dismiss(notice.Id);
+        }
+    }
+    public void Dispose() => Notices.Changed -= OnNotice;
+}

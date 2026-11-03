@@ -1,0 +1,20 @@
+@* One reusable branded animated loader. Use "page" for a full viewport blur,
+   "overlay" for a positioned container or "inline" for compact wait states. *@
+@if (IsLoading)
+{
+    <div class="ops-loading ops-loading--@Variant" role="status" aria-live="polite" aria-busy="true">
+        <div class="ops-loading-card">
+            <img class="ops-loading-gif" src="/gif/loading.gif" alt="" aria-hidden="true" />
+            @if (!string.IsNullOrWhiteSpace(Label))
+            {
+                <span class="ops-loading-caption">@Label</span>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsLoading { get; set; }
+    [Parameter] public string Variant { get; set; } = "overlay";
+    [Parameter] public string Label { get; set; } = "در حال بارگذاری...";
+}

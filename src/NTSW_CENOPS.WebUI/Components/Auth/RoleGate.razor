@@ -1,0 +1,30 @@
+@if (string.IsNullOrWhiteSpace(Roles))
+{
+    @ChildContent
+}
+else
+{
+    <AuthorizeView Roles="@Roles">
+        <Authorized>
+            @ChildContent
+        </Authorized>
+        <NotAuthorized>
+            @NotAuthorizedContent
+        </NotAuthorized>
+    </AuthorizeView>
+}
+
+@code {
+    /// <summary>
+    /// Optional comma-separated role names. A user matching any role can see the content.
+    /// Leave empty when the element has no role restriction.
+    /// </summary>
+    [Parameter]
+    public string? Roles { get; set; }
+
+    [Parameter, EditorRequired]
+    public RenderFragment ChildContent { get; set; } = default!;
+
+    [Parameter]
+    public RenderFragment? NotAuthorizedContent { get; set; }
+}

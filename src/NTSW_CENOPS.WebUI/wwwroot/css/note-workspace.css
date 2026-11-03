@@ -1,0 +1,504 @@
+/* Glasswork 2.7 — Notes. Matched to the CENOPS light-glass design language. */
+.note-editor,.note-library{--note-ink:#102c3b;--note-muted:#526d7d;--note-cyan:#088fae;--note-border:#d1e3eb;color:var(--note-ink);direction:rtl;font-size:15px}
+.note-editor{max-width:1070px;margin:0 auto;padding:8px 7px 42px}
+.note-editor-meta{display:grid;grid-template-columns:minmax(0,1fr) 260px;align-items:start;gap:22px;border-bottom:1px solid var(--note-border);padding:12px 8px 26px}
+.note-editor-title-field{min-width:0;display:flex;flex-direction:column;gap:10px}
+.note-editor-title-field label{font-size:12px;font-weight:800;color:#526c7b}
+.note-editor-title-field em{color:#d45057;font-style:normal}
+.note-editor-title{display:block;width:100%;min-width:0;border:0!important;border-bottom:2px solid transparent!important;border-radius:0!important;outline:0!important;box-shadow:none!important;background:transparent!important;color:#0c2838!important;font-size:clamp(27px,2.9vw,38px)!important;font-weight:850!important;line-height:1.6!important;letter-spacing:-.5px;padding:7px 0!important;transition:border-color .2s}
+.note-editor-title:focus{border-bottom-color:#15a5c1!important}
+.note-editor-title::placeholder{color:#9bb2bc;opacity:1}
+.note-author select{min-height:44px}
+.note-editor-canvas{position:relative;min-height:280px;margin:22px 0 12px}
+.note-start-hint{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;padding:30px 16px 10px}
+.note-start-icon{display:grid;place-items:center;width:54px;height:54px;border-radius:18px;background:#e8f8fc;color:#0b92b0;font-size:27px;border:1px solid #c3eaf2}
+.note-start-hint strong{font-size:18px;font-weight:850;color:#244557}
+.note-start-hint p{color:#708999;font-size:13px;line-height:1.9;margin:0}
+.note-insert-row{min-height:36px;display:flex;align-items:center;justify-content:center;gap:8px;position:relative;margin:3px 0 8px}
+.note-insert-line{height:1px;flex:1;background:linear-gradient(90deg,transparent,#d1e6eb 40%,#d1e6eb 60%,transparent)}
+.note-insert-control{position:relative;display:flex;align-items:center;justify-content:center;z-index:3}
+.note-add-button{display:grid;place-items:center;width:35px;height:35px;border-radius:12px;background:#fff;border:1.5px solid #a9d4e0;color:#078ca9;box-shadow:0 3px 10px #073c5110;transition:background .15s,border-color .15s,transform .15s;cursor:pointer}
+.note-add-button svg{width:19px;height:19px}
+.note-add-button:hover,.note-add-button[aria-expanded=true]{background:#dff6fb;border-color:#17a2bb;transform:scale(1.04)}
+.note-block-picker{position:absolute;z-index:10;top:42px;right:50%;transform:translateX(50%);width:min(330px,calc(100vw - 60px));padding:8px;display:grid;gap:2px;text-align:right;}
+.note-block-picker button{display:flex;align-items:center;gap:12px;width:100%;min-height:57px;background:transparent;border:0;border-radius:10px;padding:8px 10px;text-align:right;color:#143244;cursor:pointer}
+.note-block-picker button:hover{background:#eaf7fa}
+.note-block-picker button>span:last-child{display:flex;flex-direction:column;gap:4px}
+.note-block-picker strong{font-size:14px;font-weight:800}
+.note-block-picker small{color:#668395;font-size:12px}
+.note-picker-icon{display:grid;place-items:center;flex:none;width:36px;height:36px;border-radius:10px;background:#e7f6fa;color:#077d9d;font-size:21px;font-weight:850;direction:ltr}
+.note-picker-code{font-family:Consolas,monospace;font-size:13px}
+.note-edit-block{padding:16px 20px 18px;border:1px solid #d6e6ec;border-radius:16px;background:linear-gradient(145deg,#fff,#f9fdfe);box-shadow:0 5px 20px #183f5010;transition:border-color .2s}
+.note-edit-block:focus-within{border-color:#49b4cb;box-shadow:0 5px 24px #009ab315}
+.note-block-tools{display:flex;align-items:center;gap:5px;margin-bottom:9px;min-height:25px}
+.note-block-kind{margin-left:auto;display:inline-flex;align-items:center;background:#eaf6f9;color:#24738c;border:1px solid #d4edf1;border-radius:999px;padding:4px 11px;font-size:11px;font-weight:800}
+.note-block-tools button{display:grid;place-items:center;width:30px;height:27px;border:1px solid transparent;border-radius:7px;background:transparent;color:#658498;cursor:pointer;font-size:17px;font-weight:700}
+.note-block-tools button:hover:not(:disabled){background:#eaf7fa;border-color:#c8e5eb;color:#077a99}
+.note-block-tools button:disabled{opacity:.28;cursor:default}
+.note-block-tools button.note-remove:hover{color:#bb4652;background:#fff0f0;border-color:#f5c9ca}
+.note-heading-input{display:block;width:100%;border:0!important;outline:0!important;box-shadow:none!important;background:transparent!important;border-radius:0!important;color:#163649!important;font-size:23px!important;font-weight:820!important;line-height:1.6!important;padding:4px 0!important}
+.note-heading-input::placeholder,.note-paragraph-input::placeholder{color:#9bafb9;opacity:1}
+.note-paragraph-input{width:100%;min-height:130px;resize:vertical;border:0!important;outline:0!important;box-shadow:none!important;background:transparent!important;color:#244456!important;font-size:16px!important;line-height:2.1!important;padding:4px 0!important}
+.note-code-surface{border:1px solid #344657;border-radius:12px;overflow:hidden;background:#101c2b;box-shadow:inset 0 1px 0 #ffffff1a;color:#dce9f3}
+.note-code-toolbar{display:flex;align-items:center;gap:9px;padding:9px 13px;min-height:39px;border-bottom:1px solid #314154;background:#1b2b3c;color:#9bbcd2;font:700 11px/1.4 Consolas,monospace;letter-spacing:.5px}
+.note-code-symbol{display:grid;place-items:center;width:29px;height:22px;border-radius:6px;background:#123d4c;color:#5ee0e7;font-weight:700;font-size:12px}
+.note-code-language{margin-left:0;margin-right:auto;min-width:95px;width:130px;max-width:40%;border:1px solid #415264!important;outline:0;background:#233549!important;border-radius:7px!important;padding:5px 9px!important;color:#daedf9!important;font:12px Consolas,monospace!important;text-align:left}
+.note-code-language:focus{border-color:#25bbd1!important}
+.note-code-surface textarea{display:block;width:100%;min-height:180px;resize:vertical;border:0!important;outline:0!important;box-shadow:none!important;background:transparent!important;color:#e7f2fc!important;font:14px/1.9 Consolas,"Cascadia Code",monospace!important;tab-size:4;padding:16px!important;text-align:left;direction:ltr}
+.note-code-surface textarea::placeholder{color:#6e8a9f}
+.note-editor-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:22px 4px 0;padding:20px 0;border-top:1px solid #d6e6ec}
+.note-editor-actions .knowledge-button{font-size:14px;min-height:43px}
+.note-block-counter{margin-right:auto;color:#71909d;font-size:13px}
+.note-library .knowledge-grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,255px),1fr))}
+.note-library{--kn-accent:#079ab7}
+.note-create-card{background:linear-gradient(155deg,#f1fbfd,#eaf7fb)!important;border-color:#94d1df!important}
+.note-card{position:relative;background:linear-gradient(150deg,#fff,#f9fdfe);border-top:3px solid #45afc6}
+.note-card-symbol{display:inline-grid;place-items:center;width:39px;height:39px;background:#e8f8fc;border:1px solid #d0e9ef;border-radius:12px;color:#1187a6;margin-bottom:10px}
+.note-card-symbol svg{width:22px;height:22px}
+.note-card .knowledge-card-open h3{margin-top:0}
+.note-reading-surface{padding:4px 2px 10px;max-height:min(65vh,750px);overflow-y:auto;overflow-x:hidden;color:#183b4d}
+.note-reading-heading{font-weight:850;font-size:clamp(20px,2.1vw,25px);line-height:1.75;margin:22px 0 10px;white-space:pre-wrap;overflow-wrap:anywhere}
+.note-reading-paragraph{font-size:15px;line-height:2.1;white-space:pre-wrap;overflow-wrap:anywhere;margin:13px 0;color:#34546a}
+.note-reading-code{border-radius:12px;border:1px solid #2a4556;background:#142333;overflow:hidden;margin:16px 0 20px;color:#dfeef8}
+.note-reading-code-label{background:#203447;border-bottom:1px solid #355065;padding:8px 15px;color:#83d5e2;font:12px/1.5 Consolas,monospace;direction:ltr;text-align:left}
+.note-reading-code pre{padding:16px;margin:0;color:#e5eff7;direction:ltr;text-align:left;overflow-x:auto;font:14px/1.8 Consolas,monospace;white-space:pre}
+.note-reading-empty{color:#688494;text-align:center;padding:45px 15px}
+@media(max-width:780px){.note-editor-meta{grid-template-columns:minmax(0,1fr);gap:12px}.note-author{max-width:350px}.note-editor-title{font-size:27px!important}.note-edit-block{padding:13px}.note-editor-actions{margin-top:12px}}
+
+/* Glasswork 2.8 — Notes owns a warm orange identity, not cURL cyan. */
+.note-library,.note-editor{--kn-accent:#d96b18;--note-cyan:#c96a22;--note-border:#efdccb}
+.note-library .knowledge-card,.note-library .knowledge-create-card{border:1px solid #efdcc9!important}
+.note-library .knowledge-card:hover,.note-library .knowledge-create-card:hover{border-color:#edab65!important;box-shadow:0 17px 38px rgba(119,67,14,.14)!important}
+.note-library .note-card{border-top-width:1px!important;border-top-color:#efdcc9!important;background:linear-gradient(145deg,#fffdfb,#fff9f2)!important}
+.note-library .note-create-card{background:linear-gradient(145deg,#fff5e9,#ffedd7)!important;border-color:#f2cb9b!important}
+.note-library .note-create-card:hover{background:linear-gradient(145deg,#fff1df,#ffe5c1)!important}
+.note-library .note-card-symbol,.note-library .knowledge-create-symbol{background:#fff0da;color:#ba5c13;border:1px solid #f7d5ab}
+.note-library .knowledge-type-mark,.note-library .knowledge-view{color:#b96624!important}
+.note-library .knowledge-searchbar:focus-within{border-color:#e7a665;box-shadow:0 0 0 3px #f9b66025}
+.note-library .knowledge-card-open h3{color:#49301b}
+.note-editor .note-editor-title:focus{border-bottom-color:#d96b18!important}
+.note-editor .note-start-icon{background:#fff0df;color:#be641f;border-color:#f3d1ad}
+.note-editor .note-add-button{color:#ae581a;border-color:#eac5a0}
+.note-editor .note-add-button:hover,.note-editor .note-add-button[aria-expanded=true]{background:#fff1df;border-color:#d98a46}
+.note-editor .note-picker-icon{background:#fff0df;color:#b76321}
+.note-editor .note-block-kind{background:#fff2e4;color:#9a5c29;border-color:#f4dfc5}
+.note-editor .note-edit-block{border-color:#ebddcd;background:linear-gradient(145deg,#fff,#fffdf9)}
+.note-editor .note-edit-block:focus-within{border-color:#dbaa78;box-shadow:0 5px 24px #b66a1919}
+.note-editor .note-block-picker button:hover{background:#fff3e7}
+
+/* A raised insertion slot must paint above every other block and plus control. */
+.note-editor .note-editor-canvas{isolation:isolate;overflow:visible}
+.note-editor .note-insert-row{z-index:1}
+.note-editor .note-insert-row.note-insert-active{z-index:80}
+.note-editor .note-insert-control{z-index:auto}
+.note-editor .note-block-picker{z-index:90;}
+.note-editor .note-edit-block{position:relative;z-index:0}
+.note-editor .note-edit-block:focus-within{z-index:2}
+
+/* Accessible drag handle + a single compact actions dropdown. */
+.note-editor .note-block-tools{position:relative;z-index:5}
+.note-editor .note-block-toolset{position:relative;display:flex;align-items:center;gap:6px}
+.note-editor .note-block-toolset>button{width:33px;height:31px;display:grid;place-items:center;border-radius:9px;border:1px solid #ecdac6;background:#fffbf5;color:#9d7149;cursor:pointer;transition:background .15s,border-color .15s}
+.note-editor .note-block-toolset>button:hover{background:#ffeedb;border-color:#e5b886;color:#9b5119}
+.note-editor .note-block-toolset>button svg{width:17px;height:17px}
+.note-editor .note-drag-handle{cursor:grab!important;touch-action:none}
+.note-editor .note-drag-handle:active{cursor:grabbing!important}
+.note-editor .note-block-action-menu{position:absolute;z-index:70;top:36px;left:0;min-width:150px;padding:5px;border:1px solid #eadbc8;border-radius:12px;background:#fff;box-shadow:0 15px 30px #45270924}
+.note-editor .note-block-action-menu button{display:flex!important;align-items:center!important;justify-content:flex-start!important;gap:9px;width:100%;height:37px;padding:7px 10px;border:0;background:transparent;color:#a43f49;font-size:13px;text-align:right;white-space:nowrap}
+.note-editor .note-block-action-menu button:hover{background:#fff0ee;color:#a42e3f}
+.note-editor .note-block-dragging{opacity:.58;border-style:dashed!important}
+
+/* Syntax highlighting is decorative; input stays an actual editable textarea. */
+.note-code-editarea{position:relative;background:#101c2b;isolation:isolate}
+.note-code-editarea .note-code-highlight,.note-code-editarea textarea{box-sizing:border-box;margin:0;width:100%;tab-size:4;direction:ltr;text-align:left;white-space:pre;word-break:normal;overflow-wrap:normal;font:14px/1.9 Consolas,"Cascadia Code",monospace!important;letter-spacing:normal;padding:16px!important}
+.note-code-editarea .note-code-highlight{position:absolute;inset:0;pointer-events:none;overflow:hidden;color:#e7f2fc;background:transparent;z-index:1}
+.note-code-editarea .note-code-highlight code{font:inherit;white-space:inherit;tab-size:inherit;color:inherit}
+.note-code-editarea textarea{position:relative;z-index:2;min-height:185px;resize:vertical;overflow:auto;background:transparent!important;color:transparent!important;-webkit-text-fill-color:transparent;caret-color:#fff;outline:none!important;border:0!important;box-shadow:none!important;white-space:pre;overflow-wrap:normal}
+.note-code-editarea textarea::selection{background:#4d88ac88;-webkit-text-fill-color:transparent}
+.note-code-editarea textarea::placeholder{-webkit-text-fill-color:#7794a5;color:#7794a5}
+.note-code-language{min-width:135px;width:155px;cursor:pointer}
+.note-syntax-comment{color:#8095a6}
+.note-syntax-string{color:#9ed8a0}
+.note-syntax-number{color:#edbf79}
+.note-syntax-keyword{color:#b9a4ff}
+.note-syntax-tag{color:#78d8ed}
+.note-reading-code .note-syntax-comment,.note-reading-code .note-syntax-string,.note-reading-code .note-syntax-number,.note-reading-code .note-syntax-keyword,.note-reading-code .note-syntax-tag{font:inherit}
+@media(max-width:600px){.note-editor .note-block-picker{max-width:calc(100vw - 46px);}.note-code-language{min-width:105px;max-width:50%}}
+.note-code-format{display:inline-flex;align-items:center;gap:5px;padding:5px 9px;background:#283c51;border:1px solid #3c5266;border-radius:8px;color:#b9ddeb;font-size:11px;font-weight:700;line-height:1.4;cursor:pointer;white-space:nowrap}
+.note-code-format:hover{background:#324e64;border-color:#5f879c;color:#fff}
+.note-code-format svg{width:15px;height:15px}
+
+/* Glasswork 2.8.1: clean controls and a left-side drag affordance. */
+.note-editor .note-edit-block{position:relative;overflow:visible;padding-top:20px}
+.note-editor .note-drag-handle{
+    position:absolute;left:-43px;top:50%;transform:translateY(-50%);
+    width:34px;height:42px;display:grid;place-items:center;
+    background:#fffaf4;border:1px solid #eed6b9;border-radius:11px;
+    color:#a56d3d;cursor:grab;touch-action:none;
+    opacity:0;pointer-events:none;transition:opacity .14s,border-color .14s,background .14s;
+    z-index:5;box-shadow:0 3px 10px #79502012;
+}
+.note-editor .note-drag-handle svg{width:19px;height:25px}
+.note-editor .note-edit-block:hover>.note-drag-handle,
+.note-editor .note-drag-handle:focus-visible,
+.note-editor .note-edit-block.note-dragging>.note-drag-handle{opacity:1;pointer-events:auto}
+.note-editor .note-drag-handle:hover{border-color:#d9a067;background:#fff0df;color:#9f581c}
+.note-editor .note-drag-handle:active{cursor:grabbing}
+.note-editor .note-remove-block{
+    position:absolute;left:9px;top:9px;z-index:4;
+    display:grid;place-items:center;width:29px;height:29px;
+    border:1px solid transparent;border-radius:9px;background:transparent;
+    color:#987b69;cursor:pointer;opacity:.55;transition:background .15s,opacity .15s,color .15s;
+}
+.note-editor .note-remove-block svg{width:17px;height:17px}
+.note-editor .note-edit-block:hover>.note-remove-block,
+.note-editor .note-remove-block:focus-visible{opacity:1}
+.note-editor .note-remove-block:hover{color:#ba3b43;background:#ffedf0}
+.note-editor .note-edit-block.note-dragging{opacity:.54;border-style:dashed!important}
+.note-editor .note-edit-block.note-drop-before{box-shadow:0 -4px 0 #db883a,0 5px 18px #a45c1510!important}
+.note-editor .note-edit-block.note-drop-after{box-shadow:0 4px 0 #db883a,0 5px 18px #a45c1510!important}
+@media (max-width:780px){
+    .note-editor .note-drag-handle{left:-19px;width:30px;height:38px;opacity:1;pointer-events:auto}
+    .note-editor .note-edit-block{margin-left:15px}
+    .note-editor .note-remove-block{opacity:1}
+}
+
+/* Glasswork 2.8.2 — entire line (including outer gutter) is the hover hit area. */
+.note-editor .note-block-row{
+    --note-gutter:82px;
+    position:relative;
+    width:calc(100% + var(--note-gutter));
+    margin-left:calc(-1 * var(--note-gutter));
+    padding-left:var(--note-gutter);
+    box-sizing:border-box;
+    min-width:0;
+}
+.note-editor .note-block-row .note-edit-block{
+    position:relative;
+    width:100%;
+    padding:6px 8px;
+    min-width:0;
+}
+.note-editor .note-block-outside-controls{
+    position:absolute;
+    left:4px;
+    top:50%;transform:translateY(-50%) translateX(4px);
+    display:flex;
+    flex-direction:row;
+    gap:6px;
+    align-items:center;
+    width:73px;
+    padding:3px 2px;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .14s ease,transform .14s ease;
+    z-index:8;
+}
+.note-editor .note-block-row:hover>.note-block-outside-controls,
+.note-editor .note-block-row:focus-within>.note-block-outside-controls,
+.note-editor .note-block-row.note-dragging>.note-block-outside-controls{
+    opacity:1;
+    pointer-events:auto;
+    transform:translateY(-50%) translateX(0);
+}
+.note-editor .note-block-row .note-drag-handle,
+.note-editor .note-block-row .note-remove-block{
+    position:static!important;
+    inset:auto!important;
+    transform:none!important;
+    display:grid;place-items:center;
+    flex:0 0 32px;width:32px;height:36px;
+    margin:0;padding:0;
+    border:1px solid #ead5be;
+    border-radius:10px;
+    background:#fffaf4;
+    color:#9d6a3a;
+    box-shadow:0 3px 12px #7d542011;
+    opacity:1!important;
+    pointer-events:auto!important;
+    cursor:pointer;
+    transition:background .14s,border-color .14s,color .14s;
+}
+.note-editor .note-block-row .note-drag-handle{cursor:grab!important;touch-action:none;}
+.note-editor .note-block-row .note-drag-handle:active{cursor:grabbing!important;}
+.note-editor .note-block-row .note-drag-handle:hover{background:#ffefda;border-color:#dcaa70;color:#ac5c21;}
+.note-editor .note-block-row .note-remove-block{color:#a76b6b;border-color:#f0dfd9;background:#fffaf8;}
+.note-editor .note-block-row .note-remove-block:hover{background:#fff0ef;border-color:#f0b6ac;color:#bd414c;}
+.note-editor .note-block-row .note-remove-block svg{width:18px;height:18px;}
+.note-editor .note-block-row .note-drag-handle svg{width:18px;height:23px;}
+.note-editor .note-block-row.note-dragging>.note-edit-block{opacity:.6;border-style:dashed!important;}
+.note-editor .note-block-row.note-drop-before>.note-edit-block{box-shadow:0 -4px 0 #db883a,0 5px 18px #a45c1510!important;}
+.note-editor .note-block-row.note-drop-after>.note-edit-block{box-shadow:0 4px 0 #db883a,0 5px 18px #a45c1510!important;}
+@media(max-width:780px){
+    .note-editor .note-block-row{--note-gutter:72px;}
+    .note-editor .note-block-row .note-edit-block{padding:6px 7px;}
+    .note-editor .note-block-outside-controls{left:0;gap:3px;width:69px;opacity:1;pointer-events:auto;transform:translateY(-50%);}
+    .note-editor .note-block-row .note-drag-handle,
+    .note-editor .note-block-row .note-remove-block{width:31px;flex-basis:31px;height:35px;}
+}
+@media(prefers-reduced-motion:reduce){.note-editor .note-block-outside-controls{transition:none}}
+
+.note-editor-meta{grid-template-columns:minmax(0,1fr) 165px 260px}
+@media(max-width:780px){.note-editor-meta{grid-template-columns:minmax(0,1fr)}}
+
+/* Glasswork 2.13 — Todo uses the existing note insertion/drag controls with a green identity. */
+.todo-library,.todo-editor{--kn-accent:#239a73;--note-cyan:#239a73;--note-border:#d0eadc}
+.todo-library .knowledge-card,.todo-library .knowledge-create-card{border:1px solid #cfe8da!important}
+.todo-library .knowledge-create-card{background:linear-gradient(145deg,#f0fff5,#e4f7e9)!important;border-color:#9bcfb0!important}
+.todo-library .knowledge-card{background:linear-gradient(145deg,#fff,#f7fff9)!important}
+.todo-library .knowledge-type-mark,.todo-library .knowledge-view{color:#20865c!important}
+.todo-editor .note-editor-title:focus{border-bottom-color:#36a976!important}
+.todo-editor .note-start-icon,.todo-editor .note-add-button{background:#ecfbf2;color:#259c63;border-color:#afe3c5}
+.todo-editor .note-edit-block{border-color:#cce7d5;background:linear-gradient(145deg,#fff,#f8fff9)}
+.todo-entry{display:flex;align-items:center;gap:12px;width:100%;min-width:0}
+.todo-check{width:20px;height:20px;flex:none;accent-color:#27a36e;cursor:pointer}
+.todo-input{flex:1;min-width:0;background:transparent!important;border:0!important;outline:0!important;box-shadow:none!important;padding:9px 3px!important;color:#174a38!important;font-size:15px!important;text-align:start}
+.todo-input.is-complete{text-decoration:line-through;color:#799989!important}
+.todo-preview{display:grid;gap:8px;padding:4px}
+.todo-preview-row{display:flex;gap:12px;align-items:start;border:1px solid #d9e9de;border-radius:11px;background:#fbfefb;padding:11px;color:#284b3c;white-space:pre-wrap;overflow-wrap:anywhere}
+.todo-preview-row input{width:18px;height:18px;accent-color:#2a9a65;margin-top:4px}
+.todo-preview-row .done{text-decoration:line-through;color:#899c92}
+
+/* 2.14: override every explicit Notes-orange editor color within Todo only. */
+.todo-editor{--kn-accent:#218e62;--note-cyan:#218e62;--note-border:#c9e9d7;--gw-control-accent:#218e62;--gw-control-border:#98d2b3}
+.todo-editor .note-editor-title-field label,.todo-editor .note-block-counter{color:#287851}
+.todo-editor .note-insert-line{background:#bcdfcb!important}
+.todo-editor .note-add-button{border-color:#a8dbbe!important;background:#edfaf1!important;color:#19895a!important}
+.todo-editor .note-add-button:hover{background:#d8f4e3!important;border-color:#70c99b!important}
+.todo-editor .note-block-row .note-edit-block,.todo-editor .note-edit-block:focus-within{border-color:#b8dec7!important;background:linear-gradient(140deg,#fff,#f5fff8)!important;box-shadow:0 4px 20px #258b4812!important}
+.todo-editor .note-block-row .note-drag-handle{border-color:#b5dbc5!important;background:#f4fff7!important;color:#31885d!important}
+.todo-editor .note-block-row .note-drag-handle:hover{border-color:#8fccaa!important;background:#e6f9ed!important;color:#1a744b!important}
+.todo-editor .note-block-row .note-remove-block{border-color:#e4c9c9!important;background:#fffafa!important;color:#ae6262!important}
+.todo-editor .note-block-row .note-remove-block:hover{background:#fff0ef!important;border-color:#e3aaaa!important;color:#ad3939!important}
+.todo-editor .note-block-row.note-drop-before>.note-edit-block{box-shadow:0 -4px 0 #2da46a!important}
+.todo-editor .note-block-row.note-drop-after>.note-edit-block{box-shadow:0 4px 0 #2da46a!important}
+.todo-editor .note-start-hint{border-color:#cee9d7!important;background:#f7fff9!important;color:#42795a!important}
+.todo-editor .note-start-icon{background:#e0f7e8!important;color:#25895a!important;border-color:#9ddab7!important}
+.todo-editor .note-editor-actions .knowledge-button.primary{background:#238a5f!important;border-color:#238a5f!important;color:white!important}
+.todo-editor .note-editor-actions .knowledge-button.primary:hover{background:#16754f!important}
+.todo-editor .note-editor-title:focus{border-bottom-color:#2a9f6d!important}
+
+/* Glasswork 2.16: long todo previews remain inside the available viewport. */
+.app-shell .todo-preview-modal.app-modal-surface,
+.todo-preview-modal.app-modal-surface {
+    box-sizing:border-box;
+    max-height:calc(100dvh - 32px);
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+}
+.todo-preview-modal .app-modal-heading,
+.todo-preview-modal .app-modal-footer { flex:none; }
+.todo-preview-modal .app-modal-body { min-height:0; overflow-y:auto; overflow-x:hidden; overscroll-behavior:contain; }
+.todo-preview-modal .todo-preview { min-width:0; }
+@media(max-width:640px){ .todo-preview-modal.app-modal-surface{max-height:calc(100dvh - 16px)} }
+
+/* 2.27: formatter feedback without shifting the syntax canvas. */
+.note-code-status{color:#7ce6d3;font:700 10px/1.3 inherit;letter-spacing:0;white-space:nowrap}
+.note-code-toolbar .note-code-format:focus-visible,.note-code-toolbar .note-code-language:focus-visible{outline:2px solid #43c8d4!important;outline-offset:2px}
+.note-code-toolbar{flex-wrap:wrap;row-gap:6px}
+
+/* Glasswork 2.30 — spatial note editor and scroll-free, edge-driven tables. */
+.note-editor .note-layout-row{
+    position:relative;display:grid;
+    grid-template-columns:repeat(var(--note-cols),minmax(0,1fr));
+    align-items:stretch;gap:14px;min-width:0;
+}
+.note-editor .note-layout-row>.note-block-row{min-width:0;display:flex;flex-direction:column}
+.note-editor .note-layout-row .note-edit-block{
+    display:flex;flex-direction:column;flex:1;min-width:0;min-height:142px;
+}
+.note-editor .note-layout-row .note-edit-block>*{min-width:0}
+.note-editor .note-layout-row .note-code-surface{
+    display:flex;flex:1;flex-direction:column;min-width:0;
+}
+.note-editor .note-layout-row .note-code-editarea{display:flex;flex:1;min-height:180px}
+.note-editor .note-layout-row .note-code-editarea textarea{flex:1;min-height:180px;height:100%;resize:vertical}
+.note-editor .note-layout-row .note-code-highlight{min-width:0}
+.note-editor .note-inline-row>.note-block-row{
+    width:100%;margin:0;padding:0;--note-gutter:0px;
+}
+.note-editor .note-inline-row .note-edit-block{padding:6px 7px}
+.note-editor .note-inline-row .note-heading-input{font-size:clamp(16px,1.8vw,22px)!important}
+.note-editor .note-inline-row .note-code-toolbar{gap:5px;padding:7px;flex-wrap:wrap}
+.note-editor .note-inline-row .note-code-language{min-width:95px;max-width:100%}
+
+/* Drag/delete stay together near the upper-left; the side + lives at mid-height. */
+.note-editor .note-block-outside-controls,
+.note-editor .note-block-row:hover>.note-block-outside-controls,
+.note-editor .note-block-row:focus-within>.note-block-outside-controls{
+    top:10px;left:4px;transform:none;
+}
+.note-editor .note-inline-row .note-block-outside-controls,
+.note-editor .note-inline-row .note-block-row:hover>.note-block-outside-controls,
+.note-editor .note-inline-row .note-block-row:focus-within>.note-block-outside-controls{
+    top:9px;left:7px;transform:none;gap:4px;width:auto;z-index:8;
+}
+.note-editor .note-block-row{isolation:isolate}
+.note-editor .note-side-add{
+    position:absolute;top:50%;z-index:9;
+    display:grid;place-items:center;
+    width:33px;height:33px;padding:0;
+    border:1px solid #e8b98b;border-radius:11px;
+    background:#fff8ef;color:#a85c1f;
+    box-shadow:0 4px 12px #7043181f;
+    opacity:0;pointer-events:none;cursor:pointer;
+    transform:translateY(-50%) scale(.86);
+    transition:opacity .13s ease,transform .13s ease,background .13s ease;
+}
+.note-editor .note-side-add svg{display:block;width:17px;height:17px;flex:none}
+.note-editor .note-side-right{right:-16px}
+.note-editor .note-side-left{left:-16px}
+.note-editor .note-block-row.note-side-right-intent>.note-side-right,
+.note-editor .note-block-row.note-side-left-intent>.note-side-left,
+.note-editor .note-block-row.note-side-right-open>.note-side-right,
+.note-editor .note-block-row.note-side-left-open>.note-side-left,
+.note-editor .note-side-add:focus-visible{
+    opacity:1;pointer-events:auto;transform:translateY(-50%) scale(1);
+}
+.note-editor .note-side-add:hover,.note-editor .note-side-add:focus-visible{
+    background:#ffebd5;border-color:#d89149;color:#914613;
+}
+.note-editor .note-side-picker{position:absolute;top:50%;z-index:40;width:min(265px,calc(100vw - 48px));transform:translateY(-50%)}
+.note-editor .note-side-picker.right{right:26px}
+.note-editor .note-side-picker.left{left:26px;right:auto}
+.note-editor .note-side-picker button{min-height:44px}
+.note-editor .note-block-row.note-drop-right>.note-edit-block{box-shadow:inset -4px 0 0 #db8b31,0 4px 18px #a45c1510!important}
+.note-editor .note-block-row.note-drop-left>.note-edit-block{box-shadow:inset 4px 0 0 #db8b31,0 4px 18px #a45c1510!important}
+.note-editor .note-block-row.note-drop-before>.note-edit-block{box-shadow:inset 0 4px 0 #db8b31,0 4px 18px #a45c1510!important}
+.note-editor .note-block-row.note-drop-after>.note-edit-block{box-shadow:inset 0 -4px 0 #db8b31,0 4px 18px #a45c1510!important}
+
+/* Insertion affordance is independently hoverable in the gap; not permanently shown. */
+.note-editor .note-insert-row{opacity:0;z-index:2;transition:opacity .15s ease}
+.note-editor .note-insert-row:hover,
+.note-editor .note-insert-row:focus-within,
+.note-editor .note-insert-row.note-hover-intent,
+.note-editor .note-insert-row.note-insert-active{opacity:1;z-index:15}
+.note-editor .note-insert-row .note-add-button{transform:scale(.85);transition:transform .15s,background .15s}
+.note-editor .note-insert-row:hover .note-add-button,
+.note-editor .note-insert-row.note-hover-intent .note-add-button,
+.note-editor .note-insert-row.note-insert-active .note-add-button{transform:scale(1)}
+.note-editor .note-insert-choices{display:grid;gap:3px;direction:rtl;text-align:right}
+.note-editor .note-insert-choices button{direction:rtl;justify-content:flex-start;text-align:right}
+.note-editor .note-insert-choices button>span:last-child{align-items:flex-start;min-width:0;text-align:right}
+.note-editor .note-block-row.note-dragging>.note-edit-block{opacity:.55;border-style:dashed!important}
+
+/* Read-only inline rows have NO extra individual card border or frame. */
+.note-reading-row{min-width:0}
+.note-reading-inline{display:grid;grid-template-columns:repeat(var(--note-cols),minmax(0,1fr));gap:14px;align-items:stretch;margin:12px 0}
+.note-reading-inline>.note-reading-item{
+    min-width:0;background:transparent;border:0;border-radius:0;padding:0;box-shadow:none;
+}
+.note-reading-inline .note-reading-heading{font-size:clamp(17px,1.7vw,23px);margin:5px 0}
+.note-reading-inline .note-reading-paragraph{margin:0}
+.note-reading-inline .note-reading-code{margin:0}
+.note-reading-inline pre{max-width:100%}
+
+/* Table cells fill available width; height grows with data, without a default scrollbar. */
+.note-table-editor{--table-cyan:#0e9db7;display:flex;flex-direction:column;flex:1;min-width:0;max-width:100%}
+.note-table-frame{
+    position:relative;box-sizing:border-box;width:100%;min-width:0;
+    padding:22px 25px;overflow:visible;
+}
+.note-table-matrix{
+    display:grid;width:100%;min-width:0;
+    grid-template-columns:repeat(var(--table-columns),minmax(0,1fr));
+    grid-template-rows:repeat(var(--table-rows),minmax(80px,auto));
+    border:1px solid #cfdee6;border-radius:9px;background:#fff;
+    direction:rtl;overflow:visible;
+}
+.note-table-cell{position:relative;box-sizing:border-box;min-width:0;min-height:80px;border-left:1px solid #dfeaf0;border-bottom:1px solid #dfeaf0}
+.note-table-cell textarea{
+    display:block;box-sizing:border-box;width:100%;min-width:0;
+    min-height:77px;height:auto;max-height:none;overflow:hidden;resize:none;
+    margin:0;padding:12px 9px!important;
+    outline:0!important;border:0!important;box-shadow:none!important;
+    background:transparent!important;color:#304e5b!important;
+    font-family:inherit!important;font-size:13px!important;font-weight:400!important;line-height:1.6!important;direction:inherit;
+}
+.note-table-cell:focus-within{background:#f1fbfd;z-index:2}
+/* Only the first row owns column removal; only the first column owns row removal. */
+.note-table-remove-col,.note-table-remove-row{
+    position:absolute;z-index:9;display:grid;place-items:center;
+    width:28px;height:28px;padding:0;border:1px solid #ecc3c3;
+    border-radius:9px;background:#fff;color:#bd5761;cursor:pointer;
+    box-shadow:0 3px 10px #543d3d1c;
+    opacity:0;pointer-events:none;transition:opacity .13s,background .13s;
+}
+.note-table-remove-col{top:-35px;left:50%;transform:translateX(-50%)}
+.note-table-remove-row{right:-36px;top:50%;transform:translateY(-50%)}
+.note-table-remove-col svg,.note-table-remove-row svg{width:17px;height:17px;display:block}
+.note-table-cell.note-table-col-intent>.note-table-remove-col,
+.note-table-cell.note-table-row-intent>.note-table-remove-row,
+.note-table-remove-col:focus-visible,.note-table-remove-row:focus-visible{
+    opacity:1;pointer-events:auto;
+}
+.note-table-remove-col:hover,.note-table-remove-row:hover{background:#fff0f0;color:#ac303d;border-color:#d99399}
+.note-table-insert-col,.note-table-insert-row{
+    position:absolute;z-index:5;display:grid;place-items:center;
+    border:0;padding:0;background:transparent;color:#fff;
+    opacity:0;cursor:pointer;transition:opacity .13s;
+}
+.note-table-insert-col{
+    top:var(--table-top,22px);height:var(--table-height,90px);
+    width:18px;transform:translateX(50%);
+}
+.note-table-insert-row{
+    left:var(--table-left,25px);right:var(--table-right,25px);
+    height:18px;transform:translateY(-50%);
+}
+.note-table-insert-col::before,.note-table-insert-row::before{content:"";position:absolute;background:var(--table-cyan);opacity:.74}
+.note-table-insert-col::before{top:0;bottom:0;width:2px}
+.note-table-insert-row::before{right:0;left:0;height:2px}
+.note-table-insert-col svg,.note-table-insert-row svg{
+    position:relative;z-index:1;width:25px;height:25px;padding:4px;
+    border:2px solid #fff;border-radius:9px;background:var(--table-cyan);
+    box-shadow:0 3px 9px #14788b40;box-sizing:border-box;
+}
+.note-table-insert-col:hover,.note-table-insert-col:focus-visible,
+.note-table-insert-row:hover,.note-table-insert-row:focus-visible{opacity:1}
+.note-table-insert-col:disabled,.note-table-insert-row:disabled{display:none}
+.note-table-read{max-width:100%;overflow-x:auto;margin:12px 0;border:1px solid #dae7ec;border-radius:12px}
+.note-table-read table{width:100%;table-layout:fixed;border-collapse:collapse;min-width:0}
+.note-table-read td{min-width:0;padding:12px 10px;border:1px solid #e1ebef;white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;color:#345565}
+.note-table-read tr:nth-child(even){background:#f9fcfd}
+
+/* 2.31: preview tables sit flush with sibling note content, not in a padded frame. */
+.note-reading-surface .note-reading-item:has(> .note-table-read){padding:0;min-width:0}
+.note-reading-surface .note-table-read{margin:0;padding:0;border:0;border-radius:0;overflow-x:hidden;max-width:100%}
+.note-reading-surface .note-table-read td{padding:0}
+
+/* The confirmation dialog must rise above ALL drag handles/plus overlays, not only its cell. */
+.note-editor .note-layout-row:has(.app-modal-backdrop),
+.note-editor .note-block-row:has(.app-modal-backdrop),
+.note-editor .note-edit-block:has(.app-modal-backdrop){position:relative;z-index:1000;isolation:auto}
+.note-editor .note-insert-row:has(.app-modal-backdrop){z-index:1000}
+.note-editor .note-editor-canvas:has(.app-modal-backdrop){isolation:auto}
+.note-editor .note-editor-canvas:has(.app-modal-backdrop) .note-block-picker{pointer-events:none;}.note-editor .note-editor-canvas:has(.app-modal-backdrop) .note-block-outside-controls{pointer-events:none;}.note-editor .note-editor-canvas:has(.app-modal-backdrop) .note-side-add{pointer-events:none;}.note-editor .note-editor-canvas:has(.app-modal-backdrop) .note-table-insert-col{pointer-events:none;}.note-editor .note-editor-canvas:has(.app-modal-backdrop) .note-table-insert-row{pointer-events:none;}
+.note-editor .note-editor-canvas:has(.app-modal-backdrop) .note-insert-row:not(:has(.app-modal-backdrop)){z-index:0}
+
+@media(max-width:780px){
+    .note-editor .note-layout-row,.note-reading-inline{grid-template-columns:minmax(0,1fr);gap:11px}
+    .note-editor .note-inline-row .note-block-outside-controls{top:9px;left:7px}
+    .note-editor .note-side-add{width:31px;height:31px}
+    .note-editor .note-table-frame{padding:22px 25px}
+}
+@media(hover:none){
+    .note-editor .note-side-add{opacity:.72;pointer-events:auto;transform:translateY(-50%)}
+    .note-table-remove-col,.note-table-remove-row{opacity:.75;pointer-events:auto}
+}
+.note-editor .note-editor-canvas:has(.note-start-hint)>.note-insert-row{opacity:1}
+
+/* Glasswork 2.32: crisp, stroke-based equivalents of the original note-block icons. */
+.note-insert-choices .note-picker-icon{display:grid;place-items:center;box-sizing:border-box;width:38px;height:38px;flex:none;
+    background:#fff5e9;color:#c77a28;border:1px solid #f1d6b6;border-radius:10px}
+.note-insert-choices .note-picker-icon svg{display:block;width:21px;height:21px;flex:none;fill:none;stroke:currentColor}
+.note-insert-choices button:hover .note-picker-icon,.note-insert-choices button:focus-visible .note-picker-icon{background:#ffead0;border-color:#dfaf74;color:#a9651e}
+
+/* Mixed Persian/Latin snippets: let each line resolve its own bidi runs without
+   reversing Persian words. Highlight and textarea must share these rules to keep
+   the caret aligned with the decoration. */
+.note-code-editarea .note-code-highlight,
+.note-code-editarea .note-code-highlight code,
+.note-code-editarea textarea,
+.note-reading-code {unicode-bidi:plaintext;font-family:Consolas,"Cascadia Code",Tahoma,monospace!important}

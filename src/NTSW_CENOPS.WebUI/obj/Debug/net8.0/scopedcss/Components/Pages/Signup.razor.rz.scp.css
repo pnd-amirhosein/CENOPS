@@ -1,0 +1,12 @@
+.auth-link[b-qrgw7ed9n0] {
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.auth-link:hover[b-qrgw7ed9n0] {
+    text-decoration: underline;
+}
+
+.password-hint[b-qrgw7ed9n0] {
+    line-height: 1.6;
+}

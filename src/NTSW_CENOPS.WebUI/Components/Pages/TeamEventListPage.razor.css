@@ -1,0 +1,7 @@
+/* Event management uses the same DataTable controls as report management. */
+.administration-page{min-width:0}
+.administration-header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.administration-header .team-calendar-today{display:inline-flex;align-items:center;justify-content:center;min-height:35px;padding:7px 13px;background:#f1f9fb;border:1px solid #cbe6ed;border-radius:9px;color:#187f99;text-decoration:none;font-size:12px;font-weight:800}
+.team-event-remove{border:1px solid #f0b7b4;background:#fff0ee;color:#b23a34;padding:8px 13px;border-radius:10px;font-weight:750;cursor:pointer}
+.team-event-remove:hover:not(:disabled){background:#ffe1dd}
+.team-event-remove:disabled{opacity:.45;cursor:not-allowed}

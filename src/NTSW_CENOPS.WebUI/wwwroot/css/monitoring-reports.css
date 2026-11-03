@@ -1,0 +1,245 @@
+/* Glasswork 2.11 - Monitoring report administration and schema-driven wizard */
+.report-workspace{display:flex;flex-direction:column;gap:1.15rem;width:100%;min-width:0;color:#173a4b;font-size:.87rem}
+.report-workspace *{box-sizing:border-box}
+.report-page-heading{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;padding:1rem 1.1rem 1.2rem;background:linear-gradient(115deg,#f1fbfd 0%,#fff 85%);border:1px solid #e0edf1;border-radius:18px}
+.report-page-heading h2{font-size:1.25rem;line-height:1.5;font-weight:850;color:#173d50;margin:.2rem 0}
+.report-page-heading p{font-size:.8rem;color:#6a8290;margin:0;line-height:1.9}
+.report-eyebrow{font:.68rem ui-monospace,monospace;letter-spacing:.12em;color:#079ab1;direction:ltr;display:block;text-align:right;font-weight:800}
+.report-primary,.report-secondary,.report-action,.report-danger-button{display:inline-flex;justify-content:center;align-items:center;gap:.4rem;border-radius:11px;text-decoration:none!important;font:inherit;font-size:.83rem;font-weight:750;padding:.68rem 1rem;cursor:pointer;transition:background .14s ease,border-color .14s ease,transform .14s ease;border:1px solid transparent}
+.report-primary{background:#078eaa;color:#fff!important;box-shadow:0 5px 14px rgba(5,118,145,.13)}.report-primary:hover:not(:disabled){background:#036e89}
+.report-secondary{background:#f7fafb;color:#375a6c!important;border-color:#d7e8ee}.report-secondary:hover{background:#e9f4f8}
+.report-primary:disabled,.report-secondary:disabled,.report-danger-button:disabled{opacity:.55;cursor:not-allowed}
+.report-toolbar{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.report-search{display:flex;align-items:center;gap:.55rem;background:white;border:1px solid #dbe9ee;border-radius:12px;padding:.55rem .8rem;max-width:410px;flex:1;color:#4d7e91}.report-search:focus-within{border-color:#0ba6bb;box-shadow:0 0 0 3px #0ba6bb14}
+.report-search input{border:0;outline:0;min-width:0;width:100%;color:#234859;background:transparent;font:inherit}
+.report-counter{color:#6a8796;font-size:.78rem}
+.report-table-scroll{overflow-x:auto;background:white;border:1px solid #deebf0;border-radius:15px}
+.report-table{width:100%;border-collapse:collapse;text-align:right;min-width:760px}.report-table th{background:#f5fafc;font-size:.76rem;font-weight:850;color:#6b8592;padding:1rem .9rem;white-space:nowrap}.report-table td{border-top:1px solid #edf3f5;padding:.9rem;vertical-align:middle;color:#385969;font-size:.81rem}.report-table tbody tr:hover{background:#f7fcfd}
+.report-cell-name{font-weight:850;color:#204a5c}.report-table small{display:block;margin-top:.25rem;color:#87a0ac}.report-code{font:.76rem ui-monospace,Consolas,monospace;color:#116f8a;background:#eaf6fa;padding:.2rem .4rem;border-radius:6px;display:inline-block;direction:ltr;unicode-bidi:plaintext}.report-date{white-space:nowrap;font-variant-numeric:tabular-nums;color:#557487!important}.report-chart-tag{display:inline-flex;background:#eff4fb;border:1px solid #dfe9f5;padding:.25rem .65rem;color:#4d678a;border-radius:18px}.report-actions{display:flex;gap:.35rem}.report-action{font-size:.76rem;padding:.4rem .55rem;border-color:#d7eaf0;background:#f5fafb;color:#14798a}.report-action-danger{background:#fff5f5;color:#ac4351;border-color:#f8dfe1}.report-muted{color:#9bb1ba}
+.report-empty{border:1px dashed #c4dfe8;border-radius:17px;padding:2.3rem;text-align:center;color:#6a8594;background:#f9fcfe}.report-empty-feature{padding:3rem 1rem}.report-empty-icon{font-size:2.8rem;color:#1c9db3}.report-empty h3{font-size:1.04rem;color:#274c62;margin:.6rem 0}.report-empty p{margin:0 0 1.2rem;color:#7c98a5}
+.report-progress{display:flex;gap:.6rem;align-items:center;flex-wrap:wrap}.report-progress span{display:flex;gap:.5rem;align-items:center;color:#8ea4af;background:#f7fafb;border:1px solid #e4edf1;border-radius:99px;padding:.38rem .75rem;font-size:.78rem}.report-progress b{border-radius:50%;background:#e0e9ed;color:#7591a0;width:22px;height:22px;display:grid;place-items:center;font-size:.75rem}.report-progress .is-current{color:#087f96;background:#eaf8fb;border-color:#b4e4ed}.report-progress .is-current b{background:#079bb0;color:white}
+.report-editor-grid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(240px,.82fr);gap:1.1rem;align-items:start}.report-editor-main{display:flex;flex-direction:column;gap:1.1rem;min-width:0}.report-editor-aside{position:sticky;top:16px;min-width:0}
+.report-panel{border:1px solid #e0ebef;background:#fff;border-radius:17px;padding:1.2rem;box-shadow:0 5px 18px rgba(18,69,83,.035)}.report-panel-heading{display:flex;align-items:center;gap:.85rem;margin-bottom:1.2rem}.report-panel-heading h3{color:#183e53;font-size:1rem;font-weight:850;margin:0}.report-panel-heading p{color:#7a94a0;margin:.3rem 0 0;font-size:.77rem;line-height:1.9}.report-step{width:38px;height:38px;border:1px solid #bae3ed;background:#eaf8fb;color:#068fa7;border-radius:12px;font:.87rem ui-monospace,monospace;display:grid;place-items:center;flex-shrink:0}
+.report-field{display:flex;flex-direction:column;gap:.5rem;margin:1rem 0}.report-field>span,.report-measures>span{font-size:.8rem;color:#3c5f6e;font-weight:800}.report-field em{font-style:normal;color:#d75a62}.report-field input[type=text],.report-field select{width:100%;border:1px solid #d8e7eb;border-radius:11px;padding:.75rem .85rem;background:#fdfefe;color:#274b5e;outline:none;font:inherit;min-height:44px}.report-field input[type=text]:focus,.report-field select:focus{border-color:#089eaf;box-shadow:0 0 0 3px #089eaf16}
+.report-alert{border:1px solid #d9ebf3;border-radius:12px;padding:.85rem 1rem;font-size:.81rem;line-height:1.9;color:#3c6981;background:#f1f9fd}.report-alert p{margin:.25rem 0 0}.report-alert small{display:block;color:#708b99;margin-top:.3rem}.report-alert-info{border-color:#cce7f0;color:#3a6c83;background:#f1f9fd}.report-alert-warning{border-color:#f0dbad;background:#fffaef;color:#936725}.report-alert-error{border-color:#efc7ce;background:#fff4f5;color:#a42f49}.report-alert-success{border-color:#b5e3d0;background:#effbf5;color:#237455}
+.report-schema-list{border:1px solid #e1ecef;border-radius:12px;overflow:hidden;margin:1rem 0}.report-schema-title{background:#f5fafc;color:#577786;font-weight:850;padding:.65rem .8rem;font-size:.78rem}.report-schema-row{display:flex;justify-content:space-between;align-items:center;gap:1rem;border-top:1px solid #edf4f6;padding:.56rem .8rem}.report-type{border-radius:20px;background:#e8f6ed;color:#327d5d;padding:.2rem .6rem;font:.71rem ui-monospace,monospace}.report-type-invalid{background:#fff0ee;color:#b05846}.report-refresh{margin-top:.3rem;font-size:.76rem;padding:.45rem .65rem}
+.report-measures{display:flex;flex-direction:column;gap:.65rem;padding:.85rem 0}.report-chips{display:flex;gap:.5rem;flex-wrap:wrap}.report-chip{border:1px solid #c4e9ed;background:#ecf9fa;border-radius:9px;color:#128297;font:.73rem ui-monospace,Consolas,monospace;padding:.4rem .55rem}
+.report-chart-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.8rem;margin-top:.55rem}.report-chart-option{border:1px solid #dce9ee;background:#f9fcfd;border-radius:13px;display:flex;flex-direction:column;align-items:center;gap:.35rem;padding:1.05rem .4rem;cursor:pointer;text-align:center;min-width:0;position:relative}.report-chart-option:hover{border-color:#a5dbe3;background:#f1fbfc}.report-chart-option.is-selected{border-color:#05a1b8;background:#ebfafd;box-shadow:inset 0 0 0 1px #05a1b8}.report-chart-option input{position:absolute;top:7px;right:9px;accent-color:#079bb0}.report-chart-option strong{font-size:.83rem;color:#294e61}.report-chart-option small{color:#87a0ab;font-size:.72rem}.report-chart-icon{font-size:2rem;font-weight:800;color:#138fa8;line-height:1.4}
+.report-footer-actions{display:flex;gap:.7rem;flex-wrap:wrap}.report-summary dl{display:grid;grid-template-columns:1fr auto;align-items:center;gap:.9rem .3rem;margin:0}.report-summary dt{font-size:.76rem;color:#7a929e;font-weight:600}.report-summary dd{margin:0;color:#2c5266;max-width:190px;overflow-wrap:anywhere;font-size:.78rem;font-weight:700}.report-summary-note{color:#8097a3;font-size:.76rem;line-height:1.85;border-top:1px dashed #dfecef;padding-top:1rem;margin:1.2rem 0 0}
+.report-danger-button{background:#be4351;color:white}.report-danger-button:hover{background:#a32b40}
+@media(max-width:880px){.report-editor-grid{grid-template-columns:minmax(0,1fr)}.report-editor-aside{position:static}}@media(max-width:520px){.report-page-heading{padding:.9rem}.report-panel{padding:1rem}.report-chart-choices{gap:.4rem}.report-chart-option{padding:.85rem .25rem}.report-chart-icon{font-size:1.5rem}.report-table{min-width:700px}}
+
+/* 2.11.1: Card itself is the radio control; preserve semantic input for keyboard and screen readers. */
+.report-chart-option .report-chart-native-radio{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important;opacity:0!important;pointer-events:none!important}
+.report-chart-option:focus-within{outline:2px solid #067e98;outline-offset:3px}
+/* Summary: stable RTL label and value columns, with the value consistently left-aligned. */
+.report-summary dl{grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:1rem;align-items:start}
+.report-summary dt{min-width:0;text-align:right;line-height:1.65}
+.report-summary dd{min-width:0;max-width:none;width:100%;text-align:left;direction:rtl;line-height:1.65;overflow-wrap:anywhere}
+.report-summary dd[dir=ltr]{direction:ltr;text-align:left}
+
+/* Glasswork 2.12 — report chart gallery */
+.report-gallery{display:flex;flex-direction:column;gap:20px;direction:rtl;min-width:0}
+.report-gallery-heading{display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap;padding:15px 17px;border:1px solid #e1edf0;border-radius:16px;background:linear-gradient(115deg,#f0fafd,#fff)}
+.report-gallery-heading h1{font-size:1.18rem;margin:0 0 6px;color:#184052;font-weight:850}
+.report-gallery-heading p{font-size:.79rem;color:#66808d;line-height:1.8;margin:0}
+.report-gallery-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:stretch;direction:rtl}
+.monitor-chart-card{min-width:0;background:#fff;border:1px solid #dce9ed;border-radius:17px;box-shadow:0 5px 20px rgba(26,67,90,.05);padding:15px;display:flex;flex-direction:column;gap:12px}
+.monitor-chart-card-header{display:flex;gap:8px;justify-content:space-between;align-items:flex-start;min-height:48px}
+.monitor-chart-card-title{min-width:0}.monitor-chart-card-title h2{font-size:.95rem;font-weight:850;color:#214458;margin:0;overflow-wrap:anywhere}.monitor-chart-card-title p{font-size:.72rem;color:#76909e;margin:5px 0 0;overflow-wrap:anywhere}
+.monitor-chart-kind{display:inline-block;font-size:.72rem;font-weight:700;color:#0c829a;background:#e8f8fb;border-radius:22px;padding:4px 9px;white-space:nowrap}
+.monitor-chart-plot{min-width:0;width:100%;overflow:hidden;padding:4px 0 0}.monitor-chart-plot svg{display:block;width:100%;height:auto;max-height:330px;overflow:visible}
+.monitor-chart-gridline{stroke:#e7f0f4;stroke-width:1}.monitor-chart-axis{stroke:#b9d0d9;stroke-width:1.2}.monitor-chart-tick{fill:#78929d;font-size:12px;font-family:system-ui,sans-serif}
+.monitor-chart-legend{display:flex;align-items:center;gap:8px 12px;flex-wrap:wrap;min-height:28px}.monitor-chart-legend-item{font-size:.68rem;color:#466575;display:inline-flex;align-items:center;gap:5px;direction:ltr;overflow-wrap:anywhere;max-width:100%}.monitor-chart-swatch{width:9px;height:9px;border-radius:3px;flex:0 0 9px}
+.monitor-chart-warning{color:#a26d25;background:#fff8ea;padding:8px 10px;border-radius:8px;font-size:.73rem;margin:0;line-height:1.7}
+.monitor-chart-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:205px;text-align:center;padding:18px;background:#f9fcfd;border:1px dashed #d1e3e9;border-radius:12px}.monitor-chart-placeholder-icon{font-size:2rem;color:#95bac6}.monitor-chart-placeholder p{margin:8px 0;color:#657d89;font-size:.8rem;line-height:1.9}
+.monitor-chart-footer{margin-top:auto;padding-top:10px;border-top:1px solid #eaf1f3;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;color:#6e8794;font-size:.72rem}.monitor-chart-footer b{color:#197d96;font-weight:650}
+.report-gallery-status{padding:36px;border:1px dashed #d1e3e9;border-radius:14px;color:#66818d;text-align:center}
+@media(max-width:900px){.report-gallery-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.report-gallery-grid{grid-template-columns:minmax(0,1fr)}}
+
+/* Glasswork 2.12.2: report gallery toolbar and report types */
+.report-gallery-toolbar{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;min-width:0}
+.report-gallery-toolbar h1{font-size:1.23rem;font-weight:850;color:#184052;margin:0}
+.report-gallery-actions{display:flex;align-items:center;gap:.8rem;flex-wrap:wrap;min-width:0}
+.report-gallery-search{display:flex;align-items:center;gap:.6rem;border:1px solid #dce8ec;border-radius:11px;background:#fff;color:#8aa0ab;padding:0 .85rem;min-height:42px;min-width:235px;max-width:100%}
+.report-gallery-search:focus-within{border-color:#079bb0;box-shadow:0 0 0 3px #079bb01a}
+.report-gallery-search input{border:0!important;background:transparent!important;outline:0!important;flex:1;min-width:0;font:inherit;color:#254e61;font-size:.82rem}
+.report-chart-choices{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:600px){.report-gallery-actions,.report-gallery-search{width:100%}}
+
+/* Expanded reports: same SVG renderer, interactive exploration in a reusable AppModal. */
+.monitor-chart-header-actions{display:flex;align-items:center;gap:7px;flex-shrink:0}
+.monitor-chart-expand{width:30px;height:30px;display:grid;place-items:center;border:1px solid #cce4e9;border-radius:9px;background:#f1f9fb;color:#178398;cursor:pointer;transition:background .15s,border-color .15s}
+.monitor-chart-expand:hover,.monitor-chart-expand:focus-visible{background:#dbf4f8;border-color:#37a8b8;outline-offset:2px}
+.monitor-chart-modal.app-modal-surface{max-height:calc(100dvh - 36px);display:flex;flex-direction:column;overflow:hidden}
+.monitor-chart-modal .app-modal-body{overflow:auto;min-height:0;overscroll-behavior:contain;padding:2px}
+.monitor-chart-modal .app-modal-footer{flex-shrink:0}
+.monitor-chart-explorer{display:flex;flex-direction:column;gap:14px;min-width:0}
+.monitor-chart-controls{display:flex;align-items:end;gap:12px;flex-wrap:wrap}
+.monitor-chart-control-group{display:flex;flex-direction:column;gap:6px;min-width:125px}
+.monitor-chart-control-group label{font-size:.76rem;color:#627d8a;font-weight:700}
+.monitor-chart-control-group select,.monitor-chart-control-group input{border:1px solid #d5e6ec;background:#fff;border-radius:9px;padding:9px;color:#274e60;max-width:240px;font:inherit;font-size:.79rem;min-height:39px}
+.monitor-chart-reset{min-height:39px;white-space:nowrap}
+.monitor-chart-reset:disabled{opacity:.45;cursor:not-allowed}
+.monitor-chart-grid-toggle{display:flex;align-items:center;gap:7px;min-height:39px;color:#506d7b;font-size:.79rem;cursor:pointer}
+.monitor-chart-series-picker{display:flex;flex-wrap:wrap;gap:8px}
+.monitor-chart-series-picker label{display:flex;align-items:center;gap:7px;border:1px solid #dce9ee;border-radius:9px;padding:7px 10px;color:#466778;font-size:.78rem;cursor:pointer}
+.monitor-chart-series-picker label:has(input:checked){background:#edfafb;border-color:#a7dbe3}
+.monitor-chart-series-picker input{accent-color:#098da5}
+.monitor-chart-help{font-size:.75rem;color:#77919e;margin:0;line-height:1.8}
+.monitor-chart-modal .monitor-chart-card{box-shadow:none;border:1px solid #dcebef;border-radius:12px;padding:18px}
+.monitor-chart-modal .monitor-chart-plot svg{max-height:480px;min-height:260px;touch-action:none;cursor:crosshair}
+.monitor-chart-modal .monitor-chart-legend-item{font-size:.78rem}
+.monitor-chart-plot{position:relative}
+.monitor-chart-tooltip{position:absolute;z-index:5;transform:translate(-50%,-100%);pointer-events:none;min-width:150px;max-width:250px;padding:10px 12px;border-radius:10px;color:#234457;background:rgba(255,255,255,.97);border:1px solid #bddce5;box-shadow:0 8px 24px rgba(24,62,80,.17);font-size:.77rem;line-height:1.8;white-space:normal;direction:rtl}
+.monitor-chart-tooltip[hidden]{display:none}
+.monitor-chart-tooltip strong{display:block;direction:ltr;text-align:right;border-bottom:1px solid #e5eff2;margin-bottom:5px;padding-bottom:4px}
+.monitor-chart-tooltip div{display:flex;justify-content:space-between;gap:14px}
+.monitor-chart-tooltip div b{font-variant-numeric:tabular-nums;direction:ltr}
+.monitor-chart-cursor{stroke:#328a9a;stroke-width:1.4;stroke-dasharray:4 4;pointer-events:none}
+.monitor-chart-selection{fill:#0a9bb3;fill-opacity:.13;stroke:#159cb3;stroke-dasharray:4 3;pointer-events:none}
+@media(max-width:650px){.monitor-chart-modal.app-modal-surface{padding:13px;max-height:calc(100dvh - 20px)}.monitor-chart-controls{gap:9px}.monitor-chart-control-group{min-width:100px}.monitor-chart-modal .monitor-chart-plot svg{min-height:220px}}
+
+/* Glasswork 2.12.4 — spacious report explorer, without desktop scrollbars. */
+.monitor-chart-tick { font-size: 9.5px; }
+.monitor-chart-grid-toggle { white-space: nowrap; flex-shrink: 0; }
+.monitor-chart-grid-toggle span { white-space: nowrap; }
+.monitor-chart-modal.app-modal-surface {
+    width: min(1440px, calc(100vw - 24px));
+    max-width: calc(100vw - 24px);
+    max-height: calc(100dvh - 22px);
+    padding: 15px 20px 13px;
+}
+.monitor-chart-modal .app-modal-heading { margin-bottom: 9px; gap: 2px; flex-shrink: 0; }
+.monitor-chart-modal .app-modal-heading h2 { font-size: 1.02rem; }
+.monitor-chart-modal .app-modal-heading p { font-size: .74rem; line-height: 1.35; }
+.monitor-chart-modal .app-modal-body { padding: 0; min-height: 0; }
+.monitor-chart-modal .app-modal-footer { margin-top: 9px; }
+.monitor-chart-modal .monitor-chart-explorer { gap: 8px; }
+.monitor-chart-modal .monitor-chart-controls { gap: 8px; align-items: end; }
+.monitor-chart-modal .monitor-chart-control-group { min-width: 110px; gap: 4px; }
+.monitor-chart-modal .monitor-chart-control-group label { font-size: .7rem; }
+.monitor-chart-modal .monitor-chart-control-group select,
+.monitor-chart-modal .monitor-chart-control-group input { min-height: 34px; padding: 5px 8px; }
+.monitor-chart-modal .monitor-chart-reset,
+.monitor-chart-modal .monitor-chart-grid-toggle { min-height: 34px; }
+.monitor-chart-modal .monitor-chart-series-picker { gap: 6px; max-height: 72px; overflow-y: auto; }
+.monitor-chart-modal .monitor-chart-series-picker label { padding: 4px 8px; }
+.monitor-chart-modal .monitor-chart-help { font-size: .69rem; line-height: 1.45; }
+.monitor-chart-modal .monitor-chart-card { gap: 7px; padding: 10px 13px; }
+.monitor-chart-modal .monitor-chart-card-header { min-height: 36px; }
+.monitor-chart-modal .monitor-chart-card-title h2 { font-size: .88rem; }
+.monitor-chart-modal .monitor-chart-card-title p { font-size: .7rem; margin-top: 2px; }
+.monitor-chart-modal .monitor-chart-plot { overflow: visible; padding-top: 0; z-index: 1; }
+.monitor-chart-modal .monitor-chart-plot svg {
+    display: block; width: 100%; height: clamp(220px, 38dvh, 440px);
+    max-height: none; min-height: 0; overflow: visible;
+    cursor: crosshair; touch-action: none;
+}
+.monitor-chart-modal .monitor-chart-tick { font-size: 9.7px; }
+.monitor-chart-modal .monitor-chart-legend { min-height: 21px; gap: 4px 8px; }
+.monitor-chart-modal .monitor-chart-legend-item { font-size: .7rem; }
+.monitor-chart-modal .monitor-chart-footer { padding-top: 5px; font-size: .67rem; }
+.monitor-chart-tooltip {
+    z-index: 20; max-height: min(230px, 35dvh); overflow: hidden;
+    transform: translate(-50%, -100%);
+}
+.monitor-chart-tooltip.is-below { transform: translate(-50%, 0); }
+.monitor-chart-modal .monitor-chart-plot:has(.monitor-chart-tooltip:not([hidden])) { z-index: 3; }
+
+/* Fit common 16:9 desktop viewports without a modal scrollbar. On genuinely
+   small viewports the body can scroll, keeping all controls reachable. */
+@media (min-width: 901px) and (min-height: 650px) {
+    .monitor-chart-modal .app-modal-body { overflow: visible; }
+    .monitor-chart-modal .monitor-chart-controls { flex-wrap: nowrap; }
+}
+@media (max-width: 900px), (max-height: 649px) {
+    .monitor-chart-modal.app-modal-surface { padding: 12px; max-height: calc(100dvh - 16px); }
+    .monitor-chart-modal .app-modal-body { overflow-y: auto; overflow-x: hidden; }
+    .monitor-chart-modal .monitor-chart-plot svg { height: clamp(205px, 37dvh, 360px); }
+}
+
+
+/* Glasswork 2.12.5 — report chart sizing and compact explorer controls. */
+.monitor-chart-modal .monitor-chart-plot { width: 100%; min-width: 0; }
+/* Stretch the Cartesian coordinate space horizontally rather than leaving
+   hundreds of pixels letterboxed at wide desktop aspect ratios. */
+.monitor-chart-modal .monitor-chart-plot > svg { width: 100%; height: clamp(220px, 38dvh, 440px); }
+.monitor-chart-modal .monitor-chart-series-picker {
+    max-height: none; min-height: 26px; overflow: visible; align-content: center;
+    flex-shrink: 0; padding: 3px 0 4px; position: relative; z-index: 2;
+}
+.monitor-chart-modal .monitor-chart-series-picker label { flex-shrink: 0; min-height: 27px; }
+.monitor-chart-modal .monitor-chart-help {
+    flex-shrink: 0; margin: 2px 0 5px; padding-block: 3px;
+    white-space: normal; line-height: 1.65; position: relative; z-index: 1;
+}
+.monitor-chart-reset {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    box-sizing: border-box; height: 34px; min-height: 34px !important;
+    padding: 5px 10px !important; font-weight: 700; line-height: 1;
+    font-size: .76rem; border-radius: 9px;
+}
+.monitor-chart-reset svg { width: 16px; height: 16px; flex-shrink: 0; }
+.monitor-radial { width: 100%; min-width: 0; }
+.monitor-radial-svg { display: block; width: 100%; max-width: 100%; height: auto; }
+.monitor-chart-modal .monitor-radial-svg { height: clamp(220px, 36dvh, 370px) !important; }
+.monitor-radial-caption { color: #6d8998; text-align: center; font-size: .67rem; line-height: 1.5; margin: 3px 0; }
+.monitor-radial-empty { padding: 80px 14px; color: #8b6274; text-align: center; font-size: .8rem; }
+.monitor-radial-legend { display: flex; justify-content: center; flex-wrap: wrap; gap: 4px 12px; max-height: 52px; overflow-y: auto; font-size: .68rem; padding: 3px; }
+.monitor-radial-legend span { color: #496a79; display: inline-flex; align-items: center; gap: 5px; }
+.monitor-radial-legend i { display: inline-block; width: 9px; height: 9px; border-radius: 3px; }
+.monitor-treemap-label { font-size: 11px; fill: #fff; pointer-events: none; font-weight: 650; }
+.monitor-radar-label { font-size: 10px; fill: #6e8794; }
+.monitor-doughnut-value { font-size: 23px; font-weight: 800; fill: #244e61; }
+.monitor-doughnut-caption { font-size: 11px; fill: #809ba7; }
+.monitor-gauge-grid { width: 100%; display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); align-items: center; gap: 9px; }
+.monitor-gauge-item { min-width: 0; border: 1px solid #e2edf1; border-radius: 12px; padding: 5px 9px 7px; text-align: center; background: #f9fcfd; }
+.monitor-gauge-item svg, .monitor-chart-modal .monitor-gauge-item svg { width: 100%; height: auto; max-height: 102px; min-height: 0; display: block; }
+.monitor-gauge-item > span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .73rem; color: #416575; }
+.monitor-gauge-value { font-size: 20px; fill: #2b5365; font-weight: 800; }
+.monitor-gauge-cap { font-size: 8px; fill: #7795a3; }
+@media(max-width:650px) {
+  .monitor-chart-modal .monitor-chart-series-picker { overflow-x: auto; max-height: 90px; }
+  .monitor-gauge-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* Glasswork 2.12.6 — semantic field composition and gauge sizing */
+.report-measure-options{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
+.report-measure-option{display:inline-flex;align-items:center;gap:7px;padding:7px 9px;border:1px solid #dbe9ed;border-radius:9px;background:#f9fcfd;color:#385b69;cursor:pointer;max-width:100%;font-size:.78rem}
+.report-measure-option:has(input:checked){background:#eaf9fb;border-color:#9fd6e0}
+.report-measure-option input{accent-color:#098da5}
+.report-measure-option span{overflow-wrap:anywhere}
+.report-measure-hint,.report-measure-error{display:block;line-height:1.6;margin-top:7px;font-size:.72rem;color:#71818d}
+.report-measure-error{color:#a55d46}
+.monitor-gauge-grid{grid-template-columns:repeat(auto-fit,minmax(min(150px,100%),1fr));align-items:stretch;gap:8px;overflow:hidden;padding:3px}
+.monitor-gauge-item{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0;overflow:hidden;padding:9px 8px 8px}
+.monitor-gauge-item svg,.monitor-chart-modal .monitor-gauge-item svg{display:block;width:min(100%,160px)!important;max-width:160px;height:auto!important;max-height:124px!important;min-height:0!important;flex-shrink:0;overflow:hidden!important;aspect-ratio:160/124;cursor:default!important}
+.monitor-gauge-item > span{width:100%;font-size:.71rem}
+.monitor-gauge-value{font-size:19px}
+.monitor-gauge-cap{font-size:11px}
+.monitor-radial-caution{font-size:.65rem;line-height:1.45;text-align:center;color:#829ba5;margin:5px 0 0}
+.monitor-radar-label{font-size:11px;font-weight:600;fill:#436878}
+.monitor-chart-modal .monitor-radial{max-height:calc(100dvh - 310px);overflow:auto}
+@media(max-width:650px){.monitor-chart-modal .monitor-radial{max-height:none}.monitor-gauge-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* 2.13: keep measurement chips unbroken; scroll long English identifiers horizontally. */
+.report-measure-options{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;max-width:100%;padding-bottom:5px;scrollbar-width:thin}
+.report-measure-option{flex:0 0 auto;white-space:nowrap;max-width:none}
+.report-measure-option span{overflow-wrap:normal;white-space:nowrap}
+
+/* Glasswork 2.21: date popovers can open above report explorer content;
+   controls shrink cleanly without making the plot overflow its card. */
+.monitor-chart-control-group:has(.jalali-picker){min-width:155px;position:relative;z-index:4}
+.monitor-chart-control-group .jalali-picker{min-width:0;max-width:240px}
+.monitor-chart-control-group .jalali-trigger{min-height:37px;font-size:.78rem}
+.monitor-chart-tick{font-family:system-ui,sans-serif;paint-order:stroke;stroke:#fff;stroke-width:.2px}
+
+.monitor-chart-modal .app-modal-body:has(.jalali-popover){overflow:visible}
+.monitor-chart-modal .monitor-chart-control-group:has(.jalali-popover){z-index:30}
+
+/* 2.23: Prevent text labels in radial charts from scaling with a giant canvas. */
+.monitor-chart-modal .monitor-radial-svg{max-width:760px;margin-inline:auto;object-fit:contain}
+.dash-chart .monitor-radial-svg{max-width:760px;margin-inline:auto;object-fit:contain}
+.monitor-chart-modal .monitor-chart-tick{font-weight:500}

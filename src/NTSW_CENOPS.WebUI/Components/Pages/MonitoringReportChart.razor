@@ -1,0 +1,789 @@
+@using NTSW_CENOPS.Components.Common.Dates
+@using System.Globalization
+@using NTSW_CENOPS.Application.Reports
+@using NTSW_CENOPS.Components.Common
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<section class="monitor-chart-card @(DashboardMode ? "monitor-chart-dashboard" : "")" aria-label="@Data.Name">
+    <header class="monitor-chart-card-header">
+        <div class="monitor-chart-card-title">
+            <h2>@Data.Name</h2>
+            <p>@Data.JobName</p>
+        </div>
+        <div class="monitor-chart-header-actions">
+            <span class="monitor-chart-kind">@ChartLabel(Data.ChartType)</span>
+            @if (!IsExpandedView && AllowExpand)
+            {
+                <button type="button" class="monitor-chart-expand" title="نمایش بزرگ‌تر و ابزارهای نمودار"
+                        aria-label="گسترش نمودار @Data.Name" @onclick="OpenExpanded">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                        <path d="M8 3H3v5m0-5 7 7m6-7h5v5m0-5-7 7M3 16v5h5m-5 0 7-7m11 2v5h-5m5 0-7-7"/>
+                    </svg>
+                </button>
+            }
+        </div>
+    </header>
+
+    @if (Data.Points.Count == 0)
+    {
+        <div class="monitor-chart-placeholder" role="status">
+            <span class="monitor-chart-placeholder-icon" aria-hidden="true">▥</span>
+            <p>@(Data.Notice ?? "داده‌ای برای نمایش وجود ندارد.")</p>
+        </div>
+    }
+    else
+    {
+        <div class="monitor-chart-plot" dir="ltr">
+            @if (IsRadialChart)
+            {
+                <MonitoringReportRadial Data="@Data" Palette="@SeriesPalette" RootId="@_svgId" />
+            }
+            else
+            {
+            <svg id="@_svgId" data-chart-type="@Data.ChartType" viewBox="0 0 @F(_svgWidth) 285" role="img" aria-label="نمودار @Data.Name" preserveAspectRatio="xMidYMid meet">
+                <title>@Data.Name</title>
+                @for (var step = 0; step <= 4; step++)
+                {
+                    var value = YMin + ((YMax - YMin) * step / 4d);
+                    var position = PlotY(value);
+                    @if (ShowGrid)
+                    {
+                        <line x1="55" x2="@(Right + 7)" y1="@position" y2="@position" class="monitor-chart-gridline" />
+                    }
+                    @SvgTick(48, position + 4, "end", ShortNumber(value), TickFontSize)
+                }
+                <line x1="55" x2="@(Right + 7)" y1="230" y2="230" class="monitor-chart-axis" />
+                @foreach (var index in TickIndexes)
+                {
+                    var point = Data.Points[index];
+                    @SvgTick(IsBarChart ? BarTickX(index) : PlotX(point.AxisValue), 250, "middle", DisplayTick(point.Label), TickFontSize)
+                }
+                @if (Data.ChartType == "stackedarea")
+                {
+                    @for (var m = 0; m < Data.MeasureNames.Count; m++)
+                    {
+                        <path d="@StackedAreaPath(m)" fill="@SeriesColor(m)" fill-opacity="0.32"
+                              stroke="@SeriesColor(m)" stroke-width="1.5" stroke-linejoin="round" />
+                    }
+                }
+                else if (Data.ChartType == "lollipop")
+                {
+                    @for (var p = 0; p < Data.Points.Count; p++)
+                    {
+                        var point = Data.Points[p];
+                        @for (var m = 0; m < Data.MeasureNames.Count; m++)
+                        {
+                            if (m >= point.Measures.Count || point.Measures[m] is not double measurement) continue;
+                            var x = LollipopX(point.AxisValue, m);
+                            <line x1="@x" x2="@x" y1="@PlotY(0)" y2="@PlotY(measurement)"
+                                  stroke="@SeriesColor(m)" stroke-width="2" stroke-opacity=".62" />
+                            <circle cx="@x" cy="@PlotY(measurement)" r="4.3" fill="@SeriesColor(m)">
+                                <title>@JalaliDate.AxisLabel(point.Label) — @Data.MeasureNames[m]: @measurement.ToString("N2", CultureInfo.InvariantCulture)</title>
+                            </circle>
+                        }
+                    }
+                }
+                else if (Data.ChartType == "stacked")
+                {
+                    @for (var p = 0; p < Data.Points.Count; p++)
+                    {
+                        var point = Data.Points[p];
+                        double positive = 0, negative = 0;
+                        @for (var m = 0; m < Data.MeasureNames.Count; m++)
+                        {
+                            if (m >= point.Measures.Count || point.Measures[m] is not double measurement) continue;
+                            var start = measurement >= 0 ? positive : negative;
+                            if (measurement >= 0) positive += measurement;
+                            else negative += measurement;
+                            var y1 = PlotY(start);
+                            var y2 = PlotY(start + measurement);
+                            <rect x="@(BarTickX(p) - StackedBarWidth / 2)" y="@Math.Min(y1, y2)"
+                                  width="@StackedBarWidth" height="@Math.Max(1.5, Math.Abs(y2 - y1))"
+                                  fill="@SeriesColor(m)" rx="1.3">
+                                <title>@JalaliDate.AxisLabel(point.Label) — @Data.MeasureNames[m]: @measurement.ToString("N2", CultureInfo.InvariantCulture)</title>
+                            </rect>
+                        }
+                    }
+                }
+                else if (Data.ChartType == "bubble")
+                {
+                    @for (var p = 0; p < Data.Points.Count; p++)
+                    {
+                        var point = Data.Points[p];
+                        @for (var m = 0; m < Data.MeasureNames.Count; m++)
+                        {
+                            if (m >= point.Measures.Count || point.Measures[m] is not double measurement) continue;
+                            var r = BubbleRadius(measurement);
+                            var color = SeriesColor(m);
+                            <circle cx="@(PlotX(point.AxisValue) + BubbleOffset(m))" cy="@PlotY(measurement)" r="@r"
+                                    fill="@color" fill-opacity="0.30" stroke="@color" stroke-width="1.6">
+                                <title>@JalaliDate.AxisLabel(point.Label) — @Data.MeasureNames[m]: @measurement.ToString("N2", CultureInfo.InvariantCulture)</title>
+                            </circle>
+                        }
+                    }
+                }
+                else if (Data.ChartType == "bar")
+                {
+                    @for (var p = 0; p < Data.Points.Count; p++)
+                    {
+                        var point = Data.Points[p];
+                        @for (var m = 0; m < Data.MeasureNames.Count; m++)
+                        {
+                            if (m >= point.Measures.Count || point.Measures[m] is not double measurement) continue;
+                            var barX = BarX(p, m);
+                            var y = PlotY(measurement);
+                            var baseline = PlotY(0);
+                            var top = Math.Min(y, baseline);
+                            var height = Math.Max(1.5, Math.Abs(y - baseline));
+                            <rect x="@barX" y="@top" width="@BarWidth" height="@height"
+                                  fill="@SeriesColor(m)" rx="1.5">
+                                <title>@JalaliDate.AxisLabel(point.Label) — @Data.MeasureNames[m]: @measurement.ToString("N2", CultureInfo.InvariantCulture)</title>
+                            </rect>
+                        }
+                    }
+                }
+                else
+                {
+                    @for (var m = 0; m < Data.MeasureNames.Count; m++)
+                    {
+                        var color = SeriesColor(m);
+                        @if (Data.ChartType == "area")
+                        {
+                            <path d="@AreaPath(m)" fill="@color" fill-opacity="0.13" stroke="none" />
+                        }
+                        @if (Data.ChartType is "line" or "area" or "step" or "smooth")
+                        {
+                            <path d="@(Data.ChartType == "step" ? StepPath(m) : Data.ChartType == "smooth" ? SmoothPath(m) : LinePath(m))"
+                                  fill="none" stroke="@color" stroke-width="2.3"
+                                  stroke-linecap="round" stroke-linejoin="round" />
+                        }
+                        @if (Data.ChartType == "scatter" || (Data.ChartType != "step" && Data.Points.Count <= 24))
+                        {
+                            @foreach (var point in Data.Points)
+                            {
+                                if (m >= point.Measures.Count || point.Measures[m] is not double measurement) continue;
+                                <circle cx="@PlotX(point.AxisValue)" cy="@PlotY(measurement)"
+                                        r="@(Data.ChartType == "scatter" ? 4.3 : 3)" fill="@color">
+                                    <title>@JalaliDate.AxisLabel(point.Label) — @Data.MeasureNames[m]: @measurement.ToString("N2", CultureInfo.InvariantCulture)</title>
+                                </circle>
+                            }
+                        }
+                    }
+                }
+                @if (IsExpandedView)
+                {
+                    <line class="monitor-chart-cursor" x1="0" x2="0" y1="18" y2="228" style="display:none" />
+                    <rect class="monitor-chart-selection" x="0" y="18" width="0" height="210" style="display:none" />
+                }
+            </svg>
+            }
+            @if (IsExpandedView && !IsRadialChart)
+            {
+                <div class="monitor-chart-tooltip" role="status" hidden></div>
+            }
+        </div>
+        @if (Data.ChartType == "bubble")
+        {
+            <p class="monitor-radial-caption">هر رنگ یک اندازه‌گیری مستقل است؛ محور Y مقدار همان اندازه‌گیری و اندازهٔ حباب قدر مطلق همان مقدار است.</p>
+        }
+        @if (!IsRadialChart)
+        {
+        <div class="monitor-chart-legend" aria-label="فیلدهای عددی">
+            @for (var m = 0; m < Data.MeasureNames.Count; m++)
+            {
+                <span class="monitor-chart-legend-item"><span class="monitor-chart-swatch" style="background:@SeriesColor(m)"></span>@Data.MeasureNames[m]</span>
+            }
+        </div>
+        }
+        @if (!string.IsNullOrWhiteSpace(Data.Notice))
+        {
+            <p class="monitor-chart-warning">@Data.Notice</p>
+        }
+    }
+    <footer class="monitor-chart-footer">
+        <span>محور مقایسه: <b dir="ltr">@Data.ComparisonField</b></span>
+        <span>@Data.Points.Count.ToString("N0") نقطه</span>
+    </footer>
+    @if (_expanded && !IsExpandedView)
+    {
+        <AppModal IsOpen="true" Title="@Data.Name" Description="@Data.JobName"
+                  OnClose="CloseExpanded" CloseOnEscape="true" MaxWidth="1440px" CssClass="monitor-chart-modal" FloatingClose="true">
+            <ChildContent>
+                <div class="monitor-chart-explorer" dir="rtl">
+                    <div class="monitor-chart-controls">
+                        <div class="monitor-chart-control-group">
+                            <label for="@(_controlId)-range">محدوده داده</label>
+                            <select id="@(_controlId)-range" value="@_timeMode" @onchange="ChangeTimeMode">
+                                <option value="all">تمام داده‌های بارگذاری‌شده</option>
+                                @if (IsDateAxis)
+                                {
+                                    <option value="24h">۲۴ ساعت پایانی داده</option>
+                                    <option value="7d">۷ روز پایانی داده</option>
+                                    <option value="14d">۱۴ روز پایانی داده</option>
+                                    <option value="custom">بازه دلخواه</option>
+                                }
+                                else
+                                {
+                                    <option value="last20">۲۰ نقطه پایانی</option>
+                                    <option value="last50">۵۰ نقطه پایانی</option>
+                                }
+                            </select>
+                        </div>
+                        @if (IsDateAxis && _timeMode == "custom")
+                        {
+                            <div class="monitor-chart-control-group">
+                                <label>از تاریخ</label>
+                                <AppJalaliDatePicker Value="_dateFrom" ValueChanged="ChangeDateFrom" AriaLabel="شروع بازه زمانی" />
+                            </div>
+                            <div class="monitor-chart-control-group">
+                                <label>تا تاریخ</label>
+                                <AppJalaliDatePicker Value="_dateTo" ValueChanged="ChangeDateTo" AriaLabel="پایان بازه زمانی" />
+                            </div>
+                        }
+                        <button type="button" class="report-secondary monitor-chart-reset"
+                                title="بازگرداندن همه تنظیمات نمایش" @onclick="ResetView">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11a9 9 0 1 1 2.7 6.5"/><path d="M3 4v7h7"/></svg>
+                            <span>بازنشانی</span></button>
+                        <label class="monitor-chart-grid-toggle">
+                            <input type="checkbox" @bind="_showGrid" /> <span>خطوط راهنما</span>
+                        </label>
+                    </div>
+                    <div class="monitor-chart-series-picker" aria-label="اندازه‌گیری‌های قابل نمایش">
+                        @foreach (var measure in Data.MeasureNames)
+                        {
+                            var selected = !_hiddenMeasures.Contains(measure);
+                            <label>
+                                <input type="checkbox" checked="@selected" disabled="@(selected && _hiddenMeasures.Count == Data.MeasureNames.Count - 1)"
+                                       @onchange="e => ToggleMeasure(measure, e.Value is true)" />
+                                <span>@measure</span>
+                            </label>
+                        }
+                    </div>
+                    @if (IsRadialChart)
+                    {
+                        <p class="monitor-chart-help">نشانگر ماوس: مشاهده مقدار هر بخش · تنظیم بازه و مجموعه‌داده از ابزارهای بالا</p>
+                    }
+                    else
+                    {
+                        <p class="monitor-chart-help">حرکت ماوس: مشاهده مقدار · کشیدن: انتخاب بازه · Ctrl + چرخ ماوس: بزرگ‌نمایی محور X · دابل‌کلیک: بازنشانی بزرگ‌نمایی</p>
+                    }
+                    <MonitoringReportChart Data="@ExpandedData" IsExpandedView="true" ShowGrid="@_showGrid"
+                                           SeriesPalette="@OriginalPalette" RangeSelected="HandleRangeSelected"
+                                           WheelZoomRequested="HandleWheelZoom" ZoomResetRequested="ResetZoom" />
+                </div>
+            </ChildContent>
+
+        </AppModal>
+    }
+
+</section>
+
+@code {
+    // Razor treats <text> as a special transition tag, so SVG text elements
+    // with attributes must be emitted through the render tree builder.
+    private static RenderFragment SvgTick(double x, double y, string anchor, string label, double fontSize) => builder =>
+    {
+        builder.OpenElement(0, "text");
+        builder.AddAttribute(1, "x", x.ToString(CultureInfo.InvariantCulture));
+        builder.AddAttribute(2, "y", y.ToString(CultureInfo.InvariantCulture));
+        builder.AddAttribute(3, "text-anchor", anchor);
+        builder.AddAttribute(4, "class", "monitor-chart-tick");
+        builder.AddAttribute(5, "style", $"font-size:{F(fontSize)}px");
+        builder.AddContent(6, label);
+        builder.CloseElement();
+    };
+
+    [Parameter, EditorRequired] public MonitoringChartData Data { get; set; } = default!;
+    [Parameter] public bool DashboardMode { get; set; }
+    [Parameter] public bool IsExpandedView { get; set; }
+    [Parameter] public bool AllowExpand { get; set; } = true;
+    [Parameter] public bool ShowGrid { get; set; } = true;
+    [Parameter] public IReadOnlyDictionary<string, string>? SeriesPalette { get; set; }
+    [Parameter] public EventCallback<(double From, double To)> RangeSelected { get; set; }
+    [Parameter] public EventCallback<(double Anchor, double Factor)> WheelZoomRequested { get; set; }
+    [Parameter] public EventCallback ZoomResetRequested { get; set; }
+
+    private readonly string _svgId = $"monitor-svg-{Guid.NewGuid():N}";
+    private readonly string _controlId = $"monitor-select-{Guid.NewGuid():N}";
+    private bool _expanded;
+    private bool _showGrid = true;
+    private string _timeMode = "all";
+    private DateTime? _dateFrom;
+    private DateTime? _dateTo;
+    private double? _zoomMin;
+    private double? _zoomMax;
+    private readonly HashSet<string> _hiddenMeasures = new(StringComparer.Ordinal);
+    private IJSObjectReference? _interactions;
+    private DotNetObjectReference<MonitoringReportChart>? _self;
+
+    private bool IsDateAxis => Data.Points.Count > 0 &&
+        DateTime.TryParseExact(Data.Points[0].Label, "yyyy/MM/dd HH:mm", CultureInfo.InvariantCulture,
+            DateTimeStyles.None, out _);
+    private bool IsBarChart => Data.ChartType is "bar" or "stacked";
+    private bool IsRadialChart => Data.ChartType is "pie" or "doughnut" or "treemap" or "spider" or "gauge";
+    // A bubble is one (comparison key, numeric measure) sample. Color is the measure
+    // identity; radius is its magnitude. Keep size scaling consistent across series.
+    private double BubbleRadius(double? size)
+    {
+        var max = Data.Points.SelectMany(p => p.Measures)
+            .Where(v => v.HasValue).Select(v => Math.Abs(v!.Value)).DefaultIfEmpty(0).Max();
+        return max <= 0 ? 4.5 : 3.5 + 10 * Math.Sqrt(Math.Abs(size ?? 0) / max);
+    }
+    private double BubbleOffset(int measureIndex) =>
+        (measureIndex - (Data.MeasureNames.Count - 1) / 2d) * Math.Min(6, 17d / Math.Max(1, Data.MeasureNames.Count));
+    private double StackedBarWidth => Math.Max(1, Math.Min(46, BarStep * .70));
+
+    private IReadOnlyList<MonitoringChartPoint> DateFilteredPoints
+    {
+        get
+        {
+            IEnumerable<MonitoringChartPoint> points = Data.Points;
+            if (Data.Points.Count == 0) return [];
+            if (IsDateAxis)
+            {
+                var last = Data.Points[^1].AxisValue;
+                if (_timeMode == "24h") points = points.Where(x => x.AxisValue >= last - TimeSpan.FromHours(24).Ticks);
+                if (_timeMode == "7d") points = points.Where(x => x.AxisValue >= last - TimeSpan.FromDays(7).Ticks);
+                if (_timeMode == "14d") points = points.Where(x => x.AxisValue >= last - TimeSpan.FromDays(14).Ticks);
+                if (_timeMode == "custom")
+                {
+                    if (_dateFrom is { } from)
+                        points = points.Where(x => x.AxisValue >= from.Date.Ticks);
+                    if (_dateTo is { } to)
+                        points = points.Where(x => x.AxisValue < to.Date.AddDays(1).Ticks);
+                }
+            }
+            else
+            {
+                if (_timeMode == "last20") points = Data.Points.TakeLast(20);
+                if (_timeMode == "last50") points = Data.Points.TakeLast(50);
+            }
+            return points.ToArray();
+        }
+    }
+
+    private MonitoringChartData ExpandedData
+    {
+        get
+        {
+            var points = DateFilteredPoints;
+            if (_zoomMin.HasValue && _zoomMax.HasValue)
+            {
+                points = points.Where(p => p.AxisValue >= _zoomMin && p.AxisValue <= _zoomMax).ToArray();
+                // Keep the chart mounted even if a narrow continuous interval falls
+                // between samples; wheel-down must always remain accessible.
+                if (points.Count == 0 && DateFilteredPoints.Count > 0)
+                {
+                    var center = (_zoomMin.Value + _zoomMax.Value) / 2;
+                    points = DateFilteredPoints.OrderBy(p => Math.Abs(p.AxisValue - center)).Take(1).ToArray();
+                }
+            }
+            var indexes = Enumerable.Range(0, Data.MeasureNames.Count)
+                .Where(i => !_hiddenMeasures.Contains(Data.MeasureNames[i])).ToArray();
+            return Data with
+            {
+                MeasureNames = indexes.Select(i => Data.MeasureNames[i]).ToArray(),
+                Points = points.Select(p => new MonitoringChartPoint(p.Label, p.AxisValue,
+                    indexes.Select(i => i < p.Measures.Count ? p.Measures[i] : null).ToArray())).ToArray()
+            };
+        }
+    }
+
+    private void OpenExpanded()
+    {
+        ResetView();
+        _expanded = true;
+    }
+    private void ResetView()
+    {
+        _timeMode = "all";
+        _dateFrom = _dateTo = null;
+        _hiddenMeasures.Clear();
+        _showGrid = true;
+        ResetZoom();
+    }
+    private void CloseExpanded() => _expanded = false;
+    private void ChangeTimeMode(ChangeEventArgs e)
+    {
+        _timeMode = e.Value?.ToString() ?? "all";
+        ResetZoom();
+    }
+    private void ChangeDateFrom(DateTime? date)
+    {
+        _dateFrom = date?.Date;
+        ResetZoom();
+    }
+    private void ChangeDateTo(DateTime? date)
+    {
+        _dateTo = date?.Date;
+        ResetZoom();
+    }
+    private void ToggleMeasure(string name, bool visible)
+    {
+        if (visible) _hiddenMeasures.Remove(name);
+        else if (_hiddenMeasures.Count < Data.MeasureNames.Count - 1) _hiddenMeasures.Add(name);
+    }
+    private void ResetZoom() { _zoomMin = null; _zoomMax = null; }
+    private Task HandleRangeSelected((double From, double To) range)
+    {
+        var points = ExpandedData.Points;
+        if (points.Count < 2 || range.To - range.From < .02) return Task.CompletedTask;
+        if (IsBarChart)
+        {
+            var lower = Math.Clamp((int)Math.Floor(range.From * points.Count), 0, points.Count - 1);
+            var upper = Math.Clamp((int)Math.Ceiling(range.To * points.Count) - 1, lower, points.Count - 1);
+            if (lower == upper) return Task.CompletedTask;
+            _zoomMin = points[lower].AxisValue;
+            _zoomMax = points[upper].AxisValue;
+        }
+        else
+        {
+            var min = points[0].AxisValue;
+            var max = points[^1].AxisValue;
+            var from = min + (max - min) * range.From;
+            var to = min + (max - min) * range.To;
+            var selection = points.Where(p => p.AxisValue >= from && p.AxisValue <= to).ToArray();
+            if (selection.Length < 2) return Task.CompletedTask;
+            _zoomMin = selection[0].AxisValue;
+            _zoomMax = selection[^1].AxisValue;
+        }
+        return Task.CompletedTask;
+    }
+
+    // Zoom around the mouse's X-axis position, clamped to the currently
+    // selected date/range filter. Wheel zoom does not change any other filters.
+    private Task HandleWheelZoom((double Anchor, double Factor) zoom)
+    {
+        var available = DateFilteredPoints;
+        if (available.Count < 2) return Task.CompletedTask;
+        var domainMin = available[0].AxisValue;
+        var domainMax = available[^1].AxisValue;
+        var domainSpan = domainMax - domainMin;
+        if (domainSpan <= 0) return Task.CompletedTask;
+
+        // The continuous zoom bounds, NOT the surviving points, are the source of
+        // truth. A maximum zoom can contain one/zero points; wheel-down must still
+        // be able to expand back out from that state.
+        var currentMin = _zoomMin ?? domainMin;
+        var currentMax = _zoomMax ?? domainMax;
+        var span = Math.Clamp(currentMax - currentMin, 0, domainSpan);
+        var minimumGap = available.Zip(available.Skip(1), (a, b) => b.AxisValue - a.AxisValue)
+            .Where(d => d > 0).DefaultIfEmpty(domainSpan).Min();
+        var minimumSpan = Math.Min(domainSpan, minimumGap * 1.01);
+        var newSpan = Math.Clamp(span * zoom.Factor, minimumSpan, domainSpan);
+        if (newSpan >= domainSpan * .99999)
+        {
+            ResetZoom();
+            return Task.CompletedTask;
+        }
+
+        var fraction = Math.Clamp(zoom.Anchor, 0, 1);
+        var anchorAxis = currentMin + span * fraction;
+        var newMin = Math.Clamp(anchorAxis - fraction * newSpan, domainMin, domainMax - newSpan);
+        _zoomMin = newMin;
+        _zoomMax = newMin + newSpan;
+        return Task.CompletedTask;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if ((!IsExpandedView && !DashboardMode) || Data.Points.Count == 0) return;
+        try
+        {
+            _interactions ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/monitor-chart-interactions.js?v=2.20");
+            if (DashboardMode && !IsExpandedView)
+            {
+                // The SVG's *viewBox* follows the resized card's physical aspect ratio.
+                // This fills wide/short plots without clipping or stretching labels.
+                if (!IsRadialChart)
+                {
+                    var size = await _interactions.InvokeAsync<ChartDimensions>("measureDashboardDimensions", _svgId);
+                    if (size is not null && size.Width > 0 && size.Height > 0 &&
+                        (Math.Abs(size.ViewBoxWidth - _svgWidth) > 3 ||
+                         Math.Abs(size.Width - _plotWidthPx) > 3 || Math.Abs(size.Height - _plotHeightPx) > 3))
+                    {
+                        _svgWidth = size.ViewBoxWidth;
+                        _plotWidthPx = size.Width;
+                        _plotHeightPx = size.Height;
+                        await InvokeAsync(StateHasChanged);
+                    }
+                }
+                return;
+            }
+            _self ??= DotNetObjectReference.Create(this);
+            if (!IsRadialChart)
+            {
+                var width = await _interactions.InvokeAsync<double>("measureCanvas", _svgId);
+                if (width > 320 && Math.Abs(width - _svgWidth) > 8)
+                {
+                    _svgWidth = width;
+                    await InvokeAsync(StateHasChanged);
+                    return;
+                }
+            }
+            if (IsExpandedView && !IsRadialChart)
+            {
+                var size = await _interactions.InvokeAsync<ChartDimensions>("measureDashboardDimensions", _svgId);
+                if (size is not null && size.Height > 0 && Math.Abs(size.Height - _plotHeightPx) > 3)
+                {
+                    _plotHeightPx = size.Height;
+                    await InvokeAsync(StateHasChanged);
+                    return;
+                }
+            }
+            if (IsRadialChart)
+            {
+                await _interactions.InvokeVoidAsync("attachRadial", _svgId);
+                return;
+            }
+            await _interactions.InvokeVoidAsync("attach", _svgId,
+                Data.Points.Select(p => new { label = JalaliDate.AxisLabel(p.Label), axis = p.AxisValue, values = p.Measures }).ToArray(),
+                Data.MeasureNames.ToArray(), _self);
+        }
+        catch (JSDisconnectedException) { }
+    }
+
+    [JSInvokable]
+    public async Task OnChartRangeSelected(double from, double to) =>
+        await RangeSelected.InvokeAsync((from, to));
+
+    [JSInvokable]
+    public async Task OnChartWheelZoom(double anchor, double factor) =>
+        await WheelZoomRequested.InvokeAsync((anchor, factor));
+
+    [JSInvokable]
+    public async Task OnChartDoubleClick() =>
+        await ZoomResetRequested.InvokeAsync();
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_interactions is not null)
+        {
+            try
+            {
+                await _interactions.InvokeVoidAsync("detach", _svgId);
+                await _interactions.DisposeAsync();
+            }
+            catch (JSDisconnectedException) { }
+        }
+        _self?.Dispose();
+    }
+
+    private sealed record ChartDimensions(double Width, double Height, double ViewBoxWidth);
+    private const double Left = 65, Top = 18, Bottom = 228;
+    private double _svgWidth = 640;
+    private double _plotWidthPx = 640;
+    private double _plotHeightPx = 285;
+    // Font size is expressed in SVG viewBox units so its physical size stays
+    // readable even when an extremely shallow or wide dashboard card changes scale.
+    // SVG text scales with its viewBox. Counter-scale its font by the actual
+    // plot height to keep tick labels around 11 CSS pixels in both the expanded
+    // explorer and a tiny/huge dashboard tile.
+    private double TickFontSize => Math.Clamp(11d * 285d / Math.Max(80, _plotHeightPx), 3.5, 38);
+    private string DisplayTick(string label)
+    {
+        var converted = JalaliDate.AxisLabel(label);
+        if (!DashboardMode || !IsDateAxis) return TickLabel(converted);
+        // Width-adaptive shortening is visual only, never used for filtering.
+        return _plotWidthPx < 390
+            ? converted.Length >= 10 ? converted.Substring(5, 5) : converted
+            : converted.Length > 11 ? converted.Substring(5) : converted;
+    }
+    private double Right => _svgWidth - 25;
+    private static readonly string[] Colors = ["#0896ab", "#d77f33", "#755ad0", "#2a9a72", "#d45167", "#437cbe", "#a38026", "#9c5c9d", "#4d9ca2", "#c65f3d", "#6572b1", "#639245"];
+    private IReadOnlyDictionary<string, string> OriginalPalette => Data.MeasureNames
+        .Select((name, index) => new { name, index })
+        .ToDictionary(x => x.name, x => SeriesColor(x.index), StringComparer.Ordinal);
+    private string SeriesColor(int series) => SeriesPalette is not null &&
+        series < Data.MeasureNames.Count && SeriesPalette.TryGetValue(Data.MeasureNames[series], out var color)
+            ? color : Colors[series % Colors.Length];
+    private double XMin => Data.Points.Count == 0 ? 0 : Data.Points[0].AxisValue;
+    private double XMax => Data.Points.Count == 0 ? 1 : Data.Points[^1].AxisValue;
+    private IEnumerable<double> AllValues => Data.Points.SelectMany(x => x.Measures).Where(x => x.HasValue).Select(x => x!.Value);
+    private double YMin => Data.ChartType == "bubble" ? Math.Min(0, Data.Points.Select(p => p.Measures.FirstOrDefault()).Where(v => v.HasValue).Select(v => v!.Value).DefaultIfEmpty(0).Min())
+        : Data.ChartType is "stacked" or "stackedarea"
+        ? Math.Min(0, Data.Points.Select(p => p.Measures.Where(v => v < 0).Sum(v => v ?? 0)).DefaultIfEmpty(0).Min())
+        : Math.Min(0, AllValues.DefaultIfEmpty(0).Min());
+    private double YMax
+    {
+        get
+        {
+            var max = Data.ChartType == "bubble"
+                ? Math.Max(0, Data.Points.Select(p => p.Measures.FirstOrDefault()).Where(v => v.HasValue).Select(v => v!.Value).DefaultIfEmpty(0).Max())
+                : Data.ChartType is "stacked" or "stackedarea"
+                ? Math.Max(0, Data.Points.Select(p => p.Measures.Where(v => v > 0).Sum(v => v ?? 0)).DefaultIfEmpty(0).Max())
+                : Math.Max(0, AllValues.DefaultIfEmpty(0).Max());
+            return max <= YMin ? YMin + 1 : max * 1.08;
+        }
+    }
+    private double PlotX(double x) => XMax == XMin ? (Left + Right) / 2 : Left + (x - XMin) / (XMax - XMin) * (Right - Left);
+    private double PlotY(double y) => Bottom - (y - YMin) / (YMax - YMin) * (Bottom - Top);
+    private double BarTickX(int index) => Left + (index + 0.5) * BarStep;
+    private double BarStep => (Right - Left) / Math.Max(Data.Points.Count, 1);
+    private double BarWidth => Math.Max(1, Math.Min(32, (BarStep * 0.78) / Math.Max(Data.MeasureNames.Count, 1)));
+    private double LollipopX(double axis, int measureIndex) => PlotX(axis) +
+        (measureIndex - (Data.MeasureNames.Count - 1) / 2d) * Math.Min(8, 18d / Math.Max(1, Data.MeasureNames.Count));
+    private double BarX(int pointIndex, int measureIndex) =>
+        Left + (pointIndex + 0.5) * BarStep - (Data.MeasureNames.Count * BarWidth / 2) + measureIndex * BarWidth;
+    private IEnumerable<int> TickIndexes
+    {
+        get
+        {
+            if (Data.Points.Count < 2) return Data.Points.Count == 1 ? [0] : [];
+            // Estimate readable labels from the *physical* plot width, not the
+            // viewBox width (which can be much larger on shallow cards).
+            var available = Math.Max(1, _plotWidthPx - 70);
+            var perLabel = IsDateAxis ? (_plotWidthPx < 390 ? 68 : 92) : 62;
+            var n = Math.Min(Data.Points.Count, Math.Clamp((int)(available / perLabel), 1, 6));
+            if (n == 1) return [Data.Points.Count / 2];
+            return Enumerable.Range(0, n)
+                .Select(i => (int)Math.Round((double)i * (Data.Points.Count - 1) / (n - 1)))
+                .Distinct();
+        }
+    }
+    private string LinePath(int measureIndex)
+    {
+        var path = new System.Text.StringBuilder();
+        var connected = false;
+        foreach (var point in Data.Points)
+        {
+            if (measureIndex >= point.Measures.Count || point.Measures[measureIndex] is not double value)
+            { connected = false; continue; }
+            path.Append(connected ? " L " : " M ");
+            path.Append(PlotX(point.AxisValue).ToString("F2", CultureInfo.InvariantCulture));
+            path.Append(' ');
+            path.Append(PlotY(value).ToString("F2", CultureInfo.InvariantCulture));
+            connected = true;
+        }
+        return path.ToString();
+    }
+    // Monotone-ish cubic interpolation for smooth trend lines. The control
+    // handles are bounded to the segment so irregular timestamps cannot loop.
+    private string SmoothPath(int measureIndex)
+    {
+        var path = new System.Text.StringBuilder();
+        var points = new List<(double X, double Y)>();
+        void Flush()
+        {
+            if (points.Count == 0) return;
+            path.Append(" M ").Append(F(points[0].X)).Append(' ').Append(F(points[0].Y));
+            for (var i = 1; i < points.Count; i++)
+            {
+                var before = points[Math.Max(0, i - 2)];
+                var start = points[i - 1];
+                var end = points[i];
+                var after = points[Math.Min(points.Count - 1, i + 1)];
+                var dx = (end.X - start.X) / 3d;
+                var slope1 = (end.Y - before.Y) / Math.Max(.001, end.X - before.X);
+                var slope2 = (after.Y - start.Y) / Math.Max(.001, after.X - start.X);
+                path.Append(" C ").Append(F(start.X + dx)).Append(' ').Append(F(start.Y + slope1 * dx))
+                    .Append(' ').Append(F(end.X - dx)).Append(' ').Append(F(end.Y - slope2 * dx))
+                    .Append(' ').Append(F(end.X)).Append(' ').Append(F(end.Y));
+            }
+            points.Clear();
+        }
+        foreach (var point in Data.Points)
+        {
+            if (measureIndex >= point.Measures.Count || point.Measures[measureIndex] is not double value)
+            { Flush(); continue; }
+            points.Add((PlotX(point.AxisValue), PlotY(value)));
+        }
+        Flush();
+        return path.ToString();
+    }
+    private static string F(double value) => value.ToString("F2", CultureInfo.InvariantCulture);
+
+    // Stack positive and negative series independently, including each band's
+    // lower boundary, rather than overlapping filled areas at Y=0.
+    private string StackedAreaPath(int measureIndex)
+    {
+        var path = new System.Text.StringBuilder();
+        var lower = new List<(double X, double Y)>();
+        var upper = new List<(double X, double Y)>();
+        void Flush()
+        {
+            if (lower.Count == 0) return;
+            path.Append(" M ").Append(F(lower[0].X)).Append(' ').Append(F(lower[0].Y));
+            foreach (var pt in upper) path.Append(" L ").Append(F(pt.X)).Append(' ').Append(F(pt.Y));
+            for (var i = lower.Count - 1; i >= 0; i--)
+                path.Append(" L ").Append(F(lower[i].X)).Append(' ').Append(F(lower[i].Y));
+            path.Append(" Z ");
+            lower.Clear(); upper.Clear();
+        }
+        foreach (var point in Data.Points)
+        {
+            if (measureIndex >= point.Measures.Count || point.Measures[measureIndex] is not double value)
+            { Flush(); continue; }
+            var stacked = 0d;
+            for (var m = 0; m < measureIndex; m++)
+            {
+                if (m < point.Measures.Count && point.Measures[m] is double previous &&
+                    (previous >= 0) == (value >= 0)) stacked += previous;
+            }
+            var x = PlotX(point.AxisValue);
+            lower.Add((x, PlotY(stacked)));
+            upper.Add((x, PlotY(stacked + value)));
+        }
+        Flush();
+        return path.ToString();
+    }
+
+    private string StepPath(int measureIndex)
+    {
+        var path = new System.Text.StringBuilder();
+        double? previousY = null;
+        foreach (var point in Data.Points)
+        {
+            if (measureIndex >= point.Measures.Count || point.Measures[measureIndex] is not double value)
+            { previousY = null; continue; }
+            var x = PlotX(point.AxisValue).ToString("F2", CultureInfo.InvariantCulture);
+            var y = PlotY(value).ToString("F2", CultureInfo.InvariantCulture);
+            if (previousY.HasValue)
+                path.Append(" L ").Append(x).Append(' ')
+                    .Append(previousY.Value.ToString("F2", CultureInfo.InvariantCulture));
+            path.Append(previousY.HasValue ? " L " : " M ").Append(x).Append(' ').Append(y);
+            previousY = PlotY(value);
+        }
+        return path.ToString();
+    }
+    private string AreaPath(int measureIndex)
+    {
+        var path = new System.Text.StringBuilder();
+        var segment = new List<(double X, double Y)>();
+        void Finish()
+        {
+            if (segment.Count == 0) return;
+            var baseline = PlotY(0).ToString("F2", CultureInfo.InvariantCulture);
+            path.Append(" M ").Append(segment[0].X.ToString("F2", CultureInfo.InvariantCulture)).Append(' ').Append(baseline);
+            foreach (var point in segment)
+                path.Append(" L ").Append(point.X.ToString("F2", CultureInfo.InvariantCulture))
+                    .Append(' ').Append(point.Y.ToString("F2", CultureInfo.InvariantCulture));
+            path.Append(" L ").Append(segment[^1].X.ToString("F2", CultureInfo.InvariantCulture))
+                .Append(' ').Append(baseline).Append(" Z ");
+            segment.Clear();
+        }
+        foreach (var point in Data.Points)
+        {
+            if (measureIndex >= point.Measures.Count || point.Measures[measureIndex] is not double value)
+            { Finish(); continue; }
+            segment.Add((PlotX(point.AxisValue), PlotY(value)));
+        }
+        Finish();
+        return path.ToString();
+    }
+    private static string ChartLabel(string chart) => chart switch
+    {
+        "bar" => "ستونی", "scatter" => "پراکندگی", "area" => "ناحیه‌ای",
+        "step" => "پله‌ای", "stacked" => "ستونی انباشته", "smooth" => "منحنی نرم",
+        "lollipop" => "میله نقطه‌ای", "stackedarea" => "ناحیه‌ای انباشته",
+        "pie" => "دایره‌ای", "doughnut" => "حلقه‌ای", "treemap" => "نقشه درختی",
+        "spider" => "عنکبوتی", "bubble" => "حبابی", "gauge" => "عقربه‌ای", _ => "خطی"
+    };
+    private static string ShortNumber(double x) => Math.Abs(x) >= 1_000_000
+        ? (x / 1_000_000).ToString("0.#", CultureInfo.InvariantCulture) + "M"
+        : Math.Abs(x) >= 1_000 ? (x / 1_000).ToString("0.#", CultureInfo.InvariantCulture) + "K"
+        : x.ToString("0.##", CultureInfo.InvariantCulture);
+    private static string TickLabel(string label) => label.Length > 16
+        ? label[(label.Length - 16)..] : label;
+}

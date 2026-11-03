@@ -1,0 +1,434 @@
+@using System.Globalization
+@using NTSW_CENOPS.Components.Common.Dates
+@using System.Reflection
+@using NTSW_CENOPS.Components.DataTable.Models
+@typeparam T
+@inject IJSRuntime JS
+
+<div class="filter-wrapper">
+    <button type="button"
+            class="text-button flex gap-2 items-center small-button filter-trigger @(AppliedFilterCount > 0 ? "filter-trigger--active" : string.Empty)"
+            title="فیلتر"
+            aria-label="فیلتر"
+            @ref="_filterTrigger"
+            aria-expanded="@_isOpen"
+            @onclick="ToggleFilterPanel">
+        <div class="icon flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                 stroke="currentColor" class="size-4">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 0 1-.659 1.591l-5.432 5.432a2.25 2.25 0 0 0-.659 1.591v2.927a2.25 2.25 0 0 1-1.244 2.012L9.75 21v-6.568a2.25 2.25 0 0 0-.659-1.591L3.659 7.409A2.25 2.25 0 0 1 3 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0 1 12 3Z" />
+            </svg>
+        </div>
+        <div class="text">فیلتر</div>
+        @if (AppliedFilterCount > 0)
+        {
+            <span class="filter-count" aria-label="تعداد فیلترهای فعال">@AppliedFilterCount</span>
+        }
+    </button>
+
+    @if (_isOpen)
+    {
+        <button type="button"
+                class="filter-backdrop"
+                aria-label="بستن فیلترها"
+                @onclick="CloseFilterPanel"></button>
+
+        <div class="filter-panel" dir="rtl" role="dialog" aria-label="فیلتر جدول" style="@PanelPositionStyle" @onclick:stopPropagation="true">
+            <div class="filter-panel-heading"><div class="filter-panel-symbol" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg></div><div><strong>فیلتر پیشرفته</strong><small>نتایج جدول را دقیق‌تر پیدا کنید</small></div></div>
+            <div class="filter-rows">
+                @for (var i = 0; i < _filters.Count; i++)
+                {
+                    var index = i;
+                    var filter = _filters[index];
+
+                    <div class="filter-row">
+                        <div class="filter-field column-field">
+                            <label>ستون</label>
+                            <div class="control-with-actions">
+                                <select value="@filter.PropertyName"
+                                        @onchange="e => ColumnChanged(index, e)">
+                                    <option value="">انتخاب ستون</option>
+                                    @foreach (var column in GetAvailableColumns(index))
+                                    {
+                                        <option value="@column.PropertyName">@column.Title</option>
+                                    }
+                                </select>
+
+                                <span class="select-chevron" aria-hidden="true">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8"
+                                         stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6" />
+                                    </svg>
+                                </span>
+
+                                @if (!string.IsNullOrWhiteSpace(filter.PropertyName))
+                                {
+                                    <button type="button"
+                                            class="clear-control"
+                                            title="پاک کردن ستون"
+                                            aria-label="پاک کردن ستون"
+                                            @onclick="() => ClearColumn(index)">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.7"
+                                             stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="filter-field value-field">
+                            <label class="value-label">مقدار</label>
+
+                            @if (IsBooleanColumn(filter.PropertyName))
+                            {
+                                <div class="control-with-actions">
+                                    <select @bind="filter.Value" disabled="@string.IsNullOrWhiteSpace(filter.PropertyName)">
+                                        <option value="">انتخاب مقدار</option>
+                                        <option value="true">بله</option>
+                                        <option value="false">خیر</option>
+                                    </select>
+
+                                    <span class="select-chevron" aria-hidden="true">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8"
+                                             stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6" />
+                                        </svg>
+                                    </span>
+
+                                    @if (!string.IsNullOrWhiteSpace(filter.Value))
+                                    {
+                                        <button type="button"
+                                                class="clear-control"
+                                                title="پاک کردن مقدار"
+                                                aria-label="پاک کردن مقدار"
+                                                @onclick="() => ClearValue(index)">
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.7"
+                                                 stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                    }
+                                </div>
+                            }
+                            else if (IsDateColumn(filter.PropertyName))
+                            {
+                                <div class="control-with-actions">
+                                    <AppJalaliDatePicker Value="ParseDateFilter(filter.Value)"
+                                        ValueChanged="date => ChangeDateFilter(filter, date)"
+                                        AriaLabel="@GetValuePlaceholder(filter.PropertyName)" />
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="control-with-actions">
+                                    <input type="@GetInputType(filter.PropertyName)"
+                                           placeholder="@GetValuePlaceholder(filter.PropertyName)"
+                                           disabled="@string.IsNullOrWhiteSpace(filter.PropertyName)"
+                                           @bind="filter.Value"
+                                           @bind:event="oninput" />
+
+                                    @if (!string.IsNullOrWhiteSpace(filter.Value))
+                                    {
+                                        <button type="button"
+                                                class="clear-control"
+                                                title="پاک کردن مقدار"
+                                                aria-label="پاک کردن مقدار"
+                                                @onclick="() => ClearValue(index)">
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.7"
+                                                 stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                    }
+                                </div>
+                            }
+                        </div>
+
+                        <button type="button"
+                                class="remove-filter"
+                                hidden="@(_filters.Count <= 1)"
+                                title="حذف این فیلتر"
+                                aria-label="حذف این فیلتر"
+                                @onclick="() => RemoveFilter(index)">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                                 stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14" />
+                            </svg>
+                        </button>
+                    </div>
+                }
+            </div>
+
+            <button type="button" class="add-filter" disabled="@(!CanAddFilter)" @onclick="AddFilter">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.7"
+                     stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                <span>افزودن فیلتر جدید</span>
+            </button>
+
+            <div class="filter-actions">
+                <button type="button" class="apply-button" disabled="@(!CanApply)" @onclick="ApplyFilters">اعمال</button>
+                <button type="button" class="clear-filters" @onclick="ClearFilters">حذف فیلترها</button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public IReadOnlyList<ColumnDefinition<T>> Columns { get; set; } = Array.Empty<ColumnDefinition<T>>();
+
+    [Parameter]
+    public IReadOnlyList<FilterDefinition> Filters { get; set; } = Array.Empty<FilterDefinition>();
+
+    [Parameter]
+    public EventCallback<List<FilterDefinition>> FiltersChanged { get; set; }
+
+    private readonly List<FilterDefinition> _filters = new();
+    // The empty placeholder row is deliberately ignored; a chosen column
+    // without a value is not a valid filter and must never be submitted.
+    private bool CanApply =>
+        _filters.Any(x => !string.IsNullOrWhiteSpace(x.PropertyName) && !string.IsNullOrWhiteSpace(x.Value)) &&
+        !_filters.Any(x => !string.IsNullOrWhiteSpace(x.PropertyName) && string.IsNullOrWhiteSpace(x.Value));
+
+    private bool CanAddFilter => _filters.Count <
+        Columns.Select(x => x.PropertyName).Distinct(StringComparer.OrdinalIgnoreCase).Count();
+
+    // A column is unique across rows, but remains available in its own row.
+    private IEnumerable<ColumnDefinition<T>> GetAvailableColumns(int rowIndex)
+    {
+        var selectedInOtherRows = _filters
+            .Where((_, index) => index != rowIndex)
+            .Select(x => x.PropertyName)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        return Columns.Where(x => !selectedInOtherRows.Contains(x.PropertyName));
+    }
+    private int AppliedFilterCount => Filters.Count(x =>
+        !string.IsNullOrWhiteSpace(x.PropertyName) && !string.IsNullOrWhiteSpace(x.Value));
+    private string _lastExternalFiltersSignature = string.Empty;
+    private bool _isOpen;
+    private ElementReference _filterTrigger;
+    private int _panelLeft;
+    private int _panelTop;
+    private int _panelMaxHeight = 560;
+    private string PanelPositionStyle => $"left:{_panelLeft}px; top:{_panelTop}px; max-height:{_panelMaxHeight}px;";
+
+    public sealed class PopupPosition
+    {
+        public int Left { get; set; }
+        public int Top { get; set; }
+        public int MaxHeight { get; set; }
+    }
+
+    protected override void OnParametersSet()
+    {
+        var signature = BuildSignature(Filters);
+        if (signature == _lastExternalFiltersSignature)
+            return;
+
+        _filters.Clear();
+        _filters.AddRange(Filters.Select(x => new FilterDefinition
+        {
+            PropertyName = x.PropertyName,
+            Value = x.Value
+        }));
+
+        _lastExternalFiltersSignature = signature;
+    }
+
+    private async Task ToggleFilterPanel()
+    {
+        if (_isOpen)
+        {
+            _isOpen = false;
+            return;
+        }
+
+        // Position relative to the viewport. This keeps the popover out of
+        // the table/toolbar stacking and scrolling contexts.
+        var position = await JS.InvokeAsync<PopupPosition>("cenopsUI.getFilterPosition", _filterTrigger);
+        _panelLeft = position.Left;
+        _panelTop = position.Top;
+        _panelMaxHeight = position.MaxHeight;
+        _isOpen = true;
+
+        if (_filters.Count == 0)
+            AddFilter();
+    }
+
+    private void CloseFilterPanel()
+    {
+        _isOpen = false;
+        _filters.Clear();
+        _filters.AddRange(Filters.Select(x => new FilterDefinition
+        {
+            PropertyName = x.PropertyName,
+            Value = x.Value
+        }));
+    }
+
+    private void AddFilter()
+    {
+        if (CanAddFilter)
+            _filters.Add(new FilterDefinition());
+    }
+
+    private void RemoveFilter(int index)
+    {
+        if (index < 0 || index >= _filters.Count)
+            return;
+
+        _filters.RemoveAt(index);
+    }
+
+    private void ColumnChanged(int index, ChangeEventArgs args)
+    {
+        if (index < 0 || index >= _filters.Count)
+            return;
+
+        var propertyName = args.Value?.ToString() ?? "";
+        if (!string.IsNullOrEmpty(propertyName) &&
+            !GetAvailableColumns(index).Any(x =>
+                string.Equals(x.PropertyName, propertyName, StringComparison.OrdinalIgnoreCase)))
+            return;
+
+        _filters[index].PropertyName = propertyName;
+        _filters[index].Value = "";
+    }
+
+    private void ClearColumn(int index)
+    {
+        if (index < 0 || index >= _filters.Count)
+            return;
+
+        _filters[index].PropertyName = "";
+        _filters[index].Value = "";
+    }
+
+    private void ClearValue(int index)
+    {
+        if (index < 0 || index >= _filters.Count)
+            return;
+
+        _filters[index].Value = "";
+    }
+
+    private async Task ApplyFilters()
+    {
+        if (!CanApply)
+            return;
+
+        await FiltersChanged.InvokeAsync(BuildResult());
+        _isOpen = false;
+    }
+
+    private async Task ClearFilters()
+    {
+        _filters.Clear();
+        await FiltersChanged.InvokeAsync(new List<FilterDefinition>());
+        _isOpen = false;
+    }
+
+    private List<FilterDefinition> BuildResult()
+    {
+        return _filters
+            .Where(x => !string.IsNullOrWhiteSpace(x.PropertyName) && !string.IsNullOrWhiteSpace(x.Value))
+            .Select(x => new FilterDefinition
+            {
+                PropertyName = x.PropertyName,
+                Value = x.Value
+            })
+            .ToList();
+    }
+
+    private static string BuildSignature(IEnumerable<FilterDefinition> filters)
+    {
+        return string.Join(
+            "\u001e",
+            filters.Select(x => $"{x.PropertyName}\u001f{x.Value}"));
+    }
+
+    private ColumnDefinition<T>? GetColumn(string propertyName)
+    {
+        if (string.IsNullOrWhiteSpace(propertyName))
+            return null;
+
+        return Columns.FirstOrDefault(x => x.PropertyName == propertyName);
+    }
+
+    private Type? GetPropertyType(string propertyName)
+    {
+        if (string.IsNullOrWhiteSpace(propertyName))
+            return null;
+
+        var property = typeof(T).GetProperty(
+            propertyName,
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase);
+
+        return property is null
+            ? null
+            : Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
+    }
+
+    private bool IsDateColumn(string propertyName) => GetPropertyType(propertyName) is { } type &&
+        (type == typeof(DateOnly) || type == typeof(DateTime) || type == typeof(DateTimeOffset));
+    private static DateTime? ParseDateFilter(string? raw) =>
+        DateTime.TryParseExact(raw, "yyyy-MM-dd", CultureInfo.InvariantCulture,
+            DateTimeStyles.None, out var date) ? date : null;
+    private static void ChangeDateFilter(FilterDefinition filter, DateTime? date) =>
+        filter.Value = date?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? "";
+
+    private bool IsBooleanColumn(string propertyName)
+    {
+        var column = GetColumn(propertyName);
+        var propertyType = GetPropertyType(propertyName);
+
+        return column?.Type is ColumnType.Checkbox or ColumnType.Radio || propertyType == typeof(bool);
+    }
+
+    private string GetInputType(string propertyName)
+    {
+        var column = GetColumn(propertyName);
+        var propertyType = GetPropertyType(propertyName);
+
+        if (column?.Type == ColumnType.Number || IsNumericType(propertyType))
+            return "number";
+
+        if (propertyType == typeof(DateOnly) || propertyType == typeof(DateTime))
+            return "date";
+
+        if (propertyType == typeof(TimeOnly))
+            return "time";
+
+        return "text";
+    }
+
+    private string GetValuePlaceholder(string propertyName)
+    {
+        var column = GetColumn(propertyName);
+
+        return column is null
+            ? "ابتدا ستون را انتخاب کنید"
+            : $"مقدار {column.Title}";
+    }
+
+    private static bool IsNumericType(Type? type)
+    {
+        return type == typeof(byte) ||
+               type == typeof(sbyte) ||
+               type == typeof(short) ||
+               type == typeof(ushort) ||
+               type == typeof(int) ||
+               type == typeof(uint) ||
+               type == typeof(long) ||
+               type == typeof(ulong) ||
+               type == typeof(float) ||
+               type == typeof(double) ||
+               type == typeof(decimal);
+    }
+}

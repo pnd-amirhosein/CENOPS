@@ -1,0 +1,189 @@
+@using System.Security.Claims
+@using NTSW_CENOPS.Application.Dashboards
+@inject IDashboardContentService Catalog
+@implements IDisposable
+
+<div class="dcp-backdrop" dir="rtl" role="presentation" @onclick="RequestCloseAsync">
+    <section class="dcp-modal" role="dialog" aria-modal="true" aria-labelledby="dcp-title" @onclick="DismissSelectionPreview" @onclick:stopPropagation="true">
+        @* Used by the global Escape handler even if the current focus is outside the picker. *@
+        <button type="button" class="dcp-escape-trigger" data-dcp-escape-action @onclick="HandleEscapeAsync" tabindex="-1" aria-hidden="true"></button>
+        <header class="dcp-header">
+            <div><span class="dcp-eyebrow">DASHBOARD / CONTENT LIBRARY</span><h2 id="dcp-title">افزودن محتوا به @(TargetGlobal ? "داشبورد عمومی" : "داشبورد انتخابی")</h2>
+                <p>موارد موردنظر را از کتابخانه انتخاب کنید. جستجو داخل متن، کد و جزئیات محتوا را هم بررسی می‌کند.</p></div>
+            <button type="button" class="dcp-close modal-esc-key" @onclick="RequestCloseAsync" title="بستن (Esc)" aria-label="بستن پنجره">ESC</button>
+        </header>
+        <DashboardContentBrowser Actor="Actor" Selected="_selected" GlobalItems="@(TargetGlobal ? [] : GlobalItems)" PublicOnly="TargetGlobal" OnToggle="ToggleFromBrowser" OnPreview="ShowCardPreviewAsync" />
+        <footer class="dcp-footer">
+            @if (_actionError is not null) { <div class="dcp-action-error" role="alert">@_actionError</div> }
+            <div class="dcp-footer-preview" @onclick:stopPropagation="true">
+                <button type="button" class="dcp-preview-button" aria-expanded="@_previewOpen" @onclick="ToggleSelectionPreview">
+                    پیش‌نمایش انتخاب‌ها <span class="dcp-count">@_selected.Count</span>
+                </button>
+                @if (_previewOpen)
+                {
+                    <div class="dcp-preview-popover cenops-liquid-glass" role="region" aria-label="موارد انتخاب‌شده">
+                        <strong>انتخاب‌های شما (@_selected.Count)</strong>
+                        @if (_selected.Count == 0) { <p>هنوز چیزی انتخاب نشده است.</p> }
+                        @foreach (var item in _selected)
+                        {
+                            <div @key="(item.Type, item.Id)" class="dcp-preview-row">
+                                <span class="dcp-preview-category">@Label(item.Type)</span>
+                                <span title="@item.Title">@item.Title</span>
+                                <button type="button" aria-label="حذف @item.Title از انتخاب‌ها" @onclick="() => Remove(item)">×</button>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+            <div class="dcp-footer-actions">
+                <button type="button" class="dcp-btn" @onclick="RequestCloseAsync">انصراف</button>
+                <button type="button" class="dcp-btn @(TargetGlobal ? "dcp-global-add" : "dcp-personal-add")"
+                        disabled="@(!HasUnsavedSelections || _submitting || _initializationFailed)" @onclick="SubmitAsync">اعمال انتخاب‌ها (@_selected.Count)</button>
+            </div>
+        </footer>
+        @if (_detailItem is not null)
+        {
+            <DashboardContentPreview Item="_detailItem" Actor="Actor" OnClose="CloseCardPreview"
+                                     CanSelect="@(!IsGlobal(_detailItem))" IsSelected="@(IsGlobal(_detailItem) || SelectionIndex(_detailItem) > 0)"
+                                     OnToggleSelection="SelectFromDetail" />
+        }
+        @if (_confirmClose)
+        {
+            <div class="dcp-overlay dcp-confirm-backdrop" @onclick="KeepPicking">
+                <section class="dcp-confirm-modal" role="alertdialog" aria-modal="true" aria-labelledby="dcp-confirm-title" aria-describedby="dcp-confirm-desc" @onclick:stopPropagation="true">
+                    <div class="dcp-confirm-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 9v4m0 4h.01M10.1 3.9 2.8 17a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.9 3.9a2.2 2.2 0 0 0-3.8 0Z"/></svg>
+                    </div>
+                    <h3 id="dcp-confirm-title">انتخاب‌ها کنار گذاشته شوند؟</h3>
+                    <p id="dcp-confirm-desc">انتخاب‌های این پنجره تغییر کرده‌اند. با بستن آن، تغییرات اعمال‌نشده کنار گذاشته می‌شوند.</p>
+                    <div class="dcp-confirm-actions">
+                        <button type="button" class="dcp-btn" @onclick="KeepPicking">ادامه انتخاب</button>
+                        <button type="button" class="dcp-btn dcp-discard" @onclick="DiscardAndCloseAsync">بستن و حذف انتخاب‌ها</button>
+                    </div>
+                </section>
+            </div>
+        }
+    </section>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public ClaimsPrincipal Actor { get; set; } = new();
+    [Parameter] public bool TargetGlobal { get; set; }
+    [Parameter] public IReadOnlyList<DashboardContentReference> PersonalItems { get; set; } = [];
+    [Parameter] public IReadOnlyList<DashboardContentReference> GlobalItems { get; set; } = [];
+    [Parameter] public EventCallback<DashboardContentPickerResult> OnAdded { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private static readonly (string Key, string Label)[] Categories = DashboardContentBrowser.Categories;
+    private readonly List<DashboardContentItem> _selected = [];
+    private bool _previewOpen, _submitting, _confirmClose;
+    private string? _actionError;
+    private DashboardContentItem? _detailItem;
+
+    private bool _initializationFailed;
+    private readonly HashSet<string> _initialSelectionKeys = [];
+    private static string Key(string type, long id) => $"{type}:{id}";
+    private static string Key(DashboardContentItem item) => Key(item.Type, item.Id);
+    private bool IsGlobal(DashboardContentItem item) => !TargetGlobal && GlobalItems.Any(x => x.Type == item.Type && x.Id == item.Id);
+    private bool HasUnsavedSelections => !_initializationFailed && !_initialSelectionKeys.SetEquals(_selected.Select(Key));
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Preselect the actual editable personal layout, including cards outside current search results.
+        try
+        {
+            var existing = TargetGlobal ? GlobalItems : PersonalItems;
+            _selected.AddRange(await Catalog.ResolveAsync(existing, TargetGlobal, Actor));
+            _initialSelectionKeys.UnionWith(_selected.Select(Key));
+        }
+        catch (Exception)
+        {
+            _actionError = "بارگذاری انتخاب‌های قبلی ممکن نشد.";
+            // Don't allow silently overwriting an unknown selection set.
+            _initializationFailed = true;
+
+        }
+
+    }
+    private static string Label(string type) => DashboardSpecialCards.Titles.TryGetValue(type, out var title)
+        ? title : Categories.FirstOrDefault(x => x.Key == type).Label ?? type;
+    private int SelectionIndex(DashboardContentItem item) => _selected.FindIndex(x => x.Type == item.Type && x.Id == item.Id) + 1;
+    private void Toggle(DashboardContentItem item)
+    {
+        _actionError = null;
+        if (_initializationFailed || IsGlobal(item) ||
+            (TargetGlobal && !item.IsPublic && SelectionIndex(item) == 0)) return;
+        if (item.Type == "smart" && _selected.Count >= 60)
+        { _actionError = "هر بخش حداکثر ۶۰ کارت می‌تواند داشته باشد."; return; }
+        if (item.Type == "smart")
+        {
+            // A smart card is a reusable widget, not a singleton content record.
+            // Every instance gets a distinct identity and independent saved options/geometry.
+            var nextId = Math.Max(1L, _selected.Where(x => x.Type == "smart").Select(x => x.Id).DefaultIfEmpty(0).Max()) + 1;
+            _selected.Add(item with { Id = nextId });
+            return;
+        }
+        var position = SelectionIndex(item);
+        if (position > 0) _selected.RemoveAt(position - 1);
+        else if (_selected.Count < 60) _selected.Add(item);
+        else _actionError = "در هر بار حداکثر ۶۰ کارت قابل انتخاب است.";
+    }
+    private void ToggleSelectionPreview() => _previewOpen = !_previewOpen;
+    private void DismissSelectionPreview() => _previewOpen = false;
+    private void Remove(DashboardContentItem item)
+    {
+        if (IsGlobal(item)) return;
+        _selected.RemoveAll(x => x.Type == item.Type && x.Id == item.Id);
+        _actionError = null;
+    }
+
+    private Task ToggleFromBrowser(DashboardContentItem item) { Toggle(item); return Task.CompletedTask; }
+    private async Task SubmitAsync()
+    {
+        if (_initializationFailed || _submitting || !HasUnsavedSelections) return;
+        _submitting = true;
+        try
+        {
+            var items = _selected.ToList();
+            if (TargetGlobal && items.Any(x => !x.IsPublic && !_initialSelectionKeys.Contains(Key(x))))
+            {
+                _actionError = "فقط محتوای عمومی جدید را می‌توان افزود. کارت‌های قدیمیِ محدودشده حفظ می‌شوند.";
+                return;
+            }
+            await OnAdded.InvokeAsync(new DashboardContentPickerResult(TargetGlobal,
+                items.Select(x => new DashboardContentReference(x.Type, x.Id)).ToList()));
+        }
+        finally { _submitting = false; }
+    }
+    private Task RequestCloseAsync()
+    {
+        _previewOpen = false;
+        if (_submitting) return Task.CompletedTask;
+        if (HasUnsavedSelections) { _confirmClose = true; return Task.CompletedTask; }
+        return OnCancel.InvokeAsync();
+    }
+    private void KeepPicking() => _confirmClose = false;
+    private Task DiscardAndCloseAsync() => OnCancel.InvokeAsync();
+    private async Task HandleEscapeAsync()
+    {
+        if (_confirmClose) { KeepPicking(); return; }
+        if (_detailItem is not null) { CloseCardPreview(); return; }
+        if (_previewOpen) { _previewOpen = false; return; }
+        await RequestCloseAsync();
+    }
+    private Task ShowCardPreviewAsync(DashboardContentItem item)
+    {
+        _previewOpen = false;
+        _detailItem = item;
+        return Task.CompletedTask;
+    }
+    private void CloseCardPreview() => _detailItem = null;
+    private void SelectFromDetail()
+    {
+        if (_detailItem is null) return;
+        Toggle(_detailItem);
+    }
+    public void Dispose() { }
+}
+

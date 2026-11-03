@@ -1,0 +1,16 @@
+.source-file-viewer{display:flex;flex-direction:column;min-width:0;gap:10px}
+.source-file-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 13px;background:#102532;color:#e7f2f7;border-radius:10px 10px 0 0}
+.source-file-path{font:700 12px/1.5 Consolas,"Cascadia Code",monospace;direction:ltr;text-align:left;overflow-wrap:anywhere;flex:1}
+.source-file-stats{font-size:11px;color:#91a9b8;white-space:nowrap}
+.source-jump{font-size:11px;font-weight:700;line-height:1.4;color:#a6f6f2;border:1px solid #3e8490;border-radius:7px;background:#163b4a;padding:7px 10px;cursor:pointer;white-space:nowrap}
+.source-jump:hover{background:#225966}
+.source-file-caution{margin:0;font-size:11px;color:#946616;background:#fff5df;padding:9px 12px;border-radius:8px}
+.source-file-code{height:min(67vh,720px);min-height:280px;overflow:auto;background:#102532;color:#e4edf5;border:1px solid #214150;border-radius:0 0 10px 10px;scrollbar-color:#486778 #102532;direction:ltr}
+.source-file-line{display:flex;align-items:center;min-height:26px;height:26px;line-height:26px;white-space:pre;width:max-content;min-width:100%;font:12px/26px Consolas,"Cascadia Code",Tahoma,monospace;direction:ltr;text-align:left}
+.source-file-line:hover{background:#ffffff0a}
+.source-file-line.is-target{background:#2c687144;box-shadow:inset 3px 0 #28d3cc}
+.source-file-number{position:sticky;left:0;align-self:stretch;box-sizing:border-box;min-width:68px;width:68px;text-align:right;padding-right:14px;background:#193747;color:#8aa8b7;border-right:1px solid #315362;user-select:none;flex:none;z-index:1}
+.source-file-line.is-target .source-file-number{color:#7af3e6;background:#245766;font-weight:800}
+.source-file-text{display:inline-block;box-sizing:border-box;padding:0 18px;white-space:pre;font:inherit;unicode-bidi:plaintext;direction:ltr}
+.source-file-footer{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;color:var(--text-secondary,#80919d);font-size:10px}
+@media(max-width:620px){.source-file-code{height:60vh}.source-file-number{min-width:50px;width:50px;padding-right:8px}.source-file-line{font-size:11px}.source-file-text{padding:0 10px}}

@@ -1,0 +1,9 @@
+/* Scoped layout/animation; theme colors live in the global Glasswork CSS. */
+.app-tabs[b-wswa9l1g0v] { display:flex;align-items:center;justify-content:flex-start;gap:7px;width:max-content;max-width:100%;direction:rtl;padding:5px; }
+.app-tab[b-wswa9l1g0v] { display:inline-flex;align-items:center;justify-content:center;flex:0 0 46px;width:46px;min-width:0;height:46px;box-sizing:border-box;overflow:hidden;white-space:nowrap;cursor:pointer;gap:0;transition:width .3s cubic-bezier(.2,.85,.25,1),flex-basis .3s cubic-bezier(.2,.85,.25,1),background-color .2s,color .2s; }
+.app-tab-icon[b-wswa9l1g0v] { display:grid;place-items:center;flex:0 0 22px;width:22px;height:22px; }
+.app-tab-icon svg[b-wswa9l1g0v] { display:block;width:21px;height:21px;stroke:currentColor; }
+.app-tab-title[b-wswa9l1g0v] { display:block;max-width:0;opacity:0;overflow:hidden;white-space:nowrap;transform:translateX(-5px);transition:max-width .3s cubic-bezier(.2,.85,.25,1),opacity .18s,transform .3s; }
+.app-tab--active[b-wswa9l1g0v] { flex-basis:186px;width:186px;gap:10px; }
+.app-tab--active .app-tab-title[b-wswa9l1g0v] { max-width:140px;opacity:1;transform:translateX(0); }
+@media (prefers-reduced-motion:reduce) { .app-tab[b-wswa9l1g0v],.app-tab-title[b-wswa9l1g0v] {transition:none!important;} }

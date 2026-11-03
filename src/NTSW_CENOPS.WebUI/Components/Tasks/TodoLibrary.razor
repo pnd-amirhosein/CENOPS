@@ -1,0 +1,134 @@
+@using System.Security.Claims
+@using NTSW_CENOPS.Application.Tasks
+@using NTSW_CENOPS.Application.Knowledge
+@using NTSW_CENOPS.Components.Common
+@using NTSW_CENOPS.Components.Common.Loading
+@using NTSW_CENOPS.Components.Common.Notices
+@inject ITodoService Todos
+@inject AuthenticationStateProvider AuthState
+@inject NavigationManager Navigation
+@inject AppBusyService Busy
+@inject AppNoticeService Notices
+
+<div class="knowledge-library todo-library" dir="rtl">
+    <SectionContent SectionName="cenops-page-actions">
+        <PageHeaderSearch @bind-Value="_search" Label="جستجوی فهرست کارها" Placeholder="جستجو در عنوان، متن یا نویسنده..." />
+    </SectionContent>
+    <div class="knowledge-grid">
+        <button class="knowledge-create-card" type="button" @onclick="CreateNew">
+            <span class="knowledge-create-symbol" aria-hidden="true">+</span><strong>فهرست کار جدید</strong><small>افزودن کارها و پیگیری وضعیت آن‌ها</small>
+        </button>
+        @foreach (var item in Filtered)
+        {
+            <article class="knowledge-card todo-card" @key="item.Id">
+                <div class="knowledge-card-top">
+                    <span class="knowledge-type-mark">TODO / CHECKLIST</span>
+                    @if (item.Visibility == KnowledgeVisibility.Private) { <span class="knowledge-private-pill">خصوصی 🔒</span> }
+                    @if (_editableIds.Contains(item.Id))
+                    {
+                        <div class="knowledge-card-actions">
+                            <button class="knowledge-more" type="button" title="عملیات" aria-label="عملیات فهرست" @onclick="() => _menu = _menu == item.Id ? null : item.Id"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="5" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="12" cy="19" r="1" fill="currentColor"/></svg></button>
+                            @if (_menu == item.Id)
+                            {
+                                <button class="knowledge-menu-scrim" aria-label="بستن منو" @onclick="() => _menu = null"></button>
+                                <div class="knowledge-card-menu cenops-liquid-glass" role="menu">
+                                    <button class="knowledge-menu-edit" type="button" role="menuitem" @onclick="() => Edit(item.Id)">ویرایش</button>
+                                    <button class="knowledge-menu-delete danger" type="button" role="menuitem" @onclick="() => AskDelete(item)">حذف</button>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+                <button type="button" class="knowledge-card-open" @onclick="() => PreviewAsync(item.Id)">
+                    <h3>@item.Title</h3><p>@(string.IsNullOrWhiteSpace(item.Excerpt) ? "فهرست بدون کار" : item.Excerpt)</p>
+                    
+                </button>
+                <div class="knowledge-card-author knowledge-card-author-outside"><span class="knowledge-avatar" aria-hidden="true">@Initial(item.AuthorDisplayName)</span><UserHoverName DisplayName="@item.AuthorDisplayName" /><button type="button" class="knowledge-view knowledge-author-view" @onclick="() => PreviewAsync(item.Id)">مشاهده ←</button></div>
+            </article>
+        }
+    </div>
+    @if (_items.Count == 0) { <p class="knowledge-empty">هنوز فهرست کاری ثبت نشده است.</p> }
+    else if (!Filtered.Any()) { <p class="knowledge-empty">نتیجه‌ای برای جستجو پیدا نشد.</p> }
+</div>
+<AppModal IsOpen="_preview is not null" Title="@_preview?.Title" Description="@_preview?.AuthorDisplayName" MaxWidth="900px" CssClass="todo-preview-modal" OnClose="() => _preview = null">
+    <ChildContent>
+        @if (_preview is not null)
+        {
+            <div class="todo-preview" dir="rtl">
+                @foreach (var item in _preview.Items)
+                {
+                    <div class="todo-preview-row" dir="@(TextDirection(item.Text))">
+                        <input type="checkbox" checked="@item.IsCompleted" disabled aria-label="وضعیت انجام" />
+                        <span class="@(item.IsCompleted ? "done" : "")">@item.Text</span>
+                    </div>
+                }
+                @if (_preview.Items.Count == 0) { <p>هنوز کاری اضافه نشده است.</p> }
+            </div>
+        }
+    </ChildContent>
+    <Footer>
+        @if (_preview is not null && _editableIds.Contains(_preview.Id)) { <button class="knowledge-button primary" type="button" @onclick="() => Edit(_preview.Id)">ویرایش فهرست</button> }
+        <button class="knowledge-button secondary" type="button" @onclick="() => _preview = null">بستن</button>
+    </Footer>
+</AppModal>
+<AppModal IsOpen="_deleteCandidate is not null" Title="حذف فهرست" Description="آیا از حذف فهرست مطمئن هستید؟" MaxWidth="420px" OnClose="() => _deleteCandidate = null">
+    <ChildContent><p>«@_deleteCandidate?.Title» حذف خواهد شد.</p></ChildContent>
+    <Footer><button class="knowledge-button danger" disabled="@_deleting" type="button" @onclick="DeleteAsync">حذف</button><button class="knowledge-button secondary" type="button" @onclick="() => _deleteCandidate = null">انصراف</button></Footer>
+</AppModal>
+@code {
+    private List<TodoModel> _items = [];
+    private HashSet<int> _editableIds = [];
+    private string _search = string.Empty;
+    private int? _menu;
+    private TodoModel? _preview, _deleteCandidate;
+    private bool _deleting;
+    private IEnumerable<TodoModel> Filtered => _items.Where(x => string.IsNullOrWhiteSpace(_search) ||
+        x.Title.Contains(_search.Trim(), StringComparison.OrdinalIgnoreCase) ||
+        x.Excerpt.Contains(_search.Trim(), StringComparison.OrdinalIgnoreCase) ||
+        x.AuthorDisplayName.Contains(_search.Trim(), StringComparison.OrdinalIgnoreCase));
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+    private async Task LoadAsync()
+    {
+        try
+        {
+            using var lease = Busy.Begin("در حال دریافت فهرست‌ها...");
+            var actor = (await AuthState.GetAuthenticationStateAsync()).User;
+            _items = (await Todos.ListAsync(actor)).ToList();
+            var id = int.TryParse(actor.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var uid) ? uid : 0;
+            var privileged = await Todos.CanChooseAuthorAsync(actor);
+            _editableIds = _items.Where(x => privileged || x.UserId == id).Select(x => x.Id).ToHashSet();
+        }
+        catch { Notices.Error("دریافت فهرست‌ها ناموفق بود."); }
+    }
+    private static string TextDirection(string text) => text.Any(c => c is >= '\u0590' and <= '\u08FF') ? "rtl" : "ltr";
+    private static string Initial(string text) => string.IsNullOrWhiteSpace(text) ? "؟" : text.Trim()[0].ToString();
+    private void CreateNew() => Navigation.NavigateTo("/wiki/todos/new");
+    private void Edit(int id) => Navigation.NavigateTo($"/wiki/todos/edit/{id}");
+    private void AskDelete(TodoModel item) { _menu = null; _deleteCandidate = item; }
+    private async Task PreviewAsync(int id)
+    {
+        _menu = null;
+        try { _preview = await Todos.FindAsync(id, (await AuthState.GetAuthenticationStateAsync()).User); }
+        catch { Notices.Error("نمایش فهرست ممکن نشد."); }
+    }
+    private async Task DeleteAsync()
+    {
+        if (_deleteCandidate is null || _deleting) return;
+        _deleting = true;
+        try
+        {
+            var result = await Todos.DeleteAsync(_deleteCandidate.Id, (await AuthState.GetAuthenticationStateAsync()).User);
+            if (!result.Succeeded) { Notices.Error(result.Message); return; }
+            var deletedId = _deleteCandidate.Id;
+            _items.RemoveAll(x => x.Id == deletedId);
+            _editableIds.Remove(deletedId);
+            if (_preview?.Id == deletedId) _preview = null;
+            _menu = null;
+            _deleteCandidate = null;
+            Notices.Success("فهرست کارها حذف شد.");
+            await LoadAsync();
+        }
+        catch { Notices.Error("حذف فهرست ممکن نشد."); }
+        finally { _deleting = false; }
+    }
+}

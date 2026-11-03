@@ -1,0 +1,181 @@
+@using NTSW_CENOPS.Components.Common.Dates
+@page "/reports/manage"
+@using NTSW_CENOPS.Application.Reports
+@using NTSW_CENOPS.Components.Common
+@using NTSW_CENOPS.Components.DataTable.Core
+@using NTSW_CENOPS.Components.DataTable.Models
+@inject IMonitoringReportService Reports
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthState
+@inject NTSW_CENOPS.Components.Common.Notices.AppNoticeService Notices
+@attribute [AccessAuthorize(AccessKeys.ViewReports)]
+@rendermode InteractiveServer
+@implements IDisposable
+
+<PageTitle>مدیریت گزارش‌ها</PageTitle>
+
+<div class="administration-page" dir="rtl">
+    <div class="administration-header">
+        <h1>مدیریت گزارش‌ها</h1>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <div class="report-alert report-alert-error" role="alert">@_error</div>
+    }
+
+    <div class="administration-table" aria-live="polite">
+        <DataTableToolbar T="MonitoringReportModel" Controller="_controller"
+                          Columns="_columns" ActiveFilters="_filters"
+                          FiltersChanged="OnFiltersChanged"
+                          ShowNewButton="false" ShowEditButton="false" ShowDeleteButton="false">
+            <LeadingToolbarContent>
+                @if (_canManage)
+                {
+                    <button type="button" class="success outline-button flex gap-2 items-center border-1 border-green-700 small-button"
+                            @onclick="CreateReport">
+                        <div class="icon text-green-700">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+                            </svg>
+                        </div>
+                        <div class="text text-green-700">جدید</div>
+                    </button>
+                    <button type="button" class="warning text-button flex gap-2 items-center small-button"
+                            disabled="@(!_controller.CanEdit)" @onclick="EditSelectedReport">
+                        <div class="icon flex text-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"/>
+                            </svg>
+                        </div>
+                        <div class="text">ویرایش</div>
+                    </button>
+                    <button type="button" class="danger text-button flex small-button"
+                            disabled="@(!_controller.CanDelete)" @onclick="ConfirmDeleteSelected"
+                            aria-label="حذف گزارش انتخاب‌شده" title="حذف">
+                        <div class="icon flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/>
+                            </svg>
+                        </div>
+                    </button>
+                }
+            </LeadingToolbarContent>
+        </DataTableToolbar>
+
+        <DataTable T="MonitoringReportModel" Controller="_controller" Items="_filteredReports"
+                   Columns="_columns" EnableRowContextMenu="false" />
+        @if (_loading)
+        {
+            <AppLoading IsLoading="true" Variant="inline" Label="در حال آماده‌سازی گزارش‌ها..." />
+        }
+        else if (_reports.Count == 0)
+        {
+            <p class="jobs-table-hint">هنوز گزارشی ثبت نشده است. برای شروع، از دکمه «جدید» استفاده کنید.</p>
+        }
+    </div>
+</div>
+
+<AppModal IsOpen="@(_deleteTarget is not null)" Title="حذف گزارش"
+          Description="فقط تعریف گزارش حذف می‌شود؛ داده‌های کار باقی می‌مانند."
+          OnClose="() => _deleteTarget = null" MaxWidth="420px">
+    <ChildContent>
+        <p>آیا از حذف گزارش <strong>@_deleteTarget?.Name</strong> مطمئن هستید؟</p>
+    </ChildContent>
+    <Footer>
+        <button class="report-danger-button" disabled="@_deleting" @onclick="DeleteAsync">@(_deleting ? "در حال حذف..." : "حذف گزارش")</button>
+        <button class="report-secondary" disabled="@_deleting" @onclick="() => _deleteTarget = null">انصراف</button>
+    </Footer>
+</AppModal>
+
+@code {
+    private readonly DataTableController<MonitoringReportModel> _controller = new();
+    private List<MonitoringReportModel> _reports = new();
+    private List<MonitoringReportModel> _filteredReports = new();
+    private List<FilterDefinition> _filters = new();
+    private MonitoringReportModel? _deleteTarget;
+    private string? _error;
+    private bool _loading = true;
+    private bool _deleting;
+    private bool _canManage;
+
+    private readonly List<ColumnDefinition<MonitoringReportModel>> _columns = new()
+    {
+        new() { Title = "گزارش", PropertyName = nameof(MonitoringReportModel.Name), Value = x => x.Name, Type = ColumnType.Text, width = "23%" },
+        new() { Title = "کار منبع", PropertyName = nameof(MonitoringReportModel.JobName), Value = x => x.JobName, Type = ColumnType.Text, width = "23%" },
+        new() { Title = "پارامتر مقایسه", PropertyName = nameof(MonitoringReportModel.ComparisonField), Value = x => x.ComparisonField, Type = ColumnType.Text, width = "18%" },
+        new() { Title = "نوع نمودار", PropertyName = nameof(MonitoringReportModel.ChartType), Value = x => x.ChartType, DisplayValue = x => ChartLabel(x.ChartType), Type = ColumnType.Text, width = "13%" },
+        new() { Title = "آخرین ویرایش", PropertyName = nameof(MonitoringReportModel.UpdatedAtUtc), Value = x => x.UpdatedAtUtc, DisplayValue = x => JalaliDate.DateTime(x.UpdatedAtUtc.ToLocalTime()), Type = ColumnType.Text, IsReadOnly = true, width = "23%" }
+    };
+
+    private static string ChartLabel(string kind) => kind switch
+    {
+        "line" => "خطی", "bar" => "ستونی", "scatter" => "پراکندگی", "area" => "ناحیه‌ای", "step" => "پله‌ای", "stacked" => "ستونی انباشته", _ => kind
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        _controller.OnRefresh = LoadReportsAsync;
+        _controller.SetPageSize(10);
+        try
+        {
+            var actor = (await AuthState.GetAuthenticationStateAsync()).User;
+            _canManage = await Reports.CanManageAsync(actor);
+            await LoadReportsAsync();
+        }
+        catch (Exception) { _error = "دریافت گزارش‌ها انجام نشد. دسترسی و اتصال پایگاه‌داده را بررسی کنید."; }
+        finally { _loading = false; }
+    }
+
+    private async Task LoadReportsAsync()
+    {
+        var actor = (await AuthState.GetAuthenticationStateAsync()).User;
+        _reports = (await Reports.ListAsync(actor)).ToList();
+        ApplyFilters();
+    }
+
+    private Task OnFiltersChanged(List<FilterDefinition> filters)
+    {
+        _filters = filters.Select(x => new FilterDefinition { PropertyName = x.PropertyName, Value = x.Value }).ToList();
+        _controller.SetPage(1);
+        ApplyFilters();
+        return Task.CompletedTask;
+    }
+
+    private void ApplyFilters()
+    {
+        _filteredReports = _reports.Where(x => _filters.All(f => DataTableFilterMatcher.Matches(x, f))).ToList();
+        _controller.SetTotal(_filteredReports.Count);
+    }
+
+    private void CreateReport() { if (_canManage) Navigation.NavigateTo("/reports/new"); }
+    private void EditSelectedReport()
+    {
+        if (_canManage && _controller.SelectedItem is { } report)
+            Navigation.NavigateTo($"/reports/edit/{report.Id}");
+    }
+    private void ConfirmDeleteSelected()
+    {
+        if (_canManage && _controller.SelectedItem is { } report) _deleteTarget = report;
+    }
+
+    private async Task DeleteAsync()
+    {
+        if (_deleteTarget is null || _deleting || !_canManage) return;
+        _deleting = true;
+        _error = null;
+        try
+        {
+            var actor = (await AuthState.GetAuthenticationStateAsync()).User;
+            var result = await Reports.DeleteAsync(_deleteTarget.Id, actor);
+            if (!result.Succeeded) { _error = result.Message; return; }
+            _deleteTarget = null;
+            await LoadReportsAsync();
+            Notices.Success(result.Message);
+        }
+        catch (Exception) { _error = "حذف گزارش انجام نشد."; }
+        finally { _deleting = false; }
+    }
+
+    public void Dispose() { }
+}

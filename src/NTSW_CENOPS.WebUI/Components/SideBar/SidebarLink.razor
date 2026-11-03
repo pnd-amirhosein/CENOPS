@@ -1,0 +1,15 @@
+<AccessGate AccessKey="@(Item.RequiredAccess ?? string.Empty)">
+    <div class="nav-item @(!string.IsNullOrWhiteSpace(Item.Accent) ? "nav-accent-" + Item.Accent : "")">
+        <NavLink class="nav-link" href="@Item.Href" Match="NavLinkMatch.All">
+            @if (!string.IsNullOrEmpty(Item.IconSvg))
+            {
+                <span class="icon" aria-hidden="true">@((MarkupString)Item.IconSvg)</span>
+            }
+            <span class="text">@Item.Title</span>
+        </NavLink>
+    </div>
+</AccessGate>
+
+@code {
+    [Parameter] public SidebarItem Item { get; set; } = new();
+}

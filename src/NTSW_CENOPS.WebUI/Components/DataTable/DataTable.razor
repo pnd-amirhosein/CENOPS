@@ -1,0 +1,602 @@
+@using NTSW_CENOPS.Components.Common.Dates
+@using NTSW_CENOPS.Components.Common
+@using Microsoft.AspNetCore.Components.Rendering
+@using System.Collections
+@using NTSW_CENOPS.Components.DataTable.Core
+@using NTSW_CENOPS.Components.DataTable.Models
+@typeparam T
+@implements IDisposable
+
+@if (_contextMenuItem is not null)
+{
+    <button type="button"
+            class="row-menu-backdrop"
+            aria-label="بستن منوی ردیف"
+            @onclick="CloseRowMenu"></button>
+}
+
+<div class="datatable-shell border border-gray-400 rounded-xl flex-grow">
+    <table class="table !table-fixed datatable-table">
+        <thead>
+        <tr class="text-white">
+            @if (EnableRowContextMenu)
+            {
+                <th class="row-menu-header" aria-label="عملیات ردیف"></th>
+            }
+            @foreach (var column in Columns)
+            {
+                <th @onclick="() => ToggleSort(column)" style="width: @column.width">
+                    <div class="cell-content flex gap-2 items-center">
+                        <span class="text select-none">@column.Title</span>
+                        <span class="icon">
+                            @switch (SortIndicator(column.PropertyName))
+                            {
+                                case SortDirection.Asc:
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                         stroke-width="1.5" stroke="currentColor" class="size-4">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 15.75 7.5-7.5 7.5 7.5"/>
+                                    </svg>
+                                    break;
+                                case SortDirection.Desc:
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                         stroke-width="1.5" stroke="currentColor" class="size-4">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
+                                    </svg>
+                                    break;
+                                case SortDirection.None:
+                                    break;
+                            }
+                        </span>
+                    </div>
+                </th>
+            }
+
+        </tr>
+        </thead>
+
+        <tbody>
+        @if (Controller.IsCreating && Controller.EditingItem is not null)
+        {
+            <tr class="table-warning">
+                @if (EnableRowContextMenu)
+                {
+                    <td class="row-menu-cell"></td>
+                }
+                @foreach (var column in Columns)
+                {
+                    <td>
+                        @RenderEditCell(Controller.EditingItem, column)
+                    </td>
+                }
+
+            </tr>
+        }
+
+        @if (Items.Count == 0 && !Controller.IsCreating && !Controller.IsLoading)
+        {
+            <tr class="datatable-empty-row">
+                <td colspan="@(Columns.Count + (EnableRowContextMenu ? 1 : 0))">
+                    <div class="datatable-empty-state" role="status">
+                        <span class="datatable-empty-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5m-13-10h6"/></svg>
+                        </span>
+                        <strong>اطلاعاتی پیدا نشد</strong>
+                        <span>نتیجه‌ای برای نمایش وجود ندارد. فیلترها را تغییر دهید یا بازنشانی کنید.</span>
+                    </div>
+                </td>
+            </tr>
+        }
+        @foreach (var item in PaginatedItems)
+        {
+            <tr class="@GetRowClass(item)" @onclick="() => RowClicked(item)">
+                @if (EnableRowContextMenu)
+                {
+                    <td class="row-menu-cell @(IsRowMenuOpen(item) ? "row-menu-cell--open" : "")" @onclick:stopPropagation="true">
+                        <button type="button"
+                                class="row-menu-trigger"
+                                title="بیشتر"
+                                aria-label="نمایش منوی ردیف"
+                                aria-expanded="@IsRowMenuOpen(item)"
+                                @onclick="() => ToggleRowMenu(item)">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                <circle cx="12" cy="5" r="1.7" />
+                                <circle cx="12" cy="12" r="1.7" />
+                                <circle cx="12" cy="19" r="1.7" />
+                            </svg>
+                        </button>
+
+                        @if (IsRowMenuOpen(item))
+                        {
+                            <div class="row-context-menu cenops-liquid-glass" role="menu" @onclick:stopPropagation="true">
+                                @if (RowContextMenu is not null)
+                                {
+                                    @RowContextMenu(item)
+                                }
+                                else
+                                {
+                                    <div class="row-context-menu-empty">گزینه‌ای تعریف نشده است.</div>
+                                }
+                            </div>
+                        }
+                    </td>
+                }
+                @foreach (var column in Columns)
+                {
+                    <td class="@(column.Type == ColumnType.List ? "datatable-list-cell" : "overflow-hidden text-ellipsis whitespace-nowrap")" style="width: @column.width">
+                        <span class="@(column.Type == ColumnType.List ? "datatable-list-value" : "flex items-center")">
+                            @if (IsEditingRow(item))
+                            {
+                                @RenderEditCell(Controller.EditingItem!, column)
+                            }
+                            else
+                            {
+                                @RenderCell(item, column)
+                            }
+                        </span>
+                    </td>
+                }
+
+
+            </tr>
+        }
+        </tbody>
+    </table>
+    <AppLoading IsLoading="@Controller.IsLoading" Variant="overlay" Label="در حال انجام عملیات..." />
+</div>
+
+<div class="datatable-footer" dir="rtl">
+    <div class="page-size-control">
+        <span>تعداد در صفحه</span>
+        <select class="text-sm" value="@Controller.PageSize" @onchange="OnPageSizeChanged">
+            <option value="5">5</option>
+            <option value="10">10</option>
+            <option value="20">20</option>
+        </select>
+    </div>
+
+    <span class="page-summary">صفحه @Controller.Page از @Controller.PageCount</span>
+
+    <nav class="pagination" aria-label="صفحه‌بندی جدول" dir="ltr">
+        <button type="button"
+                class="pagination-nav"
+                @onclick="PrevPage"
+                disabled="@(Controller.Page == 1)"
+                aria-label="صفحه قبل">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8"
+                 stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m15.75 19.5-7.5-7.5 7.5-7.5" />
+            </svg>
+        </button>
+
+        @foreach (var pageNumber in VisiblePages)
+        {
+            if (pageNumber.HasValue)
+            {
+                var page = pageNumber.Value;
+                <button type="button"
+                        class="pagination-page @(page == Controller.Page ? "pagination-page--active" : string.Empty)"
+                        aria-current="@(page == Controller.Page ? "page" : null)"
+                        @onclick="() => GoToPage(page)">
+                    @(page)
+                </button>
+            }
+            else
+            {
+                <span class="pagination-ellipsis" aria-hidden="true">…</span>
+            }
+        }
+
+        <button type="button"
+                class="pagination-nav"
+                @onclick="NextPage"
+                disabled="@(Controller.Page >= Controller.PageCount)"
+                aria-label="صفحه بعد">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8"
+                 stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+            </svg>
+        </button>
+    </nav>
+</div>
+
+@code {
+    [Parameter] public DataTableController<T> Controller { get; set; } = default!;
+
+    [Parameter] public List<T> Items { get; set; } = new();
+
+    [Parameter] public List<ColumnDefinition<T>> Columns { get; set; } = new();
+
+    [Parameter] public RenderFragment<T>? RowTemplate { get; set; }
+
+    [Parameter] public bool EnableRowContextMenu { get; set; } = true;
+
+    [Parameter] public RenderFragment<T>? RowContextMenu { get; set; }
+
+    private T? _contextMenuItem;
+
+    private SortState Sort => Controller.Sort;
+
+    private IReadOnlyList<int?> VisiblePages => BuildVisiblePages(Controller.Page, Controller.PageCount);
+
+    protected override void OnInitialized()
+    {
+        Controller.StateChanged += OnControllerChanged;
+        Controller.PaginationChanged += OnControllerChanged;
+    }
+
+    public void Dispose()
+    {
+        Controller.StateChanged -= OnControllerChanged;
+        Controller.PaginationChanged -= OnControllerChanged;
+    }
+
+    private void OnControllerChanged()
+    {
+        _contextMenuItem = default;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void RowClicked(T item)
+    {
+        CloseRowMenu();
+
+        if (Controller.Mode == TableMode.Edit)
+            return;
+
+        Controller.Select(item);
+    }
+
+    private string GetRowClass(T item)
+    {
+        return Equals(Controller.SelectedItem, item)
+            ? "table-primary"
+            : string.Empty;
+    }
+
+    private void ToggleSort(ColumnDefinition<T> column)
+    {
+        CloseRowMenu();
+
+        if (Sort.PropertyName != column.PropertyName)
+        {
+            Sort.PropertyName = column.PropertyName;
+            Sort.Direction = SortDirection.Asc;
+        }
+        else
+        {
+            Sort.Direction = Sort.Direction switch
+            {
+                SortDirection.Asc => SortDirection.Desc,
+                SortDirection.Desc => SortDirection.None,
+                _ => SortDirection.Asc
+            };
+        }
+
+        StateHasChanged();
+    }
+
+    private SortDirection SortIndicator(string prop)
+    {
+        return Sort.PropertyName != prop
+            ? SortDirection.None
+            : Sort.Direction;
+    }
+
+    private IEnumerable<T> PaginatedItems
+    {
+        get
+        {
+            return SortedItems
+                .Skip((Controller.Page - 1) * Controller.PageSize)
+                .Take(Controller.PageSize);
+        }
+    }
+
+    private IEnumerable<T> SortedItems
+    {
+        get
+        {
+            if (Sort.PropertyName is null || Sort.Direction == SortDirection.None)
+                return Items;
+
+            var prop = typeof(T).GetProperty(Sort.PropertyName);
+            if (prop is null)
+                return Items;
+
+            // Lists sort by their display labels rather than comparing List<T> objects.
+            var isList = Columns.Any(x => x.PropertyName == Sort.PropertyName && x.Type == ColumnType.List);
+            if (isList)
+                return Sort.Direction == SortDirection.Asc
+                    ? Items.OrderBy(x => string.Join(", ", (prop.GetValue(x) as IEnumerable)?.Cast<object?>().Select(v => v?.ToString()) ?? Array.Empty<string>()))
+                    : Items.OrderByDescending(x => string.Join(", ", (prop.GetValue(x) as IEnumerable)?.Cast<object?>().Select(v => v?.ToString()) ?? Array.Empty<string>()));
+
+            return Sort.Direction == SortDirection.Asc
+                ? Items.OrderBy(x => prop.GetValue(x))
+                : Items.OrderByDescending(x => prop.GetValue(x));
+        }
+    }
+
+    private bool IsEditingRow(T item)
+    {
+        return Controller.IsEditing && Equals(Controller.SelectedItem, item);
+    }
+
+    private RenderFragment RenderCell(T item, ColumnDefinition<T> column) => builder =>
+    {
+        var value = column.Value(item);
+
+        // Display-only cells never create an interactive control. The date picker is
+        // instantiated exclusively by RenderEditCell for the currently edited row.
+        var propertyType = typeof(T).GetProperty(column.PropertyName)?.PropertyType;
+        var rawDateType = Nullable.GetUnderlyingType(propertyType ?? typeof(object)) ?? propertyType;
+        if (rawDateType == typeof(DateTime) || rawDateType == typeof(DateOnly) ||
+            rawDateType == typeof(DateTimeOffset))
+        {
+            builder.OpenElement(0, "span");
+            builder.AddAttribute(1, "class", "datatable-readonly-date");
+            builder.AddContent(2, DateDisplay(value) ?? "—");
+            builder.CloseElement();
+            return;
+        }
+
+        switch (column.Type)
+        {
+            case ColumnType.List:
+                RenderBadges(builder, value);
+                break;
+
+            case ColumnType.Checkbox:
+                builder.OpenComponent<CheckBox>(0);
+                builder.AddAttribute(1, "Value", value is true);
+                builder.AddAttribute(2, "Disabled", true);
+                builder.CloseComponent();
+                break;
+
+            case ColumnType.Radio:
+                builder.OpenElement(0, "input");
+                builder.AddAttribute(1, "type", "radio");
+                builder.AddAttribute(2, "checked", value);
+                builder.AddAttribute(3, "disabled", true);
+                builder.CloseElement();
+                break;
+
+            default:
+                builder.AddContent(0, column.DisplayValue?.Invoke(item) ?? DateDisplay(value));
+                break;
+        }
+    };
+
+    // Last-resort formatting for dates where the table column did not provide a
+    // display formatter. Sorting and filtering still operate on native data.
+    private static string? DateDisplay(object? value) => value switch
+    {
+        DateTime d => JalaliDate.DateTime(d),
+        DateTimeOffset d => JalaliDate.DateTime(d),
+        DateOnly d => JalaliDate.Date(d),
+        _ => value?.ToString()
+    };
+
+    private static void RenderBadges(RenderTreeBuilder builder, object? value)
+    {
+        var labels = value is IEnumerable values && value is not string
+            ? values.Cast<object?>().Select(x => x?.ToString() ?? string.Empty)
+                .Where(x => !string.IsNullOrWhiteSpace(x)).ToArray()
+            : Array.Empty<string>();
+        builder.OpenElement(0, "div");
+        builder.AddAttribute(1, "class", "datatable-badge-list");
+        if (labels.Length == 0)
+        {
+            builder.OpenElement(2, "span");
+            builder.AddAttribute(3, "class", "datatable-badge-empty");
+            builder.AddContent(4, "—");
+            builder.CloseElement();
+        }
+        foreach (var label in labels)
+        {
+            builder.OpenComponent<AppBadge>(5);
+            builder.AddAttribute(6, nameof(AppBadge.Label), label);
+            builder.CloseComponent();
+        }
+        builder.CloseElement();
+    }
+
+    private RenderFragment RenderEditCell(T item, ColumnDefinition<T> column) => builder =>
+    {
+        var value = column.Value(item);
+        if (column.IsReadOnly)
+        {
+            builder.OpenElement(0, "span");
+            builder.AddAttribute(1, "class", "datatable-readonly-value");
+            builder.AddContent(2, DateDisplay(value) ?? "—");
+            builder.CloseElement();
+            return;
+        }
+
+        if (column.Options is { Count: > 0 } options)
+        {
+            builder.OpenElement(0, "select");
+            builder.AddAttribute(1, "value", value?.ToString());
+            builder.AddAttribute(2, "onchange", EventCallback.Factory.Create<ChangeEventArgs>(this,
+                e => UpdateCellValue(item, column.PropertyName, e.Value)));
+            foreach (var option in options)
+            {
+                builder.OpenElement(3, "option");
+                builder.AddAttribute(4, "value", option);
+                builder.AddContent(5, column.OptionLabels is not null && column.OptionLabels.TryGetValue(option, out var label) ? label : option);
+                builder.CloseElement();
+            }
+            builder.CloseElement();
+            return;
+        }
+
+        // Date editors use the same reusable Jalali control as profile/report
+        // filters, while the bound model remains DateTime or DateOnly.
+        var dateType = typeof(T).GetProperty(column.PropertyName)?.PropertyType;
+        var underlyingDateType = Nullable.GetUnderlyingType(dateType ?? typeof(object)) ?? dateType;
+        if (underlyingDateType == typeof(DateTime) || underlyingDateType == typeof(DateOnly) ||
+            underlyingDateType == typeof(DateTimeOffset))
+        {
+            var current = value switch
+            {
+                DateTime d => (DateTime?)d,
+                DateTimeOffset d => d.DateTime,
+                DateOnly d => d.ToDateTime(TimeOnly.MinValue),
+                _ => null
+            };
+            builder.OpenComponent<AppJalaliDatePicker>(0);
+            builder.AddAttribute(1, nameof(AppJalaliDatePicker.Value), current);
+            builder.AddAttribute(2, nameof(AppJalaliDatePicker.ValueChanged),
+                EventCallback.Factory.Create<DateTime?>(this,
+                    date => UpdateDateCell(item, column.PropertyName, date)));
+            builder.CloseComponent();
+            return;
+        }
+
+        switch (column.Type)
+        {
+            case ColumnType.List:
+                // List values are read-only in edit mode.
+                RenderBadges(builder, value);
+                break;
+            case ColumnType.Checkbox:
+                builder.OpenComponent<CheckBox>(0);
+                builder.AddAttribute(1, "Value", value is true);
+                builder.AddAttribute(2, "Disabled", false);
+                builder.AddAttribute(3, "ValueChanged", EventCallback.Factory.Create<bool>(this, isChecked =>
+                {
+                    var prop = typeof(T).GetProperty(column.PropertyName);
+                    if (prop is not null && prop.CanWrite)
+                        prop.SetValue(item, isChecked);
+                }));
+                builder.CloseComponent();
+                break;
+
+            default:
+                builder.OpenElement(0, "input");
+                builder.AddAttribute(1, "value", value?.ToString());
+                builder.AddAttribute(2, "onchange", EventCallback.Factory.Create<ChangeEventArgs>(this, e =>
+                {
+                    UpdateCellValue(item, column.PropertyName, e.Value);
+                }));
+                builder.CloseElement();
+                break;
+        }
+    };
+
+    private static void UpdateDateCell(T item, string propertyName, DateTime? chosen)
+    {
+        var property = typeof(T).GetProperty(propertyName);
+        if (property is null || !property.CanWrite) return;
+        var underlying = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
+        if (underlying is not { } type || (type != typeof(DateTime) && type != typeof(DateOnly) && type != typeof(DateTimeOffset))) return;
+        if (!chosen.HasValue)
+        {
+            if (Nullable.GetUnderlyingType(property.PropertyType) is not null) property.SetValue(item, null);
+            return;
+        }
+        if (type == typeof(DateOnly))
+            property.SetValue(item, DateOnly.FromDateTime(chosen.Value));
+        else if (type == typeof(DateTimeOffset))
+        {
+            var old = property.GetValue(item) is DateTimeOffset previous ? previous : DateTimeOffset.Now;
+            property.SetValue(item, new DateTimeOffset(DateTime.SpecifyKind(chosen.Value.Date + old.TimeOfDay, DateTimeKind.Unspecified), old.Offset));
+        }
+        else
+        {
+            // When editing a DateTime date, retain an existing time and Kind.
+            var old = property.GetValue(item) is DateTime previous ? previous : DateTime.MinValue;
+            property.SetValue(item, DateTime.SpecifyKind(chosen.Value.Date + old.TimeOfDay, old.Kind));
+        }
+    }
+
+    private static void UpdateCellValue(T item, string propertyName, object? raw)
+    {
+        var property = typeof(T).GetProperty(propertyName);
+        if (property is null || !property.CanWrite) return;
+        var type = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
+        var text = raw?.ToString();
+        try
+        {
+            object? converted = string.IsNullOrWhiteSpace(text) &&
+                                Nullable.GetUnderlyingType(property.PropertyType) is not null
+                ? null
+                : type.IsEnum ? Enum.Parse(type, text ?? string.Empty, true)
+                : Convert.ChangeType(text, type, System.Globalization.CultureInfo.InvariantCulture);
+            property.SetValue(item, converted);
+        }
+        catch (Exception exception) when (exception is FormatException or OverflowException or ArgumentException)
+        {
+            // The existing value is kept until the user enters a valid value.
+        }
+    }
+
+    private void PrevPage()
+    {
+        Controller.SetPage(Controller.Page - 1);
+    }
+
+    private void NextPage()
+    {
+        Controller.SetPage(Controller.Page + 1);
+    }
+
+    private void GoToPage(int page)
+    {
+        Controller.SetPage(page);
+    }
+
+    private void OnPageSizeChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var size))
+            Controller.SetPageSize(size);
+    }
+
+    private void ToggleRowMenu(T item)
+    {
+        _contextMenuItem = IsRowMenuOpen(item)
+            ? default
+            : item;
+    }
+
+    private bool IsRowMenuOpen(T item)
+    {
+        return _contextMenuItem is not null && Equals(_contextMenuItem, item);
+    }
+
+    private void CloseRowMenu()
+    {
+        if (_contextMenuItem is null)
+            return;
+
+        _contextMenuItem = default;
+    }
+
+    private static IReadOnlyList<int?> BuildVisiblePages(int activePage, int pageCount)
+    {
+        if (pageCount <= 1)
+            return new int?[] { 1 };
+
+        var pages = new SortedSet<int>
+        {
+            1,
+            pageCount,
+            Math.Max(1, activePage - 1),
+            Math.Clamp(activePage, 1, pageCount),
+            Math.Min(pageCount, activePage + 1)
+        };
+
+        var result = new List<int?>();
+        int? previous = null;
+
+        foreach (var page in pages)
+        {
+            if (previous.HasValue && page - previous.Value > 1)
+                result.Add(null);
+
+            result.Add(page);
+            previous = page;
+        }
+
+        return result;
+    }
+}

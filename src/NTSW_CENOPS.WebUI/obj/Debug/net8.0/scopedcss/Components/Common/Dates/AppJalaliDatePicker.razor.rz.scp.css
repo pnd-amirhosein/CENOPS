@@ -1,0 +1,19 @@
+.jalali-picker[b-jc91czysa0]{position:relative;min-width:0;width:100%;font-family:inherit}
+.jalali-trigger[b-jc91czysa0]{display:flex;align-items:center;gap:10px;width:100%;min-height:40px;padding:8px 12px;border:1px solid #d4e2e9;border-radius:10px;background:#fff;color:#26495c;font:inherit;text-align:right;cursor:pointer;white-space:nowrap}
+.jalali-trigger:hover[b-jc91czysa0],.jalali-trigger:focus-visible[b-jc91czysa0]{border-color:#25a3bc;outline:none;box-shadow:0 0 0 2px #22b7cf22}
+.jalali-trigger svg[b-jc91czysa0]{flex:none;width:18px;height:18px;color:#1596b0}.jalali-placeholder[b-jc91czysa0]{color:#91a5ae}
+.jalali-backdrop[b-jc91czysa0]{position:fixed;inset:0;background:transparent;border:0;z-index:201;cursor:default}
+.jalali-popover[b-jc91czysa0]{position:absolute;top:calc(100% + 6px);right:0;z-index:202;width:min(310px,calc(100vw - 26px));padding:13px;background:#fff;border:1px solid #d8e6ed;border-radius:14px;box-shadow:0 18px 40px #16394d33;direction:rtl}
+.jalali-heading[b-jc91czysa0]{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;color:#285069}
+.jalali-heading button[b-jc91czysa0]{width:32px;height:32px;border:0;border-radius:9px;background:#f1f8fa;color:#168ba2;font-size:22px;cursor:pointer}
+.jalali-weekdays[b-jc91czysa0],.jalali-days[b-jc91czysa0]{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px;text-align:center}
+.jalali-weekdays span[b-jc91czysa0]{font-size:11px;color:#748d9b;font-weight:700;padding:7px 0}
+.jalali-days button[b-jc91czysa0]{width:100%;aspect-ratio:1;border:0;background:transparent;border-radius:8px;cursor:pointer;font:inherit;font-size:12px;color:#284f63}
+.jalali-days button:hover:not(:disabled)[b-jc91czysa0]{background:#e4f6f8}.jalali-days button.is-selected[b-jc91czysa0]{background:#0c9bb6;color:white;font-weight:800}
+.jalali-days button:disabled[b-jc91czysa0]{opacity:.25;cursor:not-allowed}
+.jalali-footer[b-jc91czysa0]{border-top:1px solid #edf2f5;margin-top:10px;padding-top:9px;display:flex;justify-content:space-between}
+.jalali-footer button[b-jc91czysa0]{border:0;background:none;color:#1389a2;font:inherit;font-size:12px;cursor:pointer;padding:5px}
+
+.jalali-month-year[b-jc91czysa0]{display:flex;align-items:center;gap:4px;min-width:0}
+.jalali-month-year select[b-jc91czysa0]{font:inherit;font-size:12px;font-weight:700;border:0;background:#f1f8fa;color:#285069;border-radius:7px;padding:5px 4px;max-width:110px;cursor:pointer}
+.jalali-month-year select:last-child[b-jc91czysa0]{max-width:76px}

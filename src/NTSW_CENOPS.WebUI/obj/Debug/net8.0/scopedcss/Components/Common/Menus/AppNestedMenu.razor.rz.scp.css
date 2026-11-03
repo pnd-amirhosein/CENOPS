@@ -1,0 +1,22 @@
+.app-nested-menu[b-zzd6ljrbib]{position:relative;display:flex;align-items:center;direction:rtl;flex:none}
+.app-nested-menu-trigger[b-zzd6ljrbib]{display:grid;place-items:center;width:35px;height:35px;padding:0;border:0;border-radius:8px;background:transparent;color:#18798a;cursor:pointer;transition:background .14s,color .14s}
+.app-nested-menu-trigger:hover[b-zzd6ljrbib],.app-nested-menu-trigger[aria-expanded=true][b-zzd6ljrbib]{background:#ddf3f6;color:#006d7e}
+.app-nested-menu-trigger:focus-visible[b-zzd6ljrbib]{outline:2px solid #0b9aab;outline-offset:2px}
+.app-nested-menu-trigger svg[b-zzd6ljrbib]{width:19px;height:19px;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round;stroke-linecap:round;fill:none}
+.app-nested-menu-popover[b-zzd6ljrbib]{position:absolute;z-index:100;right:0;bottom:calc(100% + 15px);display:flex;align-items:stretch;direction:rtl;overflow:hidden;max-width:calc(100vw - 18px);color:#2d5361;}
+.app-nested-menu-popover.left-align[b-zzd6ljrbib]{left:0;right:auto}
+.app-nested-menu-primary[b-zzd6ljrbib]{width:192px;flex:0 0 192px;padding:6px;box-sizing:border-box;display:flex;flex-direction:column;gap:3px}
+.app-nested-menu-drawer[b-zzd6ljrbib]{width:0;flex:0 0 auto;overflow:hidden;opacity:0;border-right:0 solid #e3eef0;transition:width .18s ease,opacity .15s ease}
+.app-nested-menu-popover.drawer-open .app-nested-menu-drawer[b-zzd6ljrbib]{width:138px;opacity:1;border-right-width:1px}
+.app-nested-menu-submenu[b-zzd6ljrbib]{box-sizing:border-box;width:138px;padding:6px;display:flex;flex-direction:column;gap:3px}
+.app-nested-menu-item[b-zzd6ljrbib]{display:flex;align-items:center;gap:7px;width:100%;min-height:37px;height:auto;padding:8px 10px;border:0;border-radius:8px;background:transparent;color:#2b5263;cursor:pointer;text-align:right;font-size:12px;font-weight:600;line-height:1.4;font-family:inherit;white-space:nowrap}
+.app-nested-menu-item:hover:not(:disabled)[b-zzd6ljrbib],.app-nested-menu-item.active[b-zzd6ljrbib],.app-nested-menu-item:focus-visible[b-zzd6ljrbib]{background:#e4f6f8;color:#007c91;outline:none}
+.app-nested-menu-item:disabled[b-zzd6ljrbib]{opacity:.46;cursor:not-allowed}
+.app-nested-menu-item-label[b-zzd6ljrbib]{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.app-nested-menu-item small[b-zzd6ljrbib]{font:600 10px/1.4 system-ui,sans-serif;color:#81a4ae}
+.app-nested-menu-item svg[b-zzd6ljrbib]{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+@media(max-width:740px){.app-nested-menu-trigger[b-zzd6ljrbib]{width:30px;height:32px}.app-nested-menu-popover[b-zzd6ljrbib]{bottom:calc(100% + 10px);}.app-nested-menu-popover.left-align[b-zzd6ljrbib]{left:0;right:auto}
+.app-nested-menu-primary[b-zzd6ljrbib]{width:155px;flex-basis:155px}.app-nested-menu-popover.drawer-open .app-nested-menu-drawer[b-zzd6ljrbib]{width:105px}.app-nested-menu-submenu[b-zzd6ljrbib]{width:105px}}
+
+/* Numeric context on menu entries remains visually independent from the drawer arrow. */
+.app-nested-menu-count[b-zzd6ljrbib]{display:inline-grid;place-items:center;min-width:20px;height:20px;box-sizing:border-box;padding:0 5px;border-radius:7px;background:#e6f5f8;color:#006e80;border:1px solid #c5e3e9;font:750 11px/1 system-ui,sans-serif;direction:ltr;flex:none}

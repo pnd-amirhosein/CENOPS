@@ -1,0 +1,8 @@
+@page "/wiki/notes/new"
+@page "/wiki/notes/edit/{Id:int}"
+@attribute [AccessAuthorize(AccessKeys.Notes)]
+@using NTSW_CENOPS.Components.Notes
+<PageTitle>ویرایش یادداشت</PageTitle>
+<NoteEditor DraftToken="@DraftToken" ItemId="@(Id ?? 0)" />
+@code { [Parameter] public int? Id { get; set; }
+    [SupplyParameterFromQuery(Name = "draft")] public string? DraftToken { get; set; } }

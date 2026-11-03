@@ -1,0 +1,108 @@
+.app-modal-backdrop[b-bh4ldqy31o] {
+    position: fixed;
+    z-index: 200;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.25rem;
+    background: rgba(15, 23, 42, 0.38);
+    -webkit-backdrop-filter: blur(5px);
+    backdrop-filter: blur(5px);
+    animation: modal-backdrop-in-b-bh4ldqy31o 140ms ease-out;
+}
+
+.app-modal-surface[b-bh4ldqy31o] {
+    width: min(var(--app-modal-width, 31rem), 100%);
+    position: relative;
+    padding: 1.5rem;
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    border-radius: 1.5rem;
+    background: #ffffff;
+    box-shadow: 0 24px 70px rgba(15, 23, 42, 0.22);
+    color: #0f172a;
+    animation: modal-surface-in-b-bh4ldqy31o 160ms ease-out;
+}
+
+.app-modal-heading[b-bh4ldqy31o] {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    margin-bottom: 1.25rem;
+}
+
+.app-modal-heading h2[b-bh4ldqy31o] {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.app-modal-heading p[b-bh4ldqy31o] {
+    margin: 0;
+    color: #94a3b8;
+    font-size: 0.8rem;
+    line-height: 1.7;
+}
+
+.app-modal-body[b-bh4ldqy31o] {
+    min-width: 0;
+}
+
+.app-modal-footer[b-bh4ldqy31o] {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    margin-top: 1.25rem;
+}
+
+@keyframes modal-backdrop-in-b-bh4ldqy31o {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes modal-surface-in-b-bh4ldqy31o {
+    from {
+        opacity: 0;
+        transform: translateY(5px) scale(0.99);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@media (max-width: 640px) {
+    .app-modal-surface[b-bh4ldqy31o] {
+        padding: 1.15rem;
+        border-radius: 1.2rem;
+    }
+}
+
+/* Programmatically clickable only: AppModal Escape policy uses its real Blazor close callback. */
+.app-modal-escape-trigger[b-bh4ldqy31o] { position: absolute; width: 1px; height: 1px; padding: 0; opacity: 0; pointer-events: none; overflow: hidden; }
+
+/* Optional standalone close in the top-left corner of large dialogs. */
+.app-modal-floating-close[b-bh4ldqy31o]{position:absolute;z-index:2;top:12px;left:12px;height:38px;width:38px;border:1px solid #d3e4ea;border-radius:12px;background:#fff;color:#31596c;box-shadow:0 7px 24px #173e5429;display:grid;place-items:center;cursor:pointer}
+.app-modal-floating-close:hover[b-bh4ldqy31o]{color:#ba3f51;background:#fff6f6}
+/* The close affordance uses the same keyboard-hint visual language as quick navigation. */
+.app-modal-floating-close[b-bh4ldqy31o]{height:33px;min-width:44px;width:44px;border-radius:8px}
+.app-modal-floating-close .modal-esc-key[b-bh4ldqy31o]{font:800 10px/1 Consolas,monospace;letter-spacing:.02em}
+/* 2.39: close keyboard hint belongs inside each modal's top-left corner. */
+.app-modal-floating-close[b-bh4ldqy31o]{top:11px;left:11px;background:#f4fafb;color:#246f7c;border-color:#c7e0e6;box-shadow:0 2px 8px #173e5411}
+.app-modal-floating-close:hover[b-bh4ldqy31o]{background:#e2f5f8;color:#007b8d;border-color:#92d0d9}
+
+/* Opt-in edge-to-edge dialog body. Leave default modal spacing untouched.
+   Scroll the body inside the rounded modal rather than the viewport. */
+.app-modal-surface.app-modal-surface--flush[b-bh4ldqy31o] {
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100dvh - 2.5rem);
+    padding: 0;
+    overflow: hidden;
+}
+.app-modal-surface--flush > .app-modal-body[b-bh4ldqy31o] {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+}

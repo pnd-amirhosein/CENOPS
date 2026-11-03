@@ -1,0 +1,122 @@
+/* 2.19 — pixel-positioned, independently resizable cards; same content language as the picker. */
+.dashboard-tile{--accent:#159eaf;--tint:#eff9fa;position:absolute;min-height:0;min-width:0;display:flex;flex-direction:column;overflow:hidden;box-sizing:border-box;padding:16px 17px;gap:11px;background:#fff;border:1px solid #dae7ec;border-right:3px solid var(--accent);border-radius:13px;box-shadow:0 3px 12px #163f4c0a;color:#365565}
+.dashboard-tile.note{--accent:#d58b3e;--tint:#fff7ec}.dashboard-tile.todo{--accent:#24a27a;--tint:#edf9f3}.dashboard-tile.sql{--accent:#825dbd;--tint:#f5f0fc}.dashboard-tile.curl{--accent:#129ab4;--tint:#effaff}.dashboard-tile.report{--accent:#2289aa;--tint:#eef6fc}
+.dash-card-heading{min-width:0;display:flex;flex-direction:column;gap:8px}.dash-card-heading h3{margin:0;color:#314e5e;font-size:14px;font-weight:900;line-height:1.6;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:anywhere}
+.dash-description{margin:0;min-height:0;flex:1;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;font-size:11px;line-height:1.75;color:#758e9b;white-space:pre-wrap;overflow-wrap:anywhere}
+.dash-tasks{display:flex;flex-direction:column;gap:7px;flex:1;min-width:0;overflow:hidden}
+.dash-task{display:flex;align-items:center;gap:7px;min-height:30px;padding:4px 7px;background:#f0f9f3;border-radius:8px;min-width:0;color:#517467;font-size:11px}
+.dash-task>span:last-child{white-space:nowrap;text-overflow:ellipsis;overflow:hidden;min-width:0;flex:1;text-align:start}.dash-check{width:14px;height:14px;flex:none;border:1px solid #47ac82;border-radius:4px;font-weight:900;line-height:12px;text-align:center}.dash-task.is-done>span:last-child{text-decoration:line-through;color:#8ba89a}
+.dash-tasks p{color:#93aca0;font-size:11px;margin:0}
+.dash-snippet{direction:ltr;text-align:left;min-width:0;flex:1;max-height:none;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;display:block;font:11px/1.65 Consolas,monospace;background:var(--tint);border-radius:8px;margin:0;padding:10px;color:#425b6f}
+
+/* Announcement keeps normal card chrome, but its message remains a centered headline. */
+.dashboard-tile.announcement{--accent:#cd527d;--tint:#fff2f6;padding:15px 12px}
+.dash-announcement{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:10px}.dash-announcement-meta{display:flex;justify-content:center;align-items:center;gap:11px;font-size:10px;color:var(--accent)}.dash-announcement-meta span{font-weight:850}.dash-announcement-meta strong{font-weight:850}.dash-announcement h3{font-size:clamp(15px,1.6vw,21px);font-weight:900;line-height:1.6;max-height:100%;overflow:auto;text-align:center;overflow-wrap:anywhere;margin:0;color:#263e4d}
+/* Chart keeps its original report component, can fill any assigned tile span. */
+.dashboard-tile.report{padding:0;border:0;background:transparent;box-shadow:none}.dash-chart{min-width:0;min-height:0;width:100%;height:100%;overflow:auto}.dash-chart .monitor-chart-card{max-width:100%;height:100%;margin:0}.dash-report-peek{position:absolute;bottom:8px;left:8px;display:grid;place-items:center;border-radius:8px;border:1px solid #d6e8ef;background:#fff;color:#2588a3;width:30px;height:30px;cursor:pointer;opacity:0;transition:opacity .15s}.dash-report-peek svg{width:17px;height:17px}.dashboard-tile.report:hover .dash-report-peek,.dash-report-peek:focus-visible{opacity:1}
+/* Editing controls are visible on hover/focus, never intrude in reading mode. */
+.dashboard-tile.editing{outline-offset:2px}.dash-tile-tools{position:absolute;top:5px;left:5px;z-index:5;display:flex;gap:5px;align-items:center;opacity:0;pointer-events:none;transition:opacity .16s}.dashboard-tile.editing:hover .dash-tile-tools,.dashboard-tile.editing:focus-within .dash-tile-tools{opacity:1;pointer-events:auto}
+.dash-delete,.dash-drag{box-sizing:border-box;display:grid;place-items:center;width:29px;height:29px;padding:0;border:1px solid #dde8ec;background:#fff;border-radius:8px;cursor:pointer;color:#637f8c;box-shadow:0 2px 8px #1b4b6018}.dash-delete:hover{color:#be4963;background:#fff0f3;border-color:#efc1cc}.dash-drag:hover{color:#088fa5;border-color:#92d5df}.dash-delete svg,.dash-drag svg{width:17px;height:17px}.dash-drag{cursor:grab}.dash-drag:active{cursor:grabbing}
+/* Large hit targets, discreet grips, with a dedicated bottom-left corner. */
+.dash-size-handle{position:absolute;z-index:4;padding:0;border:0;background:transparent;opacity:0;transition:opacity .15s;touch-action:none}
+.dashboard-tile.editing:hover .dash-size-handle,.dashboard-tile.editing:focus-within .dash-size-handle{opacity:1}
+.dash-size-handle.x{left:0;top:24px;bottom:21px;width:11px;cursor:ew-resize}
+.dash-size-handle.x::after{content:"";position:absolute;left:1px;top:50%;transform:translateY(-50%);width:3px;height:34px;border-radius:5px;background:#69b9c4}
+.dash-size-handle.y{bottom:0;left:21px;right:20px;height:11px;cursor:ns-resize}
+.dash-size-handle.y::after{content:"";position:absolute;left:50%;bottom:1px;transform:translateX(-50%);height:3px;width:34px;border-radius:5px;background:#69b9c4}
+.dash-size-handle.xy{bottom:0;left:0;width:20px;height:20px;cursor:nwse-resize;border-radius:0 9px 0 0;background:linear-gradient(135deg,transparent 49%,#69b9c4 50%)}
+.dashboard-tile.dashboard-dragging{opacity:.48}.dashboard-tile.dashboard-drop-target{outline:2px dashed var(--accent);outline-offset:-3px}
+@media(hover:none){.dash-tile-tools,.dash-size-handle,.dash-report-peek{opacity:1;pointer-events:auto}} 
+
+/* Description stays a fixed short introduction; code grows with the card's free height. */
+.dashboard-tile.sql .dash-description,.dashboard-tile.curl .dash-description{flex:0 0 auto;max-height:58px;-webkit-line-clamp:3}
+.dashboard-tile.sql .dash-snippet,.dashboard-tile.curl .dash-snippet{flex:1 1 0;max-height:none;min-height:0;display:block;-webkit-line-clamp:unset;overflow:hidden;white-space:pre-wrap}
+/* Lightweight centered resize grips; the hit zones are wider than their visuals. */
+.dash-size-handle{border:0;display:grid;place-items:center;box-sizing:border-box;box-shadow:none;background:transparent;transition:opacity .12s,background .12s}
+.dash-size-handle.x{left:0;top:50%;bottom:auto;transform:translateY(-50%);width:17px;height:64px;border-radius:0 10px 10px 0;cursor:ew-resize}
+.dash-size-handle.y{bottom:0;left:50%;right:auto;transform:translateX(-50%);width:64px;height:17px;border-radius:10px 10px 0 0;cursor:ns-resize}
+.dash-size-handle.x::after,.dash-size-handle.y::after{content:"";position:static;transform:none;border:0;border-radius:9px;background:#72bac7;opacity:.95}
+.dash-size-handle.x::after{width:4px;height:26px}
+.dash-size-handle.y::after{width:26px;height:4px}
+.dash-size-handle.xy{left:0;bottom:0;width:24px;height:24px;border-radius:0 9px 0 0;cursor:nesw-resize;background:transparent}
+.dash-size-handle.xy::after{content:"";width:19px;height:19px;background:radial-gradient(circle,#49a7b8 1.8px,transparent 2.2px) 0 0/7px 7px;clip-path:polygon(0 100%,0 5%,95% 100%)}
+.dash-size-handle:hover,.dash-size-handle:focus-visible{background:#d8f2f6;opacity:1;outline:none}
+.dashboard-tile.dashboard-drop-swap{outline:2px solid #199cb2;outline-offset:2px}
+.dashboard-tile.dashboard-drop-edge{outline:2px dashed #6cb9c5;outline-offset:2px}
+.dashboard-tile.dashboard-dragging{opacity:.64;box-shadow:0 12px 24px #123e5d35;cursor:grabbing}
+
+.dash-drag,.dash-size-handle{touch-action:none}
+
+/* 2.20: author and preview live on opposite ends of the heading, not a footer. */
+.dash-card-topline{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;flex:none}
+.dash-card-byline{font-size:11px;font-weight:850;color:var(--accent);min-width:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dash-card-preview{flex:none;max-width:45%;border:0;background:transparent;color:var(--accent);cursor:pointer;font-size:11px;font-weight:750;line-height:1.55;white-space:nowrap;padding:3px 0}
+.dash-card-preview:hover{text-decoration:underline}
+.dashboard-tile:is(.sql,.curl) .dash-description{flex:none;max-height:3.4em;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}
+.dashboard-tile:is(.sql,.curl) .dash-snippet{flex:1;min-height:0;max-height:none;overflow:auto;display:block;-webkit-line-clamp:unset}
+.dashboard-tile.announcement .dash-announcement h3{overflow:auto;max-height:100%}
+
+/* Dashboard report sizing. Plot flexes into leftover card space, never scroll-crops. */
+.dashboard-tile.report{container-type:size}
+.dash-chart{display:flex;overflow:hidden;min-width:0;min-height:0}
+.dash-chart .monitor-chart-dashboard{box-sizing:border-box;display:flex;flex-direction:column;width:100%;height:100%;min-height:0;gap:5px;padding:9px 11px}
+.dash-chart .monitor-chart-card-header{min-height:0;flex:none;gap:5px}
+.dash-chart .monitor-chart-card-title h2{font-size:clamp(11px,1.1vw,14px);white-space:nowrap;text-overflow:ellipsis;overflow:hidden}
+.dash-chart .monitor-chart-card-title p{font-size:10px;margin-top:2px;white-space:nowrap;text-overflow:ellipsis;overflow:hidden}
+.dash-chart .monitor-chart-kind{font-size:10px;padding:2px 7px}
+.dash-chart .monitor-chart-plot{display:flex;align-items:stretch;justify-content:center;flex:1;min-height:0;overflow:hidden;padding:0}
+.dash-chart .monitor-chart-plot>svg{display:block;flex:1;width:100%;height:100%;max-height:none;min-height:0;overflow:hidden}
+.dash-chart .monitor-chart-plot>.monitor-radial{height:100%;min-height:0;display:flex;flex-direction:column;justify-content:center;overflow:hidden}
+.dash-chart .monitor-radial-svg{min-height:0;max-height:100%;height:100%;object-fit:contain}
+.dash-chart .monitor-chart-legend{flex:none;min-height:0;max-height:33px;overflow:auto;gap:3px 8px}
+.dash-chart .monitor-chart-legend-item{font-size:9px}
+.dash-chart .monitor-chart-footer{flex:none;font-size:9px;padding-top:3px;margin-top:0;gap:4px}
+.dash-chart .monitor-chart-warning{font-size:9px;padding:3px 6px;margin:0}
+.dash-chart .monitor-chart-placeholder{min-height:0;flex:1;padding:5px}
+.dash-chart .monitor-radial-caption{display:none}
+@container (max-height: 250px){
+  .dash-chart .monitor-chart-dashboard{padding:5px 8px;gap:3px}
+  .dash-chart .monitor-chart-card-header{align-items:center}
+  .dash-chart .monitor-chart-card-title p{display:none}
+  .dash-chart .monitor-chart-footer{display:none}
+  .dash-chart .monitor-chart-legend{max-height:22px;flex-wrap:nowrap}
+  .dash-chart .monitor-radial-legend{max-height:24px;flex-wrap:nowrap;justify-content:flex-start}
+  .dash-chart .monitor-radial-legend span{white-space:nowrap}
+}
+
+/* The report chart already supplies its own expand affordance. */
+.dash-report-peek{display:none}
+
+.dash-chart-unavailable{margin:auto;padding:15px;text-align:center;color:#8195a0;font-size:12px}
+
+.dashboard-tile .dash-restricted{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:9px;width:100%;height:100%;min-height:80px;padding:16px;color:#8195a1;background:#f8fafb;border:1px dashed #dce6ec;border-radius:10px;overflow:hidden}
+.dashboard-tile .dash-restricted strong{font-size:.86rem;color:#57707c}.dashboard-tile .dash-restricted small{font-size:.73rem}
+
+.dashboard-tile:has(.user-hover-root:hover),.dashboard-tile:has(.user-hover-root:focus-within){overflow:visible;z-index:25!important}
+
+/* Glasswork 2.32: centered, resolution-independent todo completion mark. */
+.dash-check{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;line-height:1;aspect-ratio:1;overflow:hidden}
+.dash-check svg{display:block;width:12px;height:12px;flex:none}
+/* Note tiles are fixed-size excerpts: retain inline rows, clip overflow, and
+   leave full content to the existing "مشاهده محتوا" preview. */
+.dashboard-tile.note .dash-note-content,.dash-smart-slide.note .dash-note-content{
+    min-width:0;min-height:0;flex:1 1 0;overflow:hidden;container-type:inline-size;
+}
+.dash-note-content .note-reading-surface{box-sizing:border-box;max-height:none;min-width:0;overflow:visible;padding:0;color:inherit}
+.dash-note-content .note-reading-row{min-width:0;max-width:100%}
+.dash-note-content .note-reading-inline{display:grid;grid-template-columns:repeat(var(--note-cols),minmax(0,1fr));gap:7px;min-width:0;}
+.dash-note-content .note-reading-item{min-width:0;overflow-wrap:anywhere}
+.dash-note-content .note-reading-heading{font-size:13px;line-height:1.6;margin:4px 0}
+.dash-note-content .note-reading-paragraph{font-size:11px;line-height:1.8;margin:3px 0}
+.dash-note-content .note-reading-code{margin:4px 0}
+.dash-note-content .note-reading-code pre{font-size:10px;padding:7px;white-space:pre-wrap;overflow-wrap:anywhere}
+.dash-note-content .note-reading-code-label{font-size:9px;padding:4px 7px}
+.dash-note-content .note-table-read{overflow:visible}
+.dash-note-content .note-table-read table{width:100%;table-layout:fixed}
+@container (max-width: 210px){
+    .dash-note-content .note-reading-inline{grid-template-columns:minmax(0,1fr)}
+}
+
+/* Glasswork 2.33: no independent scrolling inside dashboard note excerpts. */
+.dash-note-content .note-reading-code pre{overflow:hidden}
+.dash-note-content .note-reading-surface{overflow:hidden}

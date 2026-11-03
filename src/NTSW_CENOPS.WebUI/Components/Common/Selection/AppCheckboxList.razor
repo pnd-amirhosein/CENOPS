@@ -1,0 +1,35 @@
+@namespace NTSW_CENOPS.Components.Common.Selection
+<div class="selection-checklist" role="group" aria-label="@AriaLabel">
+    @foreach (var option in Options)
+    {
+        <label @key="option.Id" class="selection-checklist-item">
+            <input type="checkbox" checked="@SelectedIds.Contains(option.Id)"
+                   disabled="@IsDisabled(option.Id)"
+                   @onchange="(ChangeEventArgs e) => OnChange.InvokeAsync(new CheckboxListChange(option.Id, e.Value is bool checkedValue && checkedValue))" />
+            <span class="selection-checklist-item-copy">
+                <strong>@option.Title</strong>
+                @if (!string.IsNullOrWhiteSpace(option.Subtitle))
+                {
+                    <small dir="ltr">@option.Subtitle</small>
+                }
+                @if (!string.IsNullOrWhiteSpace(option.Description))
+                {
+                    <small>@option.Description</small>
+                }
+            </span>
+        </label>
+    }
+    @if (!Options.Any())
+    {
+        <span class="selection-checklist-empty">موردی پیدا نشد.</span>
+    }
+</div>
+
+@code {
+    [Parameter] public IReadOnlyList<CheckboxListOption> Options { get; set; } = Array.Empty<CheckboxListOption>();
+    [Parameter] public IReadOnlySet<int> SelectedIds { get; set; } = new HashSet<int>();
+    [Parameter] public IReadOnlySet<int> DisabledIds { get; set; } = new HashSet<int>();
+    [Parameter] public string AriaLabel { get; set; } = "گزینه‌ها";
+    [Parameter] public EventCallback<CheckboxListChange> OnChange { get; set; }
+    private bool IsDisabled(int id) => DisabledIds.Contains(id);
+}

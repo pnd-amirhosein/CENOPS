@@ -1,0 +1,8 @@
+.empty-workspace{width:100%;min-height:390px;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:40px 16px;}
+.empty-workspace-symbol{width:82px;height:82px;display:grid;place-items:center;border:1px solid #d6eaf1;border-radius:22px;background:linear-gradient(135deg,#edf9fd,#f7fafc);color:#4a99b4;}
+.empty-workspace-symbol svg{width:55px;height:55px;}
+.empty-workspace-tag{margin-top:21px;font-size:10px;font-weight:750;color:#0f93b4;padding:5px 11px;border-radius:100px;background:#e9f8fc;}
+.empty-workspace h2{margin:15px 0 7px;font-size:20px;font-weight:850;color:#263c55;}
+.empty-workspace p{max-width:410px;margin:0;color:#8798aa;font-size:12px;line-height:2.1;}
+.empty-workspace-link{display:inline-flex;gap:10px;align-items:center;justify-content:center;margin-top:20px;padding:10px 16px;border-radius:9px;border:1px solid #dce8ef;color:#277994;font-size:11px;font-weight:800;text-decoration:none;transition:border-color .15s,background .15s;}
+.empty-workspace-link:hover{background:#f0f9fc;border-color:#bde2ec;color:#146581;}

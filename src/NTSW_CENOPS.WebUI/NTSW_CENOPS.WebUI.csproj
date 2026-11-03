@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>NTSW_CENOPS</RootNamespace>
+    <AssemblyName>NTSW_CENOPS.WebUI</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NTSW_CENOPS.Application\NTSW_CENOPS.Application.csproj" />
+    <ProjectReference Include="..\NTSW_CENOPS.Domain\NTSW_CENOPS.Domain.csproj" />
+    <ProjectReference Include="..\NTSW_CENOPS.Infrastructure\NTSW_CENOPS.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Release notes are bundled with publish output, independent of the source checkout. -->
+    <Content Include="..\..\docs\GLASSWORK*.md" Link="story-docs\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

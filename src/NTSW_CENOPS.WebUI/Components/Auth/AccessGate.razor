@@ -1,0 +1,36 @@
+@using NTSW_CENOPS.Application.Access
+@inject IAccessService AccessService
+@inject AuthenticationStateProvider AuthState
+
+@if (_allowed)
+{
+    @ChildContent
+}
+else
+{
+    @NotAuthorizedContent
+}
+
+@code {
+    [Parameter, EditorRequired] public string AccessKey { get; set; } = string.Empty;
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? NotAuthorizedContent { get; set; }
+
+    private bool _allowed;
+    private string? _checkedKey;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // Re-evaluate when a key changes, and on fresh circuit/component creation.
+        if (_checkedKey == AccessKey) return;
+        if (string.IsNullOrWhiteSpace(AccessKey)) { _checkedKey = AccessKey; _allowed = true; return; }
+        _checkedKey = AccessKey;
+        _allowed = false; // fail closed until the database has answered
+        try
+        {
+            var principal = (await AuthState.GetAuthenticationStateAsync()).User;
+            _allowed = await AccessService.HasAccessAsync(principal, AccessKey);
+        }
+        catch (Exception) { _allowed = false; }
+    }
+}

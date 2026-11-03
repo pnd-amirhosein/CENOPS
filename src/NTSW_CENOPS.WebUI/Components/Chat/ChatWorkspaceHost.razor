@@ -1,0 +1,18 @@
+@using NTSW_CENOPS.Components.Chat
+@using NTSW_CENOPS.Components.Auth
+@using NTSW_CENOPS.Domain.Authorization
+@implements IDisposable
+@inject ChatWorkspaceState ChatState
+
+@if (ChatState.HasOpened)
+{
+    <AccessGate AccessKey="@AccessKeys.Chat">
+        <ChatWorkspace />
+    </AccessGate>
+}
+
+@code {
+    protected override void OnInitialized() => ChatState.Changed += Refresh;
+    private void Refresh() => _ = InvokeAsync(StateHasChanged);
+    public void Dispose() => ChatState.Changed -= Refresh;
+}

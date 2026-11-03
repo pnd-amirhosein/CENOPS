@@ -1,0 +1,133 @@
+@using System.Security.Claims
+@using System.Text.Json
+@using NTSW_CENOPS.Application.Dashboards
+@using NTSW_CENOPS.Application.Reports
+@inject IDashboardContentService Catalog
+@implements IAsyncDisposable
+
+<div class="dash-smart-content @(_items.Count > 0 ? _items[_active].Type : "unconfigured")" dir="rtl" @onmouseenter="() => _paused = true" @onmouseleave="() => _paused = false">
+    @if (_loading) { <AppLoading IsLoading="true" Variant="inline" Label="در حال آماده‌سازی محتوا..." /> }
+    else if (_items.Count == 0) { <div class="dash-smart-empty">برای انتخاب محتوا، از گزینه تنظیمات کارت استفاده کنید.</div> }
+    else
+    {
+        <div class="dash-smart-viewport">
+            <div class="dash-smart-track @(_options.Horizontal ? "horizontal" : "vertical")"
+                 @ontransitionend="FinishTransitionAsync" style="@SlideTransform">
+                @if (_items.Count > 1)
+                {
+                    <DashboardSmartSlide @key="(-1)" Item="_items[^1]" Actor="Actor" Charts="Charts" OnPreview="OnPreview" OnEventDetails="OnEventDetails" />
+                }
+                @foreach (var item in _items)
+                {
+                    <DashboardSmartSlide @key="@(item.Type + "-" + item.Id)" Item="item" Actor="Actor" Charts="Charts" OnPreview="OnPreview" OnEventDetails="OnEventDetails" />
+                }
+                @if (_items.Count > 1)
+                {
+                    <DashboardSmartSlide @key="(-2)" Item="_items[0]" Actor="Actor" Charts="Charts" OnPreview="OnPreview" OnEventDetails="OnEventDetails" />
+                }
+            </div>
+        </div>
+        @if (_items.Count > 1)
+        {
+            <div class="dash-smart-navigation" role="group" aria-label="پیمایش محتوا">
+                <button type="button" class="dash-smart-nav-arrow" aria-label="مورد قبلی" title="مورد قبلی" @onclick="Previous"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 5 7 7-7 7"/></svg></button>
+                <div class="dash-smart-dots">
+                    @foreach (var index in VisibleDots)
+                    { <button type="button" class="dash-smart-dot @(index == _active ? "active" : "")" aria-pressed="@(index == _active)" aria-label="رفتن به مورد @(index + 1)" title="مورد @(index + 1)" @onclick="() => Go(index)"></button> }
+                </div>
+                <span class="dash-smart-position" aria-hidden="true">@(_active + 1) / @_items.Count</span>
+                <button type="button" class="dash-smart-nav-arrow" aria-label="مورد بعدی" title="مورد بعدی" @onclick="Next"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 5-7 7 7 7"/></svg></button>
+            </div>
+        }
+    }
+</div>
+@code {
+    [Parameter, EditorRequired] public DashboardContentReference Layout { get; set; } = default!;
+    [Parameter, EditorRequired] public ClaimsPrincipal Actor { get; set; } = default!;
+    [Parameter] public bool Global { get; set; }
+    [Parameter] public IReadOnlyDictionary<long, MonitoringChartData>? Charts { get; set; }
+    [Parameter] public EventCallback<DashboardContentItem> OnPreview { get; set; }
+    [Parameter] public EventCallback<NTSW_CENOPS.Application.Events.CalendarOccurrence> OnEventDetails { get; set; }
+    private IReadOnlyList<DashboardContentItem> _items = [];
+    private DashboardCardOptions _options = new();
+    private string? _signature;
+    private int _active;
+    private int _position = 1;
+    private bool _normalizing;
+    private bool _teleporting;
+    private string SlideTransform => $"transform:translate{(_options.Horizontal ? "X" : "Y")}(-{_position * 100}%);{(_teleporting ? "transition:none!important;" : "")}";
+    private bool _paused, _loading;
+    private IEnumerable<int> VisibleDots => Enumerable.Range(
+        Math.Clamp(_active - 3, 0, Math.Max(0, _items.Count - 7)), Math.Min(7, _items.Count));
+    private CancellationTokenSource? _clock;
+    protected override async Task OnParametersSetAsync()
+    {
+        var options = Layout.Options ?? new DashboardCardOptions();
+        var signature = JsonSerializer.Serialize(options) + ":" + Global + ":" + Actor.Identity?.Name;
+        if (_signature == signature) return;
+        _signature = signature;
+        _options = options;
+        _active = 0;
+        _position = 1;
+        _clock?.Cancel();
+        _clock?.Dispose();
+        _clock = new CancellationTokenSource();
+        _loading = true;
+        try { _items = options.Items is { Count: > 0 } ? await Catalog.ResolveAsync(options.Items, Global, Actor) : []; }
+        catch (Exception) { _items = []; }
+        finally { _loading = false; }
+        if (_items.Count > 1) _ = RunClockAsync(_clock.Token, Math.Clamp(options.IntervalSeconds, 1, 3600));
+    }
+    private async Task RunClockAsync(CancellationToken token, int seconds)
+    {
+        try
+        {
+            using var ticker = new PeriodicTimer(TimeSpan.FromSeconds(seconds));
+            while (await ticker.WaitForNextTickAsync(token))
+                if (!_paused && _items.Count > 1) await InvokeAsync(() => { Advance(1); StateHasChanged(); });
+        }
+        catch (OperationCanceledException) { }
+    }
+    private void Go(int index)
+    {
+        if (_items.Count == 0) return;
+        _active = index;
+        _position = index + 1;
+    }
+    private void Advance(int delta)
+    {
+        if (_items.Count <= 1) return;
+        // Reduced-motion users do not get transitionend. Normalize a cloned
+        // end slide before the next tick so the carousel remains perpetual.
+        if (_position == 0) _position = _items.Count;
+        else if (_position == _items.Count + 1) _position = 1;
+        _active = (_active + delta + _items.Count) % _items.Count;
+        _position += delta;
+    }
+    private void Next() => Advance(1);
+    private void Previous() => Advance(-1);
+
+    // First and last are rendered as clone slides; when their transition
+    // finishes jump invisibly to the matching real slide without a rewind.
+    private async Task FinishTransitionAsync()
+    {
+        if (_items.Count <= 1 || _normalizing) return;
+        var target = _position == 0 ? _items.Count :
+                     _position == _items.Count + 1 ? 1 : -1;
+        if (target < 0) return;
+        _normalizing = true;
+        try
+        {
+            // Commit one layout frame with transitions disabled, then restore
+            // them. The clone and its real slide are visually identical.
+            _teleporting = true;
+            _position = target;
+            await InvokeAsync(StateHasChanged);
+            await Task.Delay(45);
+            _teleporting = false;
+            await InvokeAsync(StateHasChanged);
+        }
+        finally { _normalizing = false; }
+    }
+    public ValueTask DisposeAsync() { _clock?.Cancel(); _clock?.Dispose(); return ValueTask.CompletedTask; }
+}

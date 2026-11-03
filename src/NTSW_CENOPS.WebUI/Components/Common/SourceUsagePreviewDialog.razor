@@ -1,0 +1,49 @@
+@using NTSW_CENOPS.Application.SourceIntelligence
+<AppModal IsOpen="@(Usage is not null)" OnClose="OnClose" Title="مشاهده محل استفاده"
+          MaxWidth="@(File is null ? "64rem" : "min(97vw, 110rem)")"
+          CssClass="@(File is null ? "source-usage-dialog" : "source-full-dialog")" FloatingClose="true">
+    @if (Usage is not null)
+    {
+        <div class="source-usage-modal-toolbar">
+            <div class="source-usage-modal-meta">
+                <strong dir="ltr">@Usage.File : @Usage.Line : @Usage.Column</strong>
+                <span dir="ltr">@Usage.Container</span>
+                @if (Usage.Kind.StartsWith("MediatR.", StringComparison.Ordinal))
+                {
+                    <span title="Framework relationship inferred from request and handler types; no direct call to Handle() appears in source">MediatR dispatch · inferred</span>
+                }
+            </div>
+            @if (File is null)
+            {
+                <button type="button" class="source-btn source-btn-soft" disabled="@Busy" @onclick="OnExpand">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M3 16v3a2 2 0 0 0 2 2h3M21 16v3a2 2 0 0 1-2 2h-3"/></svg>
+                    نمایش کل فایل
+                </button>
+            }
+            else
+            {
+                <button type="button" class="source-btn source-btn-soft" @onclick="OnCollapse">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+                    نمایش بخش انتخاب‌شده
+                </button>
+            }
+        </div>
+        @if (File is null)
+        {
+            <SourceCodePreview Code="@Usage.Snippet" />
+        }
+        else
+        {
+            <SourceFileViewer File="@File" ActiveLine="@Usage.Line" />
+        }
+    }
+</AppModal>
+
+@code {
+    [Parameter] public SourceUsage? Usage { get; set; }
+    [Parameter] public SourceFileResult? File { get; set; }
+    [Parameter] public bool Busy { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnExpand { get; set; }
+    [Parameter] public EventCallback OnCollapse { get; set; }
+}

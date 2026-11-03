@@ -1,0 +1,230 @@
+/*
+ * CENTRAL OPERATIONS · Glasswork refinements
+ * Authenticated shell ONLY. This is intentionally loaded after operations-shell.css
+ * and the Blazor scoped component bundle. Login, signup and password screens are not affected.
+ */
+.app-shell {
+    --ops-ink: #142c39;
+    --ops-muted: #526b78;
+    --ops-cyan: #08b7c8;
+    --ops-cyan-dark: #007e96;
+    --ops-line: rgba(76, 123, 149, .18);
+    --ops-purple: #7558bd;
+    --ops-purple-soft: #f0ebff;
+    --ops-amber: #ac681b;
+    --ops-amber-soft: #fff3e0;
+    --ops-red: #c8445b;
+    --ops-red-soft: #fff0f1;
+    --ops-green: #167c6d;
+    --ops-green-soft: #e1f8ed;
+    font-size: 14px;
+    line-height: 1.65;
+}
+/* Sharper prose, without replacing the low-contrast glass surfaces. */
+.app-shell :is(.workspace-breadcrumbs,.workspace-subtitle,.workspace-context-meta) {color:#516d7b;font-size:12px;}
+.app-shell .workspace-breadcrumbs a {color:#3c6675;}
+.app-shell .workspace-breadcrumbs span {color:#007f96;font-weight:750;}
+.app-shell .workspace-subtitle {font-size:13px;color:#617987;}
+.app-shell .workspace-context-meta strong {color:#326174;font-size:11px;}
+.app-shell .workspace-page-title {font-size:27px;color:#152d3b;}
+.app-shell .workspace-title-accent {background:linear-gradient(90deg,#05b6c7,#6bdac6);}
+
+/* Command strip: readable text and clearer affordances. */
+.app-shell .skyline-brand-copy strong {font-size:15px;color:#193240;}
+.app-shell .skyline-brand-suffix {color:#607e8c;}
+.app-shell .skyline-animated-title {font-size:12px;color:#486777;}
+.app-shell .skyline .account-trigger,.app-shell .skyline .account-display-name {font-size:13px;color:#1d3e4d;}
+.app-shell .quick-search-trigger {font-size:13px;color:#486878;}
+.app-shell .quick-search-trigger kbd {font-size:10px;color:#556e7c;}
+.app-shell .quick-search-results h2,.app-shell .quick-search-result-copy strong {font-size:14px;color:#183746;}
+.app-shell .quick-search-result-copy small,.app-shell .quick-search-help {font-size:12px;color:#607d8c;}
+.app-shell .quick-search-results h2 small {font-size:11px;color:#637f8c;}
+.app-shell .skyline .skyline-action {color:#446b7e!important;}
+.app-shell .skyline .skyline-action:hover {background:#daf6fa!important;color:#087b97!important;}
+
+/* Dock: remove the top badge, preserve a truly centered icon column. */
+.app-shell .sidebar-navigation {padding:19px 10px;}
+.app-shell .sidebar-navigation .sidebar-items {gap:9px;}
+.app-shell .sidebar-navigation :is(.nav-link,.nav-group-trigger) {
+    font-size:13px;font-weight:750;color:#4a6979!important;
+    height:50px;min-height:50px;gap:15px;
+}
+.app-shell .sidebar-navigation :is(.nav-link,.nav-group-trigger) .text {font-size:13px;color:inherit;}
+.app-shell .shell-sidebar:not(:hover):not(:focus-within) .sidebar-navigation .nav-group-trigger .accordion-arrow {
+    display:none!important;
+}
+.app-shell .sidebar-navigation .nav-group-trigger .accordion-arrow {color:#6a8b99;}
+.app-shell .sidebar-navigation .nav-group-trigger[aria-expanded="true"] {color:#047f94!important;background:#e6f8fb!important;}
+.app-shell .sidebar-navigation .nav-children .nav-link {font-size:12px;}
+.app-shell .sidebar-navigation .nav-link.active {background:#173848!important;box-shadow:0 7px 20px rgba(13,79,107,.21)!important;}
+.app-shell .sidebar-navigation .nav-link.active .icon {color:#69e4e6!important;}
+.app-shell .sidebar-navigation :is(.nav-link,.nav-group-trigger) .icon {flex:0 0 22px;margin:0;line-height:0;}
+.app-shell .sidebar-navigation .nav-group-trigger .icon svg {display:block;margin:auto;}
+.app-shell .sidebar-bottom {min-height:75px;padding:16px 14px;border-top-color:#e0eaec;}
+.app-shell .sidebar-bottom-mark {
+    background:linear-gradient(150deg,#d5f9f5,#e0eeff);
+    color:#087c92;font-family:'Yekan Bakh',sans-serif;font-size:24px;
+    line-height:1;font-weight:850;
+}
+.app-shell .sidebar-bottom-copy strong {font-size:15px;color:#1d4350;}
+.app-shell .sidebar-bottom-copy p {font-size:10px;color:#4a7e8e;letter-spacing:.05em;}
+
+/* Landing: dashboard is an invitation to the full operations suite, not just monitoring. */
+.app-shell .ops-hero-overline {font-size:11px;color:#148899;}
+.app-shell .ops-overline-index {color:#7795a2;}
+.app-shell .ops-hero h2 {color:#173342;}
+.app-shell .ops-hero p {font-size:15px;color:#4a6675;line-height:2;}
+.app-shell .ops-hero-primary {min-height:45px;font-size:14px;background:#173c4e;color:#fff;}
+.app-shell .ops-hero-primary:hover {background:#075f75;}
+.app-shell .ops-hero-secondary {font-size:13px;color:#067f96;}
+.app-shell .ops-hero-secondary:hover {color:#055e78;}
+.app-shell .ops-art-emblem {
+    font-family:'Yekan Bakh',sans-serif;
+    font-size:97px;font-weight:850;letter-spacing:0;
+    transform:rotate(12deg) translateY(20px);color:#147f95;
+}
+.app-shell .ops-art-caption {font-size:11px;color:#518392;font-family: "Yekan bakh";font-size: 1.2rem;font-weight: 900;}
+.app-shell .ops-section-eyebrow {font-size:11px;color:#008aa1;}
+.app-shell .ops-section-intro h2 {font-size:21px;color:#193745;}
+.app-shell .ops-section-intro p {font-size:13px;color:#597783;}
+.app-shell .ops-tiles {gap:14px;}
+.app-shell .ops-tile {background:rgba(255,255,255,.88);border:1px solid rgba(210,230,232,.75);box-shadow:0 7px 30px rgba(44,81,102,.04);}
+.app-shell .ops-tile:hover {border-color:#80ced8;box-shadow:0 17px 38px rgba(26,101,119,.11);}
+.app-shell .ops-tile-body strong {font-size:15px;color:#1d3c4b;}
+.app-shell .ops-tile-body small {font-size:12px;color:#577484;line-height:1.75;}
+.app-shell .ops-tile-icon--amber {color:#b56725;background:#fff0d7;}
+.app-shell .ops-tile-icon--cyan {color:#027caa;background:#dff3ff;}
+.app-shell .ops-tile-icon--mint {color:#157d67;background:#dbf8eb;}
+.app-shell .ops-tile-icon--violet {color:#6f52ae;background:#ebe3ff;}
+.app-shell .ops-future h2 {font-size:19px;color:#224351;}
+.app-shell .ops-future p {font-size:13px;color:#567381;}
+.app-shell .ops-future-state {font-size:12px;color:#138476;}
+
+/* DataTable: neutral structure; color reserved for meaning/action. */
+.app-shell .datatable-toolbar {
+    gap:9px!important;padding:13px 15px;
+    border-color:rgba(114,172,181,.23);
+    background:rgba(255,255,255,.90);
+}
+.app-shell .datatable-toolbar > button,
+.app-shell .datatable-toolbar .filter-wrapper > button:not(.filter-backdrop) {
+    font-size:13px!important;font-weight:750!important;min-height:38px;
+    padding:7px 13px!important;color:#3c5c6e!important;
+    background:#f4f8fa!important;border-color:#dce8ed!important;
+}
+.app-shell .datatable-toolbar > button:first-child {color:#087a91!important;background:#e7f7fa!important;border-color:#cfebee!important;}
+.app-shell .datatable-toolbar > .success.outline-button,
+.app-shell .datatable-toolbar > .filled.success {
+    background:#087e9f!important;color:#fff!important;border-color:#087e9f!important;
+    box-shadow:0 3px 9px rgba(1,141,175,.14)!important;
+}
+.app-shell .datatable-toolbar > .success.outline-button:hover,
+.app-shell .datatable-toolbar > .filled.success:hover {background:#05647f!important;border-color:#05647f!important;}
+.app-shell .datatable-toolbar > .warning:not(:disabled) {color:var(--ops-amber)!important;background:var(--ops-amber-soft)!important;border-color:#f4dfb9!important;}
+.app-shell .datatable-toolbar > .warning:hover:not(:disabled) {background:#ffe6b7!important;border-color:#f1c880!important;color:#8b5112!important;}
+.app-shell .datatable-toolbar > .danger:not(:disabled) {color:var(--ops-red)!important;background:var(--ops-red-soft)!important;border-color:#f5d2d9!important;}
+.app-shell .datatable-toolbar > .danger:hover:not(:disabled) {background:#ffdee5!important;border-color:#edabbb!important;color:#ac2846!important;}
+.app-shell .datatable-toolbar > button:disabled {color:#9bacb4!important;background:#f4f7f8!important;border-color:#e6ecee!important;opacity:.58!important;}
+.app-shell .datatable-toolbar .filter-wrapper > button:not(.filter-backdrop) {color:#6e4bba!important;background:#f1ecff!important;border-color:#e4d9ff!important;}
+.app-shell .datatable-toolbar .filter-wrapper > button:not(.filter-backdrop):hover,
+.app-shell .datatable-toolbar .filter-wrapper > button:not(.filter-backdrop)[aria-expanded="true"] {color:#5d36ae!important;background:#e9ddff!important;border-color:#ccb8fb!important;}
+.app-shell .datatable-shell {border-color:#dbe9ef!important;background:rgba(255,255,255,.94);}
+.app-shell .datatable-table thead tr,.app-shell .datatable-table thead th {
+    background:#eaf4f7!important;color:#254f64!important;
+}
+.app-shell .datatable-table thead th {font-size:13px!important;font-weight:800!important;padding:14px!important;border-bottom-color:#d4e5ec!important;}
+.app-shell .datatable-table tbody td {font-size:14px!important;color:#2b4958!important;line-height:1.8;padding:12px 14px!important;border-bottom-color:#e9f0f2!important;}
+.app-shell .datatable-table tbody tr:nth-child(odd) {background:rgba(245,250,253,.65)!important;}
+.app-shell .datatable-table tbody tr:hover {background:#e9f8fa!important;}
+.app-shell .datatable-table tbody tr.table-primary {background:#dbf3f5!important;box-shadow:inset -3px 0 0 #05a7be;}
+.app-shell .datatable-table tbody tr.table-warning {background:#fff8e6!important;}
+.app-shell .datatable-table :is(th,td) input {font-size:14px;}
+
+/* The row-actions column is FIRST in the DOM because the table is RTL.
+   Fixed/narrow widths and sticky right edge keep the action where it belongs. */
+.app-shell .datatable-table :is(.row-menu-header,.row-menu-cell) {
+    position:sticky;right:0;z-index:2;
+    width:44px!important;min-width:44px!important;max-width:44px!important;
+    padding:5px!important;text-align:center;
+    border-left:1px solid #e3edf0!important;
+}
+.app-shell .datatable-table .row-menu-header {z-index:3;background:#e3f0f5!important;}
+.app-shell .datatable-table .row-menu-cell--open {z-index:85;}
+.app-shell .datatable-table .row-menu-cell {background:rgba(250,253,254,.96)!important;}
+.app-shell .datatable-table tbody tr.table-primary .row-menu-cell {background:#dbf3f5!important;}
+.app-shell .datatable-table .row-menu-trigger {width:30px;height:32px;display:inline-grid;place-items:center;color:#23839b!important;padding:6px!important;border-radius:9px;}
+.app-shell .datatable-table .row-menu-trigger:hover,
+.app-shell .datatable-table .row-menu-trigger[aria-expanded=true] {background:#d3f4f9!important;color:#056c8a!important;}
+.app-shell .row-context-menu {right:35px;left:auto;top:4px;font-size:13px;color:#213f4f;}
+.app-shell .row-context-menu-empty {font-size:13px;color:#536f7b;}
+.app-shell .datatable-footer {font-size:13px;color:#536f7e;}
+.app-shell .page-summary {font-size:13px;color:#31596b;}
+.app-shell .page-size-control select {font-size:13px;color:#264f62;}
+.app-shell .pagination-page,.app-shell .pagination-nav {font-size:13px;color:#3b657a!important;}
+.app-shell .pagination-page--active {background:#098aab!important;border-color:#098aab!important;color:#fff!important;}
+.app-shell .pagination-ellipsis {color:#6d8794;}
+
+/* Filtering floats above the whole workspace; it must NOT take layout space. */
+.app-shell .filter-wrapper {position:relative;z-index:auto;}
+.app-shell .filter-backdrop {position:fixed;inset:0;z-index:180;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;}
+.app-shell .filter-panel {
+    position:fixed;z-index:181;right:auto;inset-inline-start:auto;
+    max-height:min(68vh,560px);overflow-y:auto;
+    background:rgba(255,255,255,.985);border:1px solid #d5e8ef;
+    box-shadow:0 23px 80px rgba(19,69,91,.20),0 4px 16px rgba(22,94,107,.07);
+    border-radius:16px;color:#233f4e;
+}
+.app-shell .filter-field label {font-size:13px;color:#32576b;font-weight:700;}
+.app-shell .filter-field :is(input,select) {font-size:14px;color:#1d3d4d;}
+.app-shell .filter-panel :is(.add-filter,.remove-filter,.apply-button,.clear-filters) {font-size:13px;font-weight:750;}
+.app-shell .filter-panel .apply-button {background:#078aa8!important;border-color:#078aa8!important;color:#fff!important;}
+.app-shell .filter-panel .add-filter {color:#078a9e;}
+.app-shell .filter-panel .remove-filter {color:#bd5260;}
+
+/* Tabs, modal content and account overlays deserve the same readable ink. */
+.app-shell .app-tab {font-size:14px!important;color:#4a6876!important;}
+.app-shell .app-tab--active {color:#096e88!important;box-shadow:0 3px 12px rgba(30,108,130,.11)!important;}
+.app-shell .app-modal-surface {color:#1c3948;}
+.app-shell .app-modal-heading h2 {font-size:19px;color:#193745;}
+.app-shell .app-modal-heading p {font-size:14px;color:#4d6b78;}
+.app-shell .account-menu {color:#244554;font-size:14px;}
+.app-shell .administration-header p {font-size:13px;color:#567584;}
+.app-shell .operation-message {font-size:14px;}
+.app-shell .empty-workspace p {font-size:14px;color:#4a6979;}
+.app-shell .empty-workspace-link {font-size:14px;}
+
+@media (max-width:900px) {
+    .app-shell .shell-sidebar:not(:hover):not(:focus-within) .sidebar-navigation .nav-group-trigger .accordion-arrow {display:block!important;}
+    .app-shell .shell-sidebar .sidebar-navigation :is(.nav-link,.nav-group-trigger) {font-size:13px;}
+}
+@media (max-width:670px) {
+    .app-shell .skyline-brand-copy strong {font-size:13px;}
+    .app-shell .skyline-animated-title {font-size:11px;}
+    .app-shell .datatable-toolbar > button,.app-shell .datatable-toolbar .filter-wrapper > button:not(.filter-backdrop) {font-size:12px!important;}
+    .app-shell .datatable-table thead th,.app-shell .datatable-table tbody td {font-size:12px!important;padding:10px 8px!important;}
+    .app-shell .datatable-table :is(.row-menu-header,.row-menu-cell) {width:40px!important;min-width:40px!important;max-width:40px!important;padding:4px!important;}
+}
+
+/* Glasswork 2.32: sidebar library links reuse their corresponding card-category colors. */
+.app-shell .sidebar-navigation .nav-children .nav-item.nav-accent-curl{--wiki-nav-color:#0b91af;--wiki-nav-tint:#ebfafe}
+.app-shell .sidebar-navigation .nav-children .nav-item.nav-accent-sql{--wiki-nav-color:#8056b6;--wiki-nav-tint:#f4effb}
+.app-shell .sidebar-navigation .nav-children .nav-item.nav-accent-todo{--wiki-nav-color:#198960;--wiki-nav-tint:#eaf8f0}
+.app-shell .sidebar-navigation .nav-children .nav-item.nav-accent-announcement{--wiki-nav-color:#c5507c;--wiki-nav-tint:#fff0f5}
+.app-shell .sidebar-navigation .nav-children .nav-item.nav-accent-note{--wiki-nav-color:#bd742d;--wiki-nav-tint:#fff4e7}
+.app-shell .sidebar-navigation .nav-children .nav-item[class*="nav-accent-"] .nav-link .icon,
+.app-shell .sidebar-navigation .nav-children .nav-item[class*="nav-accent-"] .nav-link .text{
+    color:var(--wiki-nav-color)!important;
+}
+.app-shell .sidebar-navigation .nav-children .nav-item[class*="nav-accent-"] .nav-link:is(:hover,.active){
+    background:var(--wiki-nav-tint)!important;
+    border-color:color-mix(in srgb,var(--wiki-nav-color) 22%,transparent)!important;
+    color:var(--wiki-nav-color)!important;
+}
+
+/* Persian workspace label: avoid the Latin-only font override on سیناپس. */
+.app-shell .workspace-context-meta,
+.app-shell .workspace-context-meta strong {
+ font-family:"Yekan Bakh",Tahoma,sans-serif;
+ font-size:12px;line-height:1.6;font-weight:700;letter-spacing:0;
+}
+.app-shell .workspace-context-meta strong {font-weight:800;color:#246a80}

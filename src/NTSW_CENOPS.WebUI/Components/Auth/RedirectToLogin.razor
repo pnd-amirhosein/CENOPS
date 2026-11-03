@@ -1,0 +1,22 @@
+﻿@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        var authenticationState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+
+        if (authenticationState.User.Identity?.IsAuthenticated == true)
+        {
+            Navigation.NavigateTo("/access-denied", forceLoad: true);
+            return;
+        }
+
+        var relativeUrl = Navigation.ToBaseRelativePath(Navigation.Uri);
+        var returnUrl = string.IsNullOrWhiteSpace(relativeUrl) ? "/dashboard" : $"/{relativeUrl}";
+
+        Navigation.NavigateTo(
+            $"/?returnUrl={Uri.EscapeDataString(returnUrl)}",
+            forceLoad: true);
+    }
+}

@@ -1,0 +1,49 @@
+/* Team event editor — inherits CENOPS type and uses shared Jalali picker */
+.team-event-editor[b-sz1joqxlzo]{--ink:#20485a;--line:#dce9ee;max-width:1150px;margin:0 auto;color:var(--ink);font-family:inherit}
+.team-editor-top[b-sz1joqxlzo]{display:flex;justify-content:space-between;align-items:start;gap:18px;margin:0 0 19px}
+.team-editor-top h2[b-sz1joqxlzo]{font-size:22px;letter-spacing:-.4px;margin:3px 0 4px;color:#234c5b;font-weight:850}
+.team-editor-top p[b-sz1joqxlzo]{margin:0;color:#76909d;font-size:12px}
+.team-editor-overline[b-sz1joqxlzo]{font:750 10px sans-serif;color:#08a0b9;letter-spacing:1.4px}
+.team-event-editor .team-calendar-add[b-sz1joqxlzo],.team-event-editor .team-calendar-today[b-sz1joqxlzo]{display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:8px 15px;border-radius:10px;border:1px solid #d0e0e5;text-decoration:none!important;white-space:nowrap;background:#fff;color:#416478!important;font:inherit;font-size:13px;font-weight:800}
+.team-event-editor .team-calendar-add[b-sz1joqxlzo]{background:#079bb6;border-color:#079bb6;color:white!important}
+.team-event-editor .team-calendar-add:hover[b-sz1joqxlzo]{background:#007f9a}
+.team-editor-grid[b-sz1joqxlzo]{display:grid;grid-template-columns:1fr 1fr;gap:17px;align-items:start}
+.team-editor-section[b-sz1joqxlzo]{background:white;border:1px solid var(--line);border-radius:16px;padding:24px;min-width:0}
+.team-editor-section h3[b-sz1joqxlzo]{font-size:16px;font-weight:850;margin:0 0 24px;padding-bottom:15px;border-bottom:1px solid #eaf1f3;color:#245062}
+.team-field[b-sz1joqxlzo]{display:flex;flex-direction:column;gap:8px;min-width:0;margin-bottom:17px;color:#416878;font-size:12px;font-weight:800}
+.team-field b[b-sz1joqxlzo]{color:#d74757}
+.team-field input:not([type=checkbox])[b-sz1joqxlzo],.team-field textarea[b-sz1joqxlzo],.team-field select[b-sz1joqxlzo]{display:block;box-sizing:border-box;width:100%;min-height:43px;border:1px solid #d7e4e8;border-radius:11px;background:#fbfdfe;color:#285160;font:inherit;font-weight:600;font-size:13px;padding:9px 12px;outline:none}
+.team-field :is(input,textarea,select):focus[b-sz1joqxlzo]{border-color:#1ca7bf;box-shadow:0 0 0 3px #1ca7bf1b}
+.team-field textarea[b-sz1joqxlzo]{resize:vertical;min-height:96px}
+.team-field small[b-sz1joqxlzo]{font-size:11px;color:#849ba5;font-weight:550}
+.team-two-fields[b-sz1joqxlzo]{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.team-checkbox-line[b-sz1joqxlzo]{display:flex;align-items:center;gap:10px;margin:15px 0 18px;font-size:12px;font-weight:800;color:#416777;cursor:pointer}
+.team-checkbox-line input[b-sz1joqxlzo]{width:17px;height:17px;accent-color:#0497b2}
+.team-weekday-pills[b-sz1joqxlzo]{display:flex;flex-wrap:wrap;gap:7px}
+.team-weekday-pills label[b-sz1joqxlzo]{cursor:pointer}
+.team-weekday-pills input[b-sz1joqxlzo]{position:absolute;opacity:0;pointer-events:none}
+.team-weekday-pills span[b-sz1joqxlzo]{display:inline-flex;align-items:center;justify-content:center;min-height:35px;padding:4px 9px;background:#f6fafb;color:#597788;border:1px solid #dce9ed;border-radius:9px;font-size:11px;font-weight:850}
+.team-weekday-pills label.checked span[b-sz1joqxlzo]{background:#e4f7fa;border-color:#5dbdce;color:#087f99}
+.team-weekday-pills input:focus-visible+span[b-sz1joqxlzo]{outline:3px solid #62bed1;outline-offset:2px}
+.team-editor-hint[b-sz1joqxlzo]{font-size:12px;color:#8097a2;line-height:1.85;margin:8px 0 20px}
+.team-rule-example[b-sz1joqxlzo]{border-right:3px solid #4cb6cb;background:#f0fafb;color:#447583;font-size:12px;padding:14px;line-height:1.8;border-radius:9px}
+.team-editor-footer[b-sz1joqxlzo]{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin:18px 0 50px}
+.team-editor-footer .team-delete[b-sz1joqxlzo]{margin-left:auto}
+.team-delete[b-sz1joqxlzo]{background:#fff1f3;border:1px solid #f1c8cd;color:#c44055;border-radius:10px;padding:9px 16px;font-size:12px;font-weight:800}
+.team-delete:hover[b-sz1joqxlzo]{background:#fbe0e5}
+.team-editor-error[b-sz1joqxlzo]{border:1px solid #f3c6ce;background:#fff3f5;color:#ad3450;padding:12px 16px;margin:15px 0 0;border-radius:9px;font-size:12px}
+.team-editor-message[b-sz1joqxlzo]{background:white;border:1px solid var(--line);border-radius:12px;padding:24px}
+@media(max-width:900px){.team-editor-grid[b-sz1joqxlzo]{grid-template-columns:1fr}}
+@media(max-width:580px){.team-editor-top[b-sz1joqxlzo]{flex-direction:column}.team-editor-section[b-sz1joqxlzo]{padding:17px}.team-two-fields[b-sz1joqxlzo]{grid-template-columns:1fr}}
+
+/* 2.28 — destructive actions share the standard editor control dimensions. */
+.team-event-editor .team-delete[b-sz1joqxlzo],
+.team-event-editor + .app-modal-backdrop .team-delete[b-sz1joqxlzo]{
+    display:inline-flex;align-items:center;justify-content:center;
+    height:36px;min-height:36px;box-sizing:border-box;
+    padding:7px 14px;font-size:13px;font-weight:800;line-height:1.4;
+}
+
+.team-delete[b-sz1joqxlzo]{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;height:36px;min-height:36px;padding:7px 14px;font-size:13px;font-weight:800;line-height:1.4}
+/* Match destructive action dimensions with the adjacent cancel/save controls. */
+.team-editor-footer .team-compact-delete[b-sz1joqxlzo]{height:36px;min-height:36px;padding:7px 14px;font-size:13px;line-height:1.4}

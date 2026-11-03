@@ -1,0 +1,29 @@
+/* Glasswork 2.40 - page-authored toolbar content in the shared application header. */
+.app-shell .workspace-context-end {display:flex; flex:0 1 auto; min-width:0; align-items:center; gap:12px; justify-content:flex-end; flex-wrap:wrap;}
+.app-shell .workspace-page-actions {display:flex; align-items:center; justify-content:flex-start; flex-wrap:wrap; gap:8px; min-width:0; direction:rtl;}
+.app-shell .workspace-page-actions:empty {display:none;}
+.app-shell .workspace-page-actions .page-action-button,
+.app-shell .workspace-page-actions .code-tool-saveas {min-height:35px; display:inline-flex; align-items:center; justify-content:center; gap:7px; padding:7px 13px; border:1px solid #c8e1e8; border-radius:10px; background:#fff; color:#16778d; font-size:12px; font-weight:750; text-decoration:none; white-space:nowrap; cursor:pointer; transition:background .15s,border-color .15s,color .15s;}
+.app-shell .workspace-page-actions .page-action-button:hover:not(:disabled),
+.app-shell .workspace-page-actions .code-tool-saveas:hover:not(:disabled) {background:#e9f9fb; border-color:#87cdd9; color:#006f8a;}
+.app-shell .workspace-page-actions :is(.page-action-button,.code-tool-saveas):disabled {opacity:.5; cursor:not-allowed;}
+.app-shell .workspace-page-actions .page-action-button svg,
+.app-shell .workspace-page-actions .page-action-search svg {width:16px; height:16px; flex:none; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round;}
+.app-shell .workspace-page-actions .page-action-search {height:35px; display:flex; align-items:center; gap:7px; padding:0 11px; border:1px solid #d3e4e9; border-radius:10px; background:#fff; color:#428096; min-width:165px; max-width:310px;}
+.app-shell .workspace-page-actions .page-action-search:focus-within {border-color:#18a0b4; box-shadow:0 0 0 3px #16b1c21c;}
+.app-shell .workspace-page-actions .page-action-search input {width:100%; min-width:0; border:none!important; outline:none!important; background:transparent!important; box-shadow:none!important; font-family:inherit; font-size:12px; font-weight:600; color:#204b60;}
+.app-shell .workspace-page-actions .dashboard-actions {margin:0; gap:6px;}
+.app-shell .workspace-page-actions :is(.dash-button,.dashboard-picker){height:35px;min-height:35px;}
+.app-shell .workspace-context-meta {flex:none;}
+@media (max-width:1050px) {
+  .app-shell .workspace-context {flex-wrap:wrap; align-items:flex-start;}
+  .app-shell .workspace-context-end {flex:1 1 100%; justify-content:space-between;}
+  .app-shell .workspace-page-actions {flex:1;}
+}
+@media (max-width:760px) {
+  .app-shell .workspace-context-end {gap:5px;}
+  .app-shell .workspace-page-actions {width:100%; flex:1 1 100%; gap:6px;}
+  .app-shell .workspace-page-actions .page-action-search {flex:1 1 170px; max-width:none;}
+  .app-shell .workspace-page-actions .dashboard-actions {width:100%;}
+  .app-shell .workspace-page-actions .dashboard-picker {max-width:min(250px,55vw);}
+}

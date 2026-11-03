@@ -1,0 +1,24 @@
+@using NTSW_CENOPS.Components.Common.Notices
+<div class="app-notice @(Notice.IsChat ? "app-notice--chat" : Notice.IsSuccess ? "app-notice--success" : "app-notice--error") @(Compact ? "app-notice--compact" : "")"
+     dir="rtl" role="status" aria-live="polite" aria-atomic="true">
+    <span class="app-notice-icon" aria-hidden="true">
+        @if (Notice.IsChat) { <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 0 1-8 8 9 9 0 0 1-4-1l-4 1 1-4a8 8 0 1 1 15 0Z"/><path d="M8 11h8m-8 3h5"/></svg> }
+        else { @(Notice.IsSuccess ? "✓" : "!") }
+    </span>
+    <div class="app-notice-copy">
+        <strong>@Notice.Title</strong>
+        <p dir="auto">@Notice.Message</p>
+    </div>
+    @if (Notice.IsChat)
+    {
+        <button type="button" class="app-notice-open" aria-label="نمایش گفتگو" title="نمایش گفتگو" @onclick="OnOpen">↗</button>
+    }
+    <button type="button" class="app-notice-close" @onclick="OnClose" aria-label="بستن اعلان">×</button>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public AppNotice Notice { get; set; } = default!;
+    [Parameter] public bool Compact { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnOpen { get; set; }
+}

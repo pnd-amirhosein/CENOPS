@@ -1,0 +1,239 @@
+@using System.Globalization
+@using NTSW_CENOPS.Application.Reports
+
+@* Composition charts summarize selected numeric fields, NOT comparison-axis values.
+   A selected range filters the source points upstream. No production SQL is executed. *@
+<div id="@RootId" class="monitor-radial" dir="ltr">
+    @if (Data.MeasureNames.Count < RequiredMeasureCount)
+    {
+        <p class="monitor-radial-empty">برای این نمودار دست‌کم @RequiredMeasureCount اندازه‌گیری عددی مجزا انتخاب کنید.</p>
+    }
+    else if (HasNegativeValues)
+    {
+        <p class="monitor-radial-empty">این نمایش سهم/ترکیب فقط برای مقادیر غیرمنفی معتبر است. فیلدها یا بازه را تغییر دهید.</p>
+    }
+    else if (CompositionTotal <= 0)
+    {
+        <p class="monitor-radial-empty">در بازه انتخاب‌شده، مجموع اندازه‌گیری‌های انتخابی مثبت نیست.</p>
+    }
+    else if (Data.ChartType == "gauge")
+    {
+        <div class="monitor-gauge-grid" dir="rtl">
+            @foreach (var item in Parts)
+            {
+                var percentage = item.Value / CompositionTotal * 100d;
+                <div class="monitor-gauge-item" dir="rtl">
+                    <svg viewBox="0 0 160 124" role="img" aria-label="@($"{item.Name}: {F(percentage)} درصد از مجموع")">
+                        <path d="M 18 86 A 62 62 0 0 1 142 86" pathLength="100"
+                              fill="none" stroke="#e5eff2" stroke-width="12" stroke-linecap="round" />
+                        <path d="M 18 86 A 62 62 0 0 1 142 86" pathLength="100"
+                              fill="none" stroke="@Color(item.Index)" stroke-width="12"
+                              stroke-dasharray="@($"{F(percentage)} 100")" stroke-linecap="round" />
+                        @SvgLabel(80, 78, "middle", $"{F(percentage)}%", "monitor-gauge-value")
+                        @SvgLabel(80, 104, "middle", Format(item.Value), "monitor-gauge-cap")
+                        <title>@item.Name — @Format(item.Value) از @Format(CompositionTotal) (@F(percentage)%)</title>
+                    </svg>
+                    <span title="@item.Name">@item.Name</span>
+                </div>
+            }
+        </div>
+        <p class="monitor-radial-caption">درصد سهم هر اندازه‌گیری از مجموع فیلدهای انتخاب‌شده در بازهٔ نمایش‌داده‌شده (نه درصد تحقق هدف).</p>
+    }
+    else if (Data.ChartType is "pie" or "doughnut" or "treemap")
+    {
+        <svg class="monitor-radial-svg" viewBox="0 0 640 285" role="img" aria-label="@Data.Name">
+            @if (Data.ChartType == "treemap")
+            {
+                @foreach (var tile in Tiles)
+                {
+                    <rect x="@F(tile.X)" y="@F(tile.Y)" width="@F(tile.W)" height="@F(tile.H)"
+                          fill="@Color(tile.Item.Index)" rx="3" stroke="white" stroke-width="2">
+                        <title>@tile.Item.Name — @Format(tile.Item.Value) (@F(Percent(tile.Item.Value))%)</title>
+                    </rect>
+                    @if (tile.W >= 65 && tile.H >= 24)
+                    {
+                        @SvgLabel(tile.X + tile.W / 2, tile.Y + tile.H / 2 + 3, "middle", Truncate(tile.Item.Name, tile.W), "monitor-treemap-label")
+                    }
+                }
+            }
+            else
+            {
+                var angle = -90d;
+                @foreach (var part in PositiveParts)
+                {
+                    var sweep = Percent(part.Value) * 3.6;
+                    <path d="@SectorPath(angle, sweep, Data.ChartType == "doughnut")"
+                          fill="@Color(part.Index)" stroke="white" stroke-width="1.6" fill-rule="evenodd">
+                        <title>@part.Name — @Format(part.Value) (@F(Percent(part.Value))%)</title>
+                    </path>
+                    angle += sweep;
+                }
+                @if (Data.ChartType == "doughnut")
+                {
+                    @SvgLabel(320, 141, "middle", Short(CompositionTotal), "monitor-doughnut-value")
+                    @SvgLabel(320, 162, "middle", "مجموع", "monitor-doughnut-caption")
+                }
+            }
+        </svg>
+        <div class="monitor-radial-legend" dir="rtl">
+            @foreach (var item in Parts)
+            {
+                <span title="@($"{item.Name}: {Format(item.Value)} ({F(Percent(item.Value))}%)")">
+                    <i style="background:@Color(item.Index)"></i>@item.Name: @F(Percent(item.Value))%
+                </span>
+            }
+        </div>
+        <p class="monitor-radial-caption">سهم هر فیلد عددی از مجموع اندازه‌گیری‌های انتخاب‌شده در بازه؛ مقادیر هر فیلد روی نقاط زمانی جمع شده‌اند.</p>
+    }
+    else if (Data.ChartType == "spider")
+    {
+        <svg class="monitor-radial-svg" viewBox="0 0 640 285" role="img" aria-label="@Data.Name">
+            @for (var level = 1; level <= 4; level++)
+            {
+                <polygon points="@RadarRing(level / 4d)" fill="none" stroke="#e0ebee" stroke-width="1" />
+            }
+            @for (var i = 0; i < Parts.Count; i++)
+            {
+                var endpoint = RadarCoordinate(i, 1);
+                var label = RadarCoordinate(i, 1.24);
+                <line x1="320" y1="142" x2="@F(endpoint.X)" y2="@F(endpoint.Y)" stroke="#dce9ed" />
+                @SvgLabel(label.X, label.Y + 4, "middle", Truncate(Parts[i].Name, 120), "monitor-radar-label")
+            }
+            <polygon points="@RadarShape" fill="#0896ab" fill-opacity=".19"
+                     stroke="#0896ab" stroke-width="2.5" stroke-linejoin="round">
+                <title>مجموع مقادیر هر فیلد در بازهٔ انتخاب‌شده؛ مقیاس بر اساس بزرگ‌ترین مجموع</title>
+            </polygon>
+            @for (var i = 0; i < Parts.Count; i++)
+            {
+                var pt = RadarCoordinate(i, Parts[i].Value / RadarMax);
+                <circle cx="@F(pt.X)" cy="@F(pt.Y)" r="4.2" fill="@Color(i)" stroke="white" stroke-width="1.5">
+                    <title>@Parts[i].Name — @Format(Parts[i].Value)</title>
+                </circle>
+            }
+        </svg>
+        <div class="monitor-radial-legend" dir="rtl">
+            @foreach (var part in Parts)
+            {
+                <span title="@part.Name — @Format(part.Value)"><i style="background:@Color(part.Index)"></i>@part.Name: @Short(part.Value)</span>
+            }
+        </div>
+        <p class="monitor-radial-caption">هر رأس نام یک فیلد عددی است، نه تاریخ؛ فاصله از مرکز نسبت به بیشترین مجموع اندازه‌گیری در بازه مقیاس می‌شود.</p>
+    }
+    <p class="monitor-radial-caution">برای سهم‌بندی درست، اندازه‌گیری‌ها باید هم‌واحد و بدون هم‌پوشانی باشند؛ مثلاً TotalCount را همزمان با اجزای تشکیل‌دهنده‌اش انتخاب نکنید.</p>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public MonitoringChartData Data { get; set; } = default!;
+    [Parameter] public string RootId { get; set; } = string.Empty;
+    [Parameter] public IReadOnlyDictionary<string, string>? Palette { get; set; }
+
+    private static readonly string[] Colors = ["#0896ab", "#d77f33", "#755ad0", "#2a9a72", "#d45167", "#437cbe", "#a38026", "#9c5c9d", "#4d9ca2", "#c65f3d"];
+    private string Color(int i) => Palette is not null && i < Data.MeasureNames.Count &&
+        Palette.TryGetValue(Data.MeasureNames[i], out var color) ? color : Colors[i % Colors.Length];
+    private sealed record Part(string Name, double Value, int Index);
+    private sealed record Tile(Part Item, double X, double Y, double W, double H);
+    private int RequiredMeasureCount => Data.ChartType == "spider" ? 3 : 2;
+    private IReadOnlyList<Part> _parts = [];
+    private bool _hasNegativeValues;
+    private double _compositionTotal;
+    // A composition chart compares field totals, not comparison-axis labels.
+    // Summarize once per data update; Blazor rendering must not rescan thousands
+    // of points for each pie slice, gauge, label or legend item.
+    protected override void OnParametersSet()
+    {
+        var totals = new double[Data.MeasureNames.Count];
+        _hasNegativeValues = false;
+        foreach (var point in Data.Points)
+            for (var i = 0; i < totals.Length; i++)
+            {
+                if (i >= point.Measures.Count || point.Measures[i] is not double value) continue;
+                if (!double.IsFinite(value) || value < 0) { _hasNegativeValues = true; continue; }
+                totals[i] += value;
+                if (!double.IsFinite(totals[i])) _hasNegativeValues = true;
+            }
+        _parts = Data.MeasureNames.Select((name, index) => new Part(name, totals[index], index)).ToArray();
+        _compositionTotal = totals.Sum();
+        if (!double.IsFinite(_compositionTotal)) _hasNegativeValues = true;
+    }
+    private IReadOnlyList<Part> Parts => _parts;
+    private bool HasNegativeValues => _hasNegativeValues;
+    private double CompositionTotal => _compositionTotal;
+    private double RadarMax => Parts.Select(p => p.Value).DefaultIfEmpty(0).Max();
+    private double Percent(double value) => CompositionTotal <= 0 ? 0 : value / CompositionTotal * 100;
+    private IReadOnlyList<Part> PositiveParts => Parts.Where(p => p.Value > 0).ToArray();
+    private IReadOnlyList<Tile> Tiles
+    {
+        get
+        {
+            var output = new List<Tile>();
+            void Add(IReadOnlyList<Part> items, double x, double y, double w, double h)
+            {
+                if (items.Count == 0) return;
+                if (items.Count == 1) { output.Add(new(items[0], x, y, w, h)); return; }
+                var total = items.Sum(p => p.Value);
+                var cut = 1;
+                var subtotal = items[0].Value;
+                while (cut < items.Count - 1 && subtotal < total / 2) subtotal += items[cut++].Value;
+                var share = subtotal / total;
+                if (w >= h)
+                {
+                    Add(items.Take(cut).ToArray(), x, y, w * share, h);
+                    Add(items.Skip(cut).ToArray(), x + w * share, y, w * (1 - share), h);
+                }
+                else
+                {
+                    Add(items.Take(cut).ToArray(), x, y, w, h * share);
+                    Add(items.Skip(cut).ToArray(), x, y + h * share, w, h * (1 - share));
+                }
+            }
+            Add(PositiveParts.OrderByDescending(p => p.Value).ToArray(), 17, 16, 606, 249);
+            return output;
+        }
+    }
+    private static (double X, double Y) Polar(double cx, double cy, double r, double angle)
+    {
+        var radians = angle * Math.PI / 180;
+        return (cx + Math.Cos(radians) * r, cy + Math.Sin(radians) * r);
+    }
+    private (double X, double Y) RadarCoordinate(int i, double fraction) =>
+        Polar(320, 142, 94 * Math.Clamp(fraction, 0, 1), -90 + (double)i * 360 / Math.Max(1, Parts.Count));
+    private string RadarRing(double fraction) => string.Join(" ", Enumerable.Range(0, Parts.Count).Select(i =>
+    {
+        var p = RadarCoordinate(i, fraction);
+        return $"{F(p.X)},{F(p.Y)}";
+    }));
+    private string RadarShape => string.Join(" ", Parts.Select((p, i) =>
+    {
+        var point = RadarCoordinate(i, RadarMax <= 0 ? 0 : p.Value / RadarMax);
+        return $"{F(point.X)},{F(point.Y)}";
+    }));
+    private static string F(double value) => value.ToString("0.##", CultureInfo.InvariantCulture);
+    private static string Short(double value) => value.ToString("0.##", CultureInfo.InvariantCulture);
+    private static string Format(double? value) => value?.ToString("N2", CultureInfo.InvariantCulture) ?? "—";
+    private static string Truncate(string value, double width) => value.Length > Math.Max(5, (int)(width / 6))
+        ? value[..Math.Max(4, (int)(width / 6) - 1)] + "…" : value;
+    private static string SectorPath(double start, double sweep, bool donut)
+    {
+        const double cx = 320, cy = 141, r = 114, inner = 64;
+        // Exact 360-degree SVG arcs have coincident endpoints and aren't drawable.
+        // Two half-arcs keep the result valid even for a single 100% component.
+        sweep = Math.Clamp(sweep, 0, 360);
+        var angle = Math.Min(sweep, 359.999);
+        var a = Polar(cx, cy, r, start);
+        var b = Polar(cx, cy, r, start + angle);
+        var large = angle > 180 ? 1 : 0;
+        var path = $"M {F(a.X)} {F(a.Y)} A {r} {r} 0 {large} 1 {F(b.X)} {F(b.Y)}";
+        if (!donut) return path + $" L {cx} {cy} Z";
+        var c = Polar(cx, cy, inner, start + angle);
+        var d = Polar(cx, cy, inner, start);
+        return path + $" L {F(c.X)} {F(c.Y)} A {inner} {inner} 0 {large} 0 {F(d.X)} {F(d.Y)} Z";
+    }
+    // Razor's <text> is a compiler directive; emit SVG text with RenderTreeBuilder.
+    private static RenderFragment SvgLabel(double x, double y, string anchor, string value, string css) => builder =>
+    {
+        builder.OpenElement(0, "text");
+        builder.AddAttribute(1, "x", F(x)); builder.AddAttribute(2, "y", F(y));
+        builder.AddAttribute(3, "text-anchor", anchor); builder.AddAttribute(4, "class", css);
+        builder.AddContent(5, value); builder.CloseElement();
+    };
+}

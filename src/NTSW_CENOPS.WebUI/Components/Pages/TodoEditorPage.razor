@@ -1,0 +1,7 @@
+@page "/wiki/todos/new"
+@page "/wiki/todos/edit/{Id:int}"
+@attribute [AccessAuthorize(AccessKeys.Todos)]
+@using NTSW_CENOPS.Components.Tasks
+<PageTitle>ویرایش فهرست کارها</PageTitle>
+<TodoEditor ItemId="@(Id ?? 0)" />
+@code { [Parameter] public int? Id { get; set; } }

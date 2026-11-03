@@ -1,0 +1,13 @@
+
+.app-badge[b-yei9w7zjuu] { display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;line-height:1.5;
+    padding:.26rem .65rem;border-radius:8px;border:1px solid #a6e5ea;background:#e7f9fa;color:#04788a;
+    font:inherit;font-size:.79rem;font-weight:750;max-width:100%; }
+.app-badge--violet[b-yei9w7zjuu] { background:#f0eaff;border-color:#dcd0ff;color:#6842ae; }
+.app-badge--amber[b-yei9w7zjuu] { background:#fff5df;border-color:#f5dea1;color:#986009; }
+.app-badge--coral[b-yei9w7zjuu] { background:#fff0eb;border-color:#ffcbb8;color:#af4428; }
+.app-badge--green[b-yei9w7zjuu] { background:#e7f9ef;border-color:#b0e9cb;color:#14794a; }
+.app-badge--interactive[b-yei9w7zjuu] { cursor:pointer;transition:transform .18s,box-shadow .18s,background .18s; }
+.app-badge--interactive:hover[b-yei9w7zjuu] { transform:translateY(-2px);box-shadow:0 4px 12px #08556c16;filter:saturate(1.12); }
+.app-badge--interactive:focus-visible[b-yei9w7zjuu] { outline:2px solid #059caf;outline-offset:2px; }
+
+.app-badge--locked[b-yei9w7zjuu]{opacity:.62;cursor:not-allowed;}

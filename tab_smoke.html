@@ -1,0 +1,12 @@
+<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8" />
+<link rel="stylesheet" href="src/NTSW_CENOPS.WebUI/Components/Common/Tabs/AppTabs.razor.css" />
+<link rel="stylesheet" href="src/NTSW_CENOPS.WebUI/wwwroot/css/operations-shell.css" />
+<link rel="stylesheet" href="src/NTSW_CENOPS.WebUI/wwwroot/css/operations-refinements.css" />
+<link rel="stylesheet" href="src/NTSW_CENOPS.WebUI/wwwroot/css/glasswork-final.css" />
+<style>body{padding:60px;background:#edf6f7}.app-shell{padding:20px;background:white}</style></head><body><div class="app-shell"><div class="administration-tabs"><div class="app-tabs" role="tablist" dir="rtl">
+<button id="roles" class="app-tab app-tab--active"><span class="app-tab-icon">♢</span><span class="app-tab-title">مدیریت نقش‌ها</span></button>
+<button id="users" class="app-tab"><span class="app-tab-icon">♧</span><span class="app-tab-title">مدیریت کاربران</span></button></div></div></div>
+<script>
+function record(){ let a=document.querySelector('.app-tab--active'), b=document.querySelector('.app-tab:not(.app-tab--active)'); let x={activeWidth:a.getBoundingClientRect().width,inactiveWidth:b.getBoundingClientRect().width,titleOpacity:getComputedStyle(a.querySelector('.app-tab-title')).opacity,background:getComputedStyle(a).backgroundImage}; document.body.dataset.test=JSON.stringify(x)}
+setTimeout(record,350);
+</script></body></html>

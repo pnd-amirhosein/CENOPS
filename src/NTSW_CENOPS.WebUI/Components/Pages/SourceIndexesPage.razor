@@ -1,0 +1,124 @@
+@page "/tools/source-indexes"
+@attribute [AccessAuthorize(AccessKeys.SourceIntelligence)]
+@rendermode InteractiveServer
+@using NTSW_CENOPS.Application.SourceIntelligence
+@using NTSW_CENOPS.Components.Common
+@inject ISourceIntelligenceService Sources
+@inject AuthenticationStateProvider Authentication
+
+<PageTitle>مدیریت منابع سورس</PageTitle>
+<div class="source-explorer" dir="rtl">
+    <SectionContent SectionName="cenops-page-actions">
+        <button class="page-action-button" type="button" disabled="@_busy" @onclick="ReloadAsync">بروزرسانی پوشه‌ها</button>
+        <a class="page-action-button" href="/tools/source-explorer">جستجوی نمادها ←</a>
+    </SectionContent>
+    @if (!string.IsNullOrWhiteSpace(_error)) { <div class="source-alert" role="alert">@_error</div> }
+    @if (!string.IsNullOrWhiteSpace(_notice)) { <div class="source-notice" role="status">@_notice</div> }
+    <div class="source-top-grid">
+        <section class="source-panel source-register">
+            <header><span class="source-icon"><svg viewBox="0 0 24 24"><path d="M3 8V5a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v12H3V8zM12 11v6m-3-3h6"/></svg></span><div><h3>ثبت سورس</h3><p>ابتدا یک فولدر را در مسیر تنظیم‌شده کپی کنید.</p></div></header>
+            <div class="source-field"><label for="source-folder">پوشه موجود روی سرور</label>
+                <select id="source-folder" @bind="_folder" @bind:after="FolderChangedAsync" disabled="@_busy">
+                    <option value="">انتخاب پوشه…</option>
+                    @foreach (var folder in _folders) { <option value="@folder">@folder</option> }
+                </select>
+            </div>
+            <div class="source-field"><label for="source-project">فایل راهکار / پروژه</label>
+                <select id="source-project" @bind="_projectFile" @bind:after="ProjectChanged" disabled="@(_busy || string.IsNullOrWhiteSpace(_folder))">
+                    <option value="">تمام فایل‌های C# پوشه</option>
+                    @foreach (var entry in _availableProjects)
+                    {
+                        <option value="@entry.Path">[@entry.Kind] @entry.Path</option>
+                    }
+                </select>
+                <small class="source-field-help">فایل‌های sln، slnx و csproj شناسایی می‌شوند. انتخاب فایل محدوده ایندکس را مشخص می‌کند.</small>
+            </div>
+            <div class="source-field"><label for="source-name">نام نمایشی</label>
+                <input id="source-name" list="source-name-suggestions" @bind="_name" maxlength="120" placeholder="مثلاً NTSW.BusinessLogic" disabled="@_busy" />
+                <datalist id="source-name-suggestions">
+                    @foreach (var entry in _availableProjects) { <option value="@entry.Name"></option> }
+                </datalist>
+            </div>
+            <button type="button" class="source-btn source-primary" disabled="@(_busy || string.IsNullOrWhiteSpace(_folder) || string.IsNullOrWhiteSpace(_name))" @onclick="RegisterAsync">
+                <span class="source-plus">+</span> ثبت منبع
+            </button>
+        </section>
+        <section class="source-panel source-repositories">
+            <header><span class="source-icon"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16M8 3v6m8 0v6"/></svg></span><div><h3>منابع ثبت‌شده</h3><p>ایندکس فعلاً دستی است؛ هیچ کدی اجرا نمی‌شود.</p></div></header>
+            @if (_repos.Count == 0) { <div class="source-empty">هنوز پروژه‌ای ثبت نشده است.</div> }
+            @foreach (var repo in _repos)
+            {
+                <div class="source-repo" @key="repo.Id">
+                    <div class="source-repo-summary"><strong>@repo.Name</strong><small dir="ltr">@repo.Folder @(!string.IsNullOrWhiteSpace(repo.ProjectFile) ? "/ " + repo.ProjectFile : "(all .cs)")</small>
+                        <span class="source-stats">@repo.FileCount فایل · @repo.SymbolCount نماد · @repo.RelationCount ارتباط</span></div>
+                    <div class="source-repo-actions">
+                        @if (repo.IndexedUtc.HasValue) { <span class="source-tag">ایندکس شده</span> }
+                        <button class="source-btn source-btn-soft" type="button" disabled="@_busy" @onclick="() => IndexAsync(repo.Id)">
+                            @(repo.IndexedUtc.HasValue ? "بازایندکس" : "ایندکس")
+                        </button>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(repo.LastError)) { <p class="source-repo-error">@repo.LastError</p> }
+                </div>
+            }
+        </section>
+    </div>
+    @if (_busy) { <div class="source-working" role="status" aria-live="polite"><span class="source-spinner"></span>@_workingMessage</div> }
+</div>
+
+@code {
+    private List<SourceRepository> _repos = [];
+    private List<string> _folders = [];
+    private IReadOnlyList<SourceProjectFile> _availableProjects = [];
+    private string _projectFile = "";
+    private string _folder = "";
+    private string _name = "";
+    private string? _error;
+    private string? _notice;
+    private bool _busy;
+    private string _workingMessage = "در حال آماده‌سازی…";
+
+    protected override async Task OnInitializedAsync() => await ReloadAsync();
+    private async Task RunAsync(Func<System.Security.Claims.ClaimsPrincipal, Task> action, string working)
+    {
+        _busy = true; _workingMessage = working; _error = null; _notice = null;
+        try
+        {
+            var auth = await Authentication.GetAuthenticationStateAsync();
+            await action(auth.User);
+        }
+        catch (Exception e) when (e is InvalidOperationException or ArgumentException or IOException or UnauthorizedAccessException)
+        { _error = e.Message; }
+        finally { _busy = false; }
+    }
+    private Task ReloadAsync() => RunAsync(async actor =>
+    {
+        _repos = (await Sources.ListAsync(actor)).ToList();
+        _folders = (await Sources.ListAvailableFoldersAsync(actor)).ToList();
+    }, "در حال دریافت منابع…");
+    private Task RegisterAsync() => RunAsync(async actor =>
+    {
+        var repo = await Sources.RegisterAsync(actor, _name, _folder, _projectFile);
+        _repos = (await Sources.ListAsync(actor)).ToList();
+        _notice = $"{repo.Name} ثبت شد؛ برای تحلیل، دکمه ایندکس را بزنید.";
+        _folder = ""; _name = ""; _projectFile = ""; _availableProjects = [];
+    }, "در حال ثبت پروژه…");
+    private Task FolderChangedAsync() => RunAsync(async actor =>
+    {
+        _projectFile = "";
+        _availableProjects = string.IsNullOrWhiteSpace(_folder) ? [] :
+            await Sources.DiscoverProjectFilesAsync(actor, _folder);
+        _name = _folder;
+    }, "در حال شناسایی فایل‌های راهکار و پروژه…");
+    private void ProjectChanged()
+    {
+        if (string.IsNullOrWhiteSpace(_projectFile)) return;
+        var item = _availableProjects.FirstOrDefault(x => x.Path == _projectFile);
+        if (item is not null) _name = item.Name;
+    }
+    private Task IndexAsync(Guid id) => RunAsync(async actor =>
+    {
+        var repo = await Sources.IndexAsync(actor, id);
+        _repos = (await Sources.ListAsync(actor)).ToList();
+        _notice = $"{repo.Name}: تعداد {repo.SymbolCount} نماد و {repo.RelationCount} ارتباط ایندکس شد.";
+    }, "در حال تحلیل سورس با Roslyn؛ ممکن است چند دقیقه طول بکشد…");
+}

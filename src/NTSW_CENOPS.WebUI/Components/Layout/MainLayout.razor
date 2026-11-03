@@ -1,0 +1,177 @@
+@using NTSW_CENOPS.Components.Common
+@using NTSW_CENOPS.Components.Chat
+@inherits LayoutComponentBase
+@implements IDisposable
+@inject NavigationManager Nav
+@inject NTSW_CENOPS.Components.Common.Loading.AppBusyService Busy
+@inject IJSRuntime JS
+
+<AppNoticeHost />
+<ChatInboxHost />
+<AppLoadingHost />
+<ChatWorkspaceHost />
+@* Global overlay outlet: graph dialogs must sit above the shell and outside its clipping/stacking contexts. *@
+@* Site-wide information overlay must not live inside Skyline's glass stacking context. *@
+<div class="cenops-about-overlay-root" dir="rtl">
+    <SectionOutlet SectionName="cenops-about-overlay" />
+</div>
+<div class="cenops-global-overlay-root" dir="rtl">
+    <SectionOutlet SectionName="cenops-global-overlays" />
+</div>
+<div class="app-shell" dir="rtl">
+    <input id="shell-nav-toggle" class="shell-nav-toggle" type="checkbox" aria-label="نمایش فهرست راهبری" />
+
+    <header class="shell-topbar cenops-liquid-glass cenops-liquid-glass--shell">
+        <Skyline />
+    </header>
+
+    <label class="shell-nav-scrim" for="shell-nav-toggle" aria-label="بستن فهرست راهبری"></label>
+
+    <div class="shell-columns">
+        <aside class="shell-sidebar cenops-liquid-glass cenops-liquid-glass--shell" aria-label="منوی اصلی سامانه">
+            <NavMenu />
+        </aside>
+
+        <main class="shell-workspace" id="main-content">
+            <div class="workspace-context" aria-label="صفحه فعلی">
+                <div class="workspace-context-text">
+                    <nav class="workspace-breadcrumbs" aria-label="مسیر صفحه">
+                        <a href="/dashboard">فضای کاری</a>
+                        <svg aria-hidden="true" viewBox="0 0 20 20" fill="none"><path d="m12 5-5 5 5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                        <span aria-current="page">@CurrentPageTitle</span>
+                    </nav>
+                    <div class="workspace-title-row"><h1 class="workspace-page-title">@CurrentPageTitle</h1><span class="workspace-title-accent" aria-hidden="true"></span></div>
+                    <p class="workspace-subtitle">@CurrentPageSubtitle</p>
+                </div>
+                <div class="workspace-context-end">
+                    <div class="workspace-page-actions" aria-label="ابزارهای صفحه">
+                        <SectionOutlet SectionName="cenops-page-actions" />
+                    </div>
+                    <div class="workspace-context-meta"><span class="workspace-live-indicator" aria-hidden="true"></span><span>گمرک</span><span class="workspace-context-slash">/</span><strong>سیناپس</strong></div>
+                </div>
+            </div>
+
+            <article class="workspace-surface">
+                @Body
+            </article>
+        </main>
+    </div>
+</div>
+
+@code {
+    private string CurrentPageSubtitle
+    {
+        get
+        {
+            var path = Nav.ToBaseRelativePath(Nav.Uri).Split('?', '#')[0].Trim('/');
+            return path.ToLowerInvariant() switch
+            {
+                "dashboard" or "" => "داده‌ها، پایش، گزارش‌ها و دانش فنی در یک فضای مشترک",
+                "team/events" => "تقویم مشترک تیم با نمایش سالانه، ماهانه، هفتگی و روزانه",
+                "tools/clean-code" => "پاک‌سازی و مرتب‌سازی کدها، بدون ثبت اطلاعات",
+                "tools/source-explorer" => "تعریف دقیق نمادها و مشاهده محل‌های استفاده در فایل‌ها",
+                "tools/database-inspector" => "بازرسی ساختار جداول و ارتباط‌های کلید خارجی پایگاه‌های داده خارجی",
+                "tools/source-indexes" => "ثبت، مدیریت و بازایندکس راهکارهای دات‌نت",
+                var p when p.StartsWith("team/events/") => "ایجاد یا ویرایش رویداد و زمان‌بندی تکرار",
+                "reports" => "نمایش نمودارهای گزارش‌های ثبت‌شده از داده‌های ذخیره‌شده",
+                "reports/manage" => "مدیریت، ویرایش و حذف گزارش‌های ساخته‌شده",
+                "reports/new" => "ایجاد گزارش جدید از داده کارهای خودکار",
+                var p when p.StartsWith("reports/edit/") => "ویرایش ساختار و نمودار گزارش",
+                "settings" => "مدیریت کاربران و سطوح دسترسی",
+                "wiki/curls" => "کتابخانه درخواست‌ها و نمونه‌های API",
+                "wiki/queries" => "کتابخانه دستورها و نمونه‌های SQL",
+                "wiki/notes" => "کتابخانه یادداشت‌ها و مستندات تیم",
+                "wiki/todos" => "کارهای تیم و فهرست‌های قابل پیگیری",
+                "wiki/announcements" => "اطلاعیه‌های تیم توسعه",
+                var p when p.StartsWith("wiki/todos/") => "ایجاد یا ویرایش فهرست کارها",
+                var p when p.StartsWith("wiki/notes/") => "ایجاد یا ویرایش یادداشت",
+                var p when p.StartsWith("wiki/curls/") => "ایجاد یا ویرایش درخواست API",
+                var p when p.StartsWith("wiki/queries/") => "ایجاد یا ویرایش پرس‌وجوی بانک اطلاعاتی",
+                _ => "مرکز یکپارچه عملیات"
+            };
+        }
+    }
+
+    private string CurrentPageTitle
+    {
+        get
+        {
+            var path = Nav.ToBaseRelativePath(Nav.Uri).Split('?', '#')[0].Trim('/');
+            return path.ToLowerInvariant() switch
+            {
+                "dashboard" or "" => "داشبورد",
+                "team/events" => "زمان و رویدادها",
+                "tools/clean-code" => "پاک‌سازی کد",
+                "tools/source-explorer" => "جستجوی نمادها",
+                "tools/database-inspector" => "بررسی دیتابیس",
+                "tools/source-indexes" => "مدیریت منابع سورس",
+                var p when p.StartsWith("team/events/") => "ویرایش رویداد",
+                "reports" => "گزارش‌ها",
+                "reports/manage" => "مدیریت گزارش‌ها",
+                "reports/new" => "گزارش جدید",
+                var p when p.StartsWith("reports/edit/") => "ویرایش گزارش",
+                "settings" => "مدیریت سیستم",
+                "wiki/curls" => "درخواست‌های cURL",
+                "wiki/queries" => "پرس‌وجوهای SQL",
+                "wiki/notes" => "یادداشت‌ها",
+                "wiki/todos" => "فهرست کارها",
+                "wiki/announcements" => "اطلاعیه‌ها",
+                var p when p.StartsWith("wiki/todos/") => "ویرایش فهرست کارها",
+                var p when p.StartsWith("wiki/notes/") => "ویرایش یادداشت",
+                var p when p.StartsWith("wiki/curls/") => "ویرایش درخواست cURL",
+                var p when p.StartsWith("wiki/queries/") => "ویرایش پرس‌وجوی SQL",
+                _ => "فضای کاری"
+            };
+        }
+    }
+
+    private IDisposable? _initialLoading;
+    private IDisposable? _navigationLoading;
+
+    protected override void OnInitialized()
+    {
+        Nav.LocationChanged += OnLocationChanged;
+        // Visible even on very fast dashboards; released after hydration / optional intro.
+        _initialLoading = Busy.Begin("در حال آماده‌سازی فضای کاری...");
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs args)
+    {
+        _navigationLoading?.Dispose();
+        _navigationLoading = Busy.Begin("در حال نمایش صفحه...");
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                // Run exactly once in a browser-tab login cycle, not on every route.
+                if (await JS.InvokeAsync<bool>("cenopsUI.shouldShowSignInIntro"))
+                    await Task.Delay(500);
+            }
+            catch (JSDisconnectedException) { }
+            catch (JSException) { /* Never strand the user behind an overlay. */ }
+            finally
+            {
+                _initialLoading?.Dispose();
+                _initialLoading = null;
+            }
+        }
+
+        if (_navigationLoading is not null)
+        {
+            _navigationLoading.Dispose();
+            _navigationLoading = null;
+        }
+    }
+
+    public void Dispose()
+    {
+        Nav.LocationChanged -= OnLocationChanged;
+        _initialLoading?.Dispose();
+        _navigationLoading?.Dispose();
+    }
+}

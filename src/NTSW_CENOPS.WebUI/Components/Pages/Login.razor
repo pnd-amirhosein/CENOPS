@@ -1,0 +1,57 @@
+@page "/"
+@using NTSW_CENOPS.Components.Layout
+@using Microsoft.AspNetCore.Authorization
+@using NTSW_CENOPS.Components.Common
+@layout EmptyLayout
+@attribute [AllowAnonymous]
+@rendermode InteractiveServer
+
+<PageTitle>ورود</PageTitle>
+
+<div class="auth-stage h-screen w-full flex items-center justify-center">
+    <div class="login-container auth-card flex gap-4 h-50 w-50">
+        <AuthBrandPanel />
+        <div class="login-box auth-form-panel flex flex-col justify-content-between gap-8 w-1/2 rtl pl-4">
+            <div class="welcome text-xl">
+                 سیستم
+                <AnimatedTitle/>
+            </div>
+            <form method="post" action="/auth/login" class="login-main flex flex-col gap-3">
+                <AntiforgeryToken />
+                <input type="hidden" name="returnUrl" value="@ReturnUrl" />
+                <div>
+                    <input name="username"
+                           autocomplete="username"
+                           placeholder="نام کاربری"
+                           class="w-full"
+                           value="@Username" />
+                </div>
+
+                <div>
+                    <PasswordInput Name="password"
+                                   Autocomplete="current-password"
+                                   Placeholder="رمز عبور"
+                                   Required="true" />
+                </div>
+
+                <div class="button-container flex justify-content-between items-center">
+                    @if (!string.IsNullOrEmpty(StatusMessage))
+                    {
+                        <p class="@StatusCssClass text-sm text-center" role="status">@StatusMessage</p>
+                    }
+                    <button type="submit" class="w-1/3">
+                        <div class="text">ورود</div>
+                    </button>
+                </div>
+            </form>
+            <div class="help text-normal text-primary flex items-center gap-2">
+                <span>حساب کاربری ندارید؟</span>
+                <a href="/signup" class="auth-link">ایجاد حساب کاربری</a>
+            </div>
+            <div class="credit text-xs text-gray-500 flex flex-col gap-2">
+                <span>تولید توسعه و پشتیبانی:</span>
+                <span>تیم مدیریت اطلاعات و فناوری سامانه جامع تجارت واحد گمرک </span>
+            </div>
+        </div>
+    </div>
+</div>

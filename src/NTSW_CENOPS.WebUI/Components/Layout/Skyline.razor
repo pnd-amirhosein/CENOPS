@@ -1,0 +1,277 @@
+@using NTSW_CENOPS.Components.Common
+@using NTSW_CENOPS.Components.Profile
+@using NTSW_CENOPS.Components.Chat
+@using NTSW_CENOPS.Domain.Authorization
+@using NTSW_CENOPS.Application.Access
+@using NTSW_CENOPS.Components.Common.Notices
+@using NTSW_CENOPS.Application.Stories
+@using NTSW_CENOPS.Components.Stories
+@using System.Security.Claims
+@rendermode InteractiveServer
+@inject NavigationManager Navigation
+@inject ChatWorkspaceState ChatState
+@inject ChatInboxState ChatInbox
+@inject IAccessService AccessService
+@inject AuthenticationStateProvider AuthState
+@inject AppNoticeService Notices
+@inject IReleaseStoryService ReleaseStories
+@implements IDisposable
+
+<div class="skyline" dir="rtl">
+    <div class="skyline-brand">
+        <label for="shell-nav-toggle" class="skyline-menu-toggle" title="نمایش فهرست" aria-label="نمایش فهرست">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></svg>
+        </label>
+        <button type="button" class="@(_hasUnreadStories ? "skyline-logo is-unread" : "skyline-logo")"
+                title="داستانچه به‌روزرسانی‌ها" aria-label="نمایش داستانچه انتشار"
+                aria-haspopup="dialog" @onclick="OpenStories">
+            <CenopsMark CssClass="h-100 w-auto" />
+        </button>
+        <div class="skyline-brand-copy">
+            <strong>NTSW <span class="skyline-brand-suffix">/ CENOPS</span></strong>
+            <p class="skyline-animated-title"><AnimatedTitle PreserveSpace="true" /></p>
+        </div>
+        <button type="button" class="skyline-chat-launch" title="بازکردن گفت‌وگوها (Ctrl + M)" aria-label="بازکردن فضای گفتگو" aria-keyshortcuts="Control+M" @onclick="OpenChatAsync">
+            <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 11.6a8.5 8.5 0 0 1-8.5 8.5 9 9 0 0 1-4-1l-4.5 1.1 1.2-4.2a8.5 8.5 0 1 1 15.8-4.4Z"/><path d="M8 11h8M8 14.5h5"/></svg>
+            @if (ChatInbox.UnreadCount > 0) { <span class="skyline-chat-count" aria-label="@ChatInbox.UnreadCount پیام خوانده‌نشده">@(ChatInbox.UnreadCount > 99 ? "99+" : ChatInbox.UnreadCount.ToString())</span> }
+            <kbd class="skyline-chat-shortcut" aria-hidden="true">CTRL M</kbd>
+        </button>
+        <div class="skyline-create-wrap">
+            <button type="button" class="skyline-create-button" title="ثبت مورد جدید (Ctrl + B)" aria-label="افزودن مورد جدید" aria-keyshortcuts="Control+B" aria-expanded="@_createOpen" @onclick="ToggleCreateAsync"><span class="skyline-create-plus" aria-hidden="true">+</span><kbd class="skyline-create-shortcut" aria-hidden="true">CTRL B</kbd></button>
+            @if (_createOpen)
+            {
+                <button type="button" class="skyline-create-scrim" aria-label="بستن منوی ایجاد" @onclick="() => _createOpen = false"></button>
+                <div class="skyline-create-menu cenops-liquid-glass">
+                    @if (_createGrants.Contains(AccessKeys.Events)) { <button type="button" data-create-shortcut="e" aria-keyshortcuts="E" @onclick='() => NavigateCreateAsync("/team/events/new", AccessKeys.Events)'><span class="skyline-create-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4m8-4v4M3 9h18m-13 5h3m4 0h2"/></svg></span><span class="skyline-create-menu-name">رویداد جدید</span><kbd>E</kbd></button> }
+                    @if (_createGrants.Contains(AccessKeys.Todos)) { <button type="button" data-create-shortcut="t" aria-keyshortcuts="T" @onclick='() => NavigateCreateAsync("/wiki/todos/new", AccessKeys.Todos)'><span class="skyline-create-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="m7 9 2 2 4-4M14 10h4M7 16h11"/></svg></span><span class="skyline-create-menu-name">فهرست کار جدید</span><kbd>T</kbd></button> }
+                    @if (_createGrants.Contains(AccessKeys.Announcements)) { <button type="button" data-create-shortcut="a" aria-keyshortcuts="A" @onclick='() => NavigateCreateAsync("/wiki/announcements?new=1", AccessKeys.Announcements)'><span class="skyline-create-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 11v3l7 3V8zM11 9c4 0 6-2 9-4v15c-3-2-5-4-9-4M6 16l2 5"/></svg></span><span class="skyline-create-menu-name">اطلاعیه جدید</span><kbd>A</kbd></button> }
+                    @if (_createGrants.Contains(AccessKeys.Notes)) { <button type="button" data-create-shortcut="n" aria-keyshortcuts="N" @onclick='() => NavigateCreateAsync("/wiki/notes/new", AccessKeys.Notes)'><span class="skyline-create-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h8l4 4v13a1 1 0 0 1-1 1H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M15 3v5h4M9 12h6M9 16h5"/></svg></span><span class="skyline-create-menu-name">یادداشت جدید</span><kbd>N</kbd></button> }
+                    @if (_createGrants.Contains(AccessKeys.Curls)) { <button type="button" data-create-shortcut="c" aria-keyshortcuts="C" @onclick='() => NavigateCreateAsync("/wiki/curls/new", AccessKeys.Curls)'><span class="skyline-create-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m8 8-4 4 4 4m8-8 4 4-4 4M14 5l-4 14"/></svg></span><span class="skyline-create-menu-name">درخواست cURL</span><kbd>C</kbd></button> }
+                    @if (_createGrants.Contains(AccessKeys.ManageReports)) { <button type="button" data-create-shortcut="r" aria-keyshortcuts="R" @onclick='() => NavigateCreateAsync("/reports/new", AccessKeys.ManageReports)'><span class="skyline-create-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V11m5 9V5m5 15v-7m5 7V8"/><path d="M3 20.5h18"/><path d="M18 4v6m-3-3h6"/></svg></span><span class="skyline-create-menu-name">گزارش جدید</span><kbd>R</kbd></button> }
+                    @if (_createGrants.Contains(AccessKeys.SqlQueries)) { <button type="button" data-create-shortcut="s" aria-keyshortcuts="S" @onclick='() => NavigateCreateAsync("/wiki/queries/new", AccessKeys.SqlQueries)'><span class="skyline-create-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5.5" rx="8" ry="3"/><path d="M4 5.5v12c0 1.65 3.6 3 8 3s8-1.35 8-3v-12M4 11.5c0 1.66 3.6 3 8 3s8-1.34 8-3"/></svg></span><span class="skyline-create-menu-name">پرس‌وجوی SQL</span><kbd>S</kbd></button> }
+                </div>
+            }
+        </div>
+        <div class="skyline-create-wrap skyline-tools-wrap">
+            <button type="button" class="skyline-tools-button" aria-label="ابزارها" title="ابزارها (Ctrl + I)"
+                    aria-keyshortcuts="Control+I" aria-expanded="@_toolsOpen" @onclick="ToggleTools">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M4 8h16M4 16h16M8 4v8m8 0v8"/>
+                </svg>
+                <kbd class="skyline-create-shortcut" aria-hidden="true">CTRL I</kbd>
+            </button>
+            @if (_toolsOpen)
+            {
+                <button type="button" class="skyline-create-scrim skyline-tools-scrim" aria-label="بستن منوی ابزارها" @onclick="() => _toolsOpen = false"></button>
+                <div class="skyline-create-menu skyline-tools-menu cenops-liquid-glass" aria-label="ابزارهای سامانه">
+                    <button type="button" data-tool-shortcut="c" aria-keyshortcuts="C" @onclick="OpenCodeTool">
+                        <span class="skyline-create-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="m8 8-4 4 4 4m8-8 4 4-4 4M14 4l-4 16"/></svg></span>
+                        <span class="skyline-create-menu-name">پاک‌سازی کد</span><kbd>C</kbd>
+                    </button>
+                    <AccessGate AccessKey="@AccessKeys.SourceIntelligence">
+                        <button type="button" data-tool-shortcut="s" aria-keyshortcuts="S" @onclick="OpenSourceTool">
+                            <span class="skyline-create-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="m8 8-4 4 4 4m8-8 4 4-4 4M14 4l-4 16M3 21h18"/></svg></span>
+                            <span class="skyline-create-menu-name">تحلیل سورس</span><kbd>S</kbd>
+                        </button>
+                    </AccessGate>
+                    <AccessGate AccessKey="@AccessKeys.DatabaseInspector">
+                        <button type="button" data-tool-shortcut="i" aria-keyshortcuts="I" @onclick="OpenDatabaseInspectorAsync">
+                            <span class="skyline-create-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 4 16 4 16 0V5M4 12c0 4 16 4 16 0"/></svg></span>
+                            <span class="skyline-create-menu-name">بررسی دیتابیس</span><kbd>I</kbd>
+                        </button>
+                    </AccessGate>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="skyline-utilities">
+        <QuickNavigate />
+        <div class="skyline-account"><UserAccountMenu /></div>
+        <span class="skyline-separator" aria-hidden="true"></span>
+        <div class="skyline-actions">
+            <AccessGate AccessKey="@AccessKeys.Settings">
+            <NavLink href="/settings"
+                     class="button square-button text-button skyline-action"
+                     aria-label="تنظیمات"
+                     title="تنظیمات">
+                <div class="icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                    </svg>
+                </div>
+            </NavLink>
+        </AccessGate>
+            @* About is intentionally visible to everyone; it does not require an AccessGate. *@
+            <button type="button"
+                    class="button square-button text-button skyline-action skyline-about-action"
+                    aria-label="درباره سامانه"
+                    title="درباره CENOPS"
+                    aria-haspopup="dialog"
+                    @onclick="OpenAbout">
+                <span class="icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="9" />
+                        <path d="M12 11v5" />
+                        <circle cx="12" cy="7.5" r="1" fill="currentColor" stroke="none" />
+                    </svg>
+                </span>
+            </button>
+            <form id="logout-form" method="post" action="/auth/logout" class="logout-post-form">
+            <AntiforgeryToken />
+            <button type="button"
+                    class="button square-button text-button logout-icon flex skyline-action"
+                    aria-label="خروج از حساب"
+                    title="خروج از حساب"
+                    @onclick="OpenLogoutConfirmation">
+                <div class="icon">
+                    <svg class="h-auto" width="22" height="22" viewBox="0 0 22 22" fill="none"
+                         xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            d="M3.67893 3.67893C-0.22631 7.58417 -0.22631 13.9158 3.67893 17.8211C7.58417 21.7263 13.9158 21.7263 17.8211 17.8211C21.7263 13.9158 21.7263 7.58417 17.8211 3.67893M10.75 0.75V10.75"
+                            stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+            </button>
+        </form>
+        </div>
+    </div>
+</div>
+
+<SectionContent SectionName="cenops-about-overlay">
+    <CenopsAboutDialog IsOpen="_aboutOpen" OnClose="CloseAbout" />
+    <ReleaseStoryViewer IsOpen="_storiesOpen" OnClose="CloseStories" OnReadChanged="RefreshStoriesAsync" />
+</SectionContent>
+
+<AppModal IsOpen="_logoutConfirmationOpen"
+          Title="خروج از حساب کاربری"
+          Description="آیا از خروج از حساب مطمئن هستید؟"
+          MaxWidth="28rem"
+          OnClose="CloseLogoutConfirmation">
+    <ChildContent>
+        <div class="logout-warning">
+            <span class="logout-warning-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 8V12.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                    <path d="M12 16H12.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <path d="M10.28 4.56L2.82 17.5C2.05 18.83 3.01 20.5 4.55 20.5H19.45C20.99 20.5 21.95 18.83 21.18 17.5L13.72 4.56C12.95 3.23 11.05 3.23 10.28 4.56Z"
+                          stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                </svg>
+            </span>
+            <p>با تأیید این عملیات، نشست فعلی شما پایان پیدا می‌کند و برای ورود مجدد باید نام کاربری و رمز عبور را وارد کنید.</p>
+        </div>
+    </ChildContent>
+    <Footer>
+        <button type="submit" form="logout-form" class="logout-confirm-button">خروج</button>
+        <button type="button" class="logout-cancel-button" @onclick="CloseLogoutConfirmation">انصراف</button>
+    </Footer>
+</AppModal>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        ChatInbox.Changed += RefreshChatBadge;
+        await RefreshStoriesAsync();
+    }
+
+    private bool _storiesOpen;
+    private bool _hasUnreadStories;
+    private void OpenStories() { _createOpen = false; _toolsOpen = false; _storiesOpen = true; }
+    private void CloseStories() => _storiesOpen = false;
+    private async Task RefreshStoriesAsync()
+    {
+        try
+        {
+            var actor = (await AuthState.GetAuthenticationStateAsync()).User;
+            if (!int.TryParse(actor.FindFirstValue(ClaimTypes.NameIdentifier), out var id)) return;
+            _hasUnreadStories = (await ReleaseStories.ListAsync(id)).Any(x => !x.Viewed);
+        }
+        catch { _hasUnreadStories = false; /* Database unavailable / migration not applied. */ }
+    }
+    private void RefreshChatBadge() => _ = InvokeAsync(StateHasChanged);
+    public void Dispose() => ChatInbox.Changed -= RefreshChatBadge;
+    private bool _logoutConfirmationOpen;
+    private bool _aboutOpen;
+    private void OpenAbout() => _aboutOpen = true;
+    private void CloseAbout() => _aboutOpen = false;
+    private bool _createOpen;
+    private bool _toolsOpen;
+    private void ToggleTools() { _createOpen = false; _toolsOpen = !_toolsOpen; }
+    private void OpenCodeTool() { _toolsOpen = false; Navigation.NavigateTo("/tools/clean-code"); }
+    private void OpenSourceTool() { _toolsOpen = false; Navigation.NavigateTo("/tools/source-explorer"); }
+    private async Task OpenDatabaseInspectorAsync()
+    {
+        _toolsOpen = false;
+        try
+        {
+            var actor = (await AuthState.GetAuthenticationStateAsync()).User;
+            if (await AccessService.HasAccessAsync(actor, AccessKeys.DatabaseInspector))
+            {
+                Navigation.NavigateTo("/tools/database-inspector");
+                return;
+            }
+        }
+        catch (Exception) { /* Fail closed. */ }
+        Notices.Error("دسترسی به بررسی دیتابیس برای شما مجاز نیست.");
+    }
+    // Never trust client-side keyboard shortcuts for authorization. Both mouse and keyboard
+    // use these same handlers, and the database is checked again on the final action.
+    private readonly HashSet<string> _createGrants = new(StringComparer.OrdinalIgnoreCase);
+
+    private async Task ToggleCreateAsync()
+    {
+        _toolsOpen = false;
+        if (_createOpen) { _createOpen = false; return; }
+        _createGrants.Clear();
+        try
+        {
+            var principal = (await AuthState.GetAuthenticationStateAsync()).User;
+            var granted = await AccessService.GetCurrentAccessKeysAsync(principal);
+            foreach (var key in new[] { AccessKeys.Events, AccessKeys.Notes, AccessKeys.Curls, AccessKeys.SqlQueries, AccessKeys.Todos, AccessKeys.Announcements, AccessKeys.ManageReports })
+                if (granted.Contains(key)) _createGrants.Add(key);
+        }
+        catch (Exception) { /* Fail closed. */ }
+        if (_createGrants.Count == 0)
+        {
+            Notices.Error("شما مجوز ایجاد مورد جدید را ندارید.");
+            return;
+        }
+        _createOpen = true;
+    }
+
+    private async Task NavigateCreateAsync(string url, string permission)
+    {
+        _createOpen = false;
+        try
+        {
+            var principal = (await AuthState.GetAuthenticationStateAsync()).User;
+            if (await AccessService.HasAccessAsync(principal, permission))
+            {
+                Navigation.NavigateTo(url);
+                return;
+            }
+        }
+        catch (Exception) { /* Fail closed. */ }
+        Notices.Error("دسترسی به این بخش برای شما مجاز نیست.");
+    }
+
+    private async Task OpenChatAsync()
+    {
+        try
+        {
+            var principal = (await AuthState.GetAuthenticationStateAsync()).User;
+            if (await AccessService.HasAccessAsync(principal, AccessKeys.Chat))
+            {
+                ChatState.Open();
+                return;
+            }
+        }
+        catch (Exception) { /* Fail closed. */ }
+        Notices.Error("شما مجوز استفاده از گفتگو را ندارید.");
+    }
+
+    private void OpenLogoutConfirmation() => _logoutConfirmationOpen = true;
+
+    private void CloseLogoutConfirmation() => _logoutConfirmationOpen = false;
+}

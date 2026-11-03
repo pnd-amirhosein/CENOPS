@@ -1,0 +1,12 @@
+C:\Repos\NTSW_CENOPS_Glasswork_2_67_BuildFix\NTSW_CENOPS_Glasswork_2_67\src\NTSW_CENOPS.FileStreaming\bin\Debug\net8.0\NTSW_CENOPS.FileStreaming.deps.json
+C:\Repos\NTSW_CENOPS_Glasswork_2_67_BuildFix\NTSW_CENOPS_Glasswork_2_67\src\NTSW_CENOPS.FileStreaming\bin\Debug\net8.0\NTSW_CENOPS.FileStreaming.dll
+C:\Repos\NTSW_CENOPS_Glasswork_2_67_BuildFix\NTSW_CENOPS_Glasswork_2_67\src\NTSW_CENOPS.FileStreaming\bin\Debug\net8.0\NTSW_CENOPS.FileStreaming.pdb
+C:\Repos\NTSW_CENOPS_Glasswork_2_67_BuildFix\NTSW_CENOPS_Glasswork_2_67\src\NTSW_CENOPS.FileStreaming\obj\Debug\net8.0\NTSW_CENOPS.FileStreaming.csproj.AssemblyReference.cache
+C:\Repos\NTSW_CENOPS_Glasswork_2_67_BuildFix\NTSW_CENOPS_Glasswork_2_67\src\NTSW_CENOPS.FileStreaming\obj\Debug\net8.0\NTSW_CENOPS.FileStreaming.GeneratedMSBuildEditorConfig.editorconfig
+C:\Repos\NTSW_CENOPS_Glasswork_2_67_BuildFix\NTSW_CENOPS_Glasswork_2_67\src\NTSW_CENOPS.FileStreaming\obj\Debug\net8.0\NTSW_CENOPS.FileStreaming.AssemblyInfoInputs.cache
+C:\Repos\NTSW_CENOPS_Glasswork_2_67_BuildFix\NTSW_CENOPS_Glasswork_2_67\src\NTSW_CENOPS.FileStreaming\obj\Debug\net8.0\NTSW_CENOPS.FileStreaming.AssemblyInfo.cs
+C:\Repos\NTSW_CENOPS_Glasswork_2_67_BuildFix\NTSW_CENOPS_Glasswork_2_67\src\NTSW_CENOPS.FileStreaming\obj\Debug\net8.0\NTSW_CENOPS.FileStreaming.csproj.CoreCompileInputs.cache
+C:\Repos\NTSW_CENOPS_Glasswork_2_67_BuildFix\NTSW_CENOPS_Glasswork_2_67\src\NTSW_CENOPS.FileStreaming\obj\Debug\net8.0\NTSW_CENOPS.FileStreaming.dll
+C:\Repos\NTSW_CENOPS_Glasswork_2_67_BuildFix\NTSW_CENOPS_Glasswork_2_67\src\NTSW_CENOPS.FileStreaming\obj\Debug\net8.0\refint\NTSW_CENOPS.FileStreaming.dll
+C:\Repos\NTSW_CENOPS_Glasswork_2_67_BuildFix\NTSW_CENOPS_Glasswork_2_67\src\NTSW_CENOPS.FileStreaming\obj\Debug\net8.0\NTSW_CENOPS.FileStreaming.pdb
+C:\Repos\NTSW_CENOPS_Glasswork_2_67_BuildFix\NTSW_CENOPS_Glasswork_2_67\src\NTSW_CENOPS.FileStreaming\obj\Debug\net8.0\ref\NTSW_CENOPS.FileStreaming.dll

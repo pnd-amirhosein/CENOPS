@@ -1,0 +1,16 @@
+@* Shared header search: content is projected by the owning page through SectionContent. *@
+<label class="page-action-search" aria-label="@Label">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m16 16 5 5"/></svg>
+    <input type="search" value="@Value" @oninput="HandleInput"
+           placeholder="@Placeholder" aria-label="@Label" />
+</label>
+
+@code {
+    [Parameter] public string Value { get; set; } = string.Empty;
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+    [Parameter, EditorRequired] public string Label { get; set; } = string.Empty;
+    [Parameter] public string Placeholder { get; set; } = string.Empty;
+
+    private Task HandleInput(ChangeEventArgs args) =>
+        ValueChanged.InvokeAsync(args.Value?.ToString() ?? string.Empty);
+}

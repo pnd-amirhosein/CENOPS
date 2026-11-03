@@ -1,0 +1,5 @@
+.source-usage-modal-toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;padding-inline-start:38px}
+.source-usage-modal-meta{display:grid;gap:5px;min-width:0;color:#3c6b7f;font:700 12px/1.6 Consolas,Tahoma,monospace}
+.source-usage-modal-meta strong{color:#185064;overflow-wrap:anywhere}
+.source-usage-modal-toolbar button{display:flex;align-items:center;gap:7px}
+.source-usage-modal-toolbar svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.7}

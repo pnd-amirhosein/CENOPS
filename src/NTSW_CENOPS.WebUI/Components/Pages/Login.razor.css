@@ -1,0 +1,8 @@
+.auth-link {
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.auth-link:hover {
+    text-decoration: underline;
+}

@@ -1,0 +1,89 @@
+@using NTSW_CENOPS.Application.Access
+@inject IAccessService AccessService
+@using Microsoft.AspNetCore.Components.Web
+@using NTSW_CENOPS.Domain.Authorization
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager Navigation
+
+<div class="quick-search">
+    <button type="button" class="quick-search-trigger" aria-label="جستجوی بخش‌ها" aria-expanded="@_open" title="جستجوی بخش‌ها (Ctrl + K)" @onclick="Toggle">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" stroke="currentColor" stroke-width="1.75"/><path d="m16 16 4.5 4.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg>
+        <span>جستجوی بخش‌ها</span><kbd>CTRL K</kbd>
+    </button>
+    @if (_open)
+    {
+        <button type="button" class="quick-search-backdrop" aria-label="بستن جستجو" @onclick="Close"></button>
+        <section class="quick-search-panel cenops-liquid-glass" role="dialog" aria-modal="true" aria-labelledby="quick-search-heading" @onkeydown="HandleKeyDown">
+            <div class="quick-search-field">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" stroke="currentColor" stroke-width="1.75"/><path d="m16 16 4.5 4.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg>
+                <input id="quick-search-input" type="search" autocomplete="off" aria-label="جستجوی مقصد" placeholder="دنبال کدام بخش می‌گردید؟" @bind="_query" @bind:event="oninput" />
+                <button type="button" class="quick-search-close" @onclick="Close" aria-label="بستن">ESC</button>
+            </div>
+            <div class="quick-search-results">
+                <h2 id="quick-search-heading">دسترسی سریع <small>صفحات مجاز شما</small></h2>
+                @if (Matches.Any())
+                {
+                    @foreach (var item in Matches)
+                    {
+                        <button type="button" class="quick-search-result" @onclick="() => GoTo(item.Href)">
+                            <span class="quick-search-result-dot" aria-hidden="true"></span>
+                            <span class="quick-search-result-copy"><strong>@item.Title</strong><small>@item.Hint</small></span>
+                            <span class="quick-search-result-arrow" aria-hidden="true">↖</span>
+                        </button>
+                    }
+                }
+                else
+                {
+                    <p class="quick-search-empty">بخشی با این نام پیدا نشد.</p>
+                }
+            </div>
+            <footer class="quick-search-help">جستجو فقط میان صفحات قابل دسترس شما انجام می‌شود.</footer>
+        </section>
+    }
+</div>
+
+@code {
+    private sealed record Destination(string Title, string Hint, string Href, string AccessKey);
+    private static readonly Destination[] Destinations =
+    [
+        new("داشبورد", "خانه مرکز عملیات", "/dashboard", AccessKeys.Dashboard),
+        new("زمان و رویدادها", "تقویم و رویدادهای تیم", "/team/events", AccessKeys.Events),
+        new("درخواست‌های cURL", "کتابخانه نمونه درخواست‌های API", "/wiki/curls", AccessKeys.Curls),
+        new("پرس‌وجوهای SQL", "کتابخانه دستورهای بانک اطلاعاتی", "/wiki/queries", AccessKeys.SqlQueries),
+        new("یادداشت‌ها", "متن، مستندات و قطعه‌کدها", "/wiki/notes", AccessKeys.Notes),
+        new("فهرست کارها", "مدیریت کارهای تیم", "/wiki/todos", AccessKeys.Todos),
+        new("اطلاعیه‌ها", "اعلامیه‌های دانش‌نامه", "/wiki/announcements", AccessKeys.Announcements),
+        new("مدیریت سیستم", "کاربران، نقش‌ها و دسترسی‌ها", "/settings", AccessKeys.Settings)
+    ];
+    private HashSet<string> _granted = new(StringComparer.OrdinalIgnoreCase);
+    private bool _open;
+    private string _query = string.Empty;
+    private IEnumerable<Destination> Matches => Destinations.Where(d =>
+        _granted.Contains(d.AccessKey) &&
+        (string.IsNullOrWhiteSpace(_query) || d.Title.Contains(_query.Trim(), StringComparison.OrdinalIgnoreCase) ||
+         d.Hint.Contains(_query.Trim(), StringComparison.OrdinalIgnoreCase) ||
+         d.Href.Contains(_query.Trim(), StringComparison.OrdinalIgnoreCase)));
+
+    protected override Task OnInitializedAsync() => RefreshPermissionsAsync();
+
+    private async Task RefreshPermissionsAsync()
+    {
+        try
+        {
+            var principal = (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User;
+            _granted = (await AccessService.GetCurrentAccessKeysAsync(principal))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        }
+        catch (Exception) { _granted.Clear(); /* fail closed */ }
+    }
+
+    private async Task Toggle()
+    {
+        _open = !_open;
+        _query = string.Empty;
+        if (_open) await RefreshPermissionsAsync();
+    }
+    private void Close() { _open = false; _query = string.Empty; }
+    private void GoTo(string href) { Close(); Navigation.NavigateTo(href); }
+    private void HandleKeyDown(KeyboardEventArgs e) { if (e.Key == "Escape") Close(); }
+}

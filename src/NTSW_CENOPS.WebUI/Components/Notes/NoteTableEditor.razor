@@ -1,0 +1,99 @@
+@using NTSW_CENOPS.Application.Notes
+@using NTSW_CENOPS.Components.Common
+
+<div class="note-table-editor" dir="rtl">
+    <div class="note-table-frame" style="--table-columns:@_table.Rows[0].Count;--table-rows:@_table.Rows.Count">
+        <div class="note-table-matrix">
+            @for (var row = 0; row < _table.Rows.Count; row++)
+            {
+                var r = row;
+                @for (var col = 0; col < _table.Rows[r].Count; col++)
+                {
+                    var c = col;
+                    <div class="note-table-cell" data-note-table-row="@r" data-note-table-col="@c">
+                        <textarea dir="auto" rows="2" maxlength="2000" aria-label="ردیف @(r+1) ستون @(c+1)" value="@_table.Rows[r][c]" @onchange="e => SetCell(r, c, e.Value?.ToString() ?? string.Empty)"></textarea>
+                        @if (r == 0 && _table.Rows[0].Count > 1)
+                        {
+                            <button type="button" class="note-table-remove-col" title="حذف ستون @(c+1)" aria-label="حذف ستون @(c+1)" @onclick="() => AskRemoveColumn(c)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 7h14M9 4h6M7.5 7l.7 13h7.6l.7-13M10 11v5M14 11v5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                        }
+                        @if (c == 0 && _table.Rows.Count > 1)
+                        {
+                            <button type="button" class="note-table-remove-row" title="حذف ردیف @(r+1)" aria-label="حذف ردیف @(r+1)" @onclick="() => AskRemoveRow(r)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 7h14M9 4h6M7.5 7l.7 13h7.6l.7-13M10 11v5M14 11v5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                        }
+                    </div>
+                }
+            }
+        </div>
+        @for (var c = 0; c <= _table.Rows[0].Count; c++)
+        {
+            var boundary = c;
+            <button type="button" class="note-table-insert-col" disabled="@(_table.Rows[0].Count >= 12)" title="ستون جدید" aria-label="افزودن ستون در موقعیت @(c+1)" @onclick="() => AddColumn(boundary)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg></button>
+        }
+        @for (var r = 0; r <= _table.Rows.Count; r++)
+        {
+            var boundary = r;
+            <button type="button" class="note-table-insert-row" disabled="@(_table.Rows.Count >= 20)" title="ردیف جدید" aria-label="افزودن ردیف در موقعیت @(r+1)" @onclick="() => AddRow(boundary)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg></button>
+        }
+    </div>
+</div>
+<AppModal IsOpen="@(_pending != null)" Title="حذف از جدول" Description="این سطر یا ستون شامل داده است. آیا حذف شود؟" MaxWidth="420px" OnClose="CancelRemoval">
+    <Footer>
+        <button type="button" class="knowledge-button secondary" @onclick="CancelRemoval">انصراف</button>
+        <button type="button" class="knowledge-button danger" @onclick="ConfirmRemoval">حذف</button>
+    </Footer>
+</AppModal>
+
+@code {
+    [Parameter] public string Value { get; set; } = string.Empty;
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+    private NoteTableData _table = new();
+    private string? _loaded;
+    private (bool Row, int Index)? _pending;
+    protected override void OnParametersSet()
+    {
+        // Incoming values replace local state only when changed externally.
+        if (_loaded == Value) return;
+        _table = NoteTableData.Parse(Value);
+        _loaded = Value;
+    }
+    private async Task Commit()
+    {
+        _loaded = _table.Serialize();
+        await ValueChanged.InvokeAsync(_loaded);
+    }
+    private Task SetCell(int row, int col, string text) { _table.Rows[row][col] = text; return Commit(); }
+    private Task AddRow(int index)
+    {
+        if (_table.Rows.Count >= 20) return Task.CompletedTask;
+        _table.Rows.Insert(index, Enumerable.Repeat(string.Empty, _table.Rows[0].Count).ToList());
+        return Commit();
+    }
+    private Task AddColumn(int index)
+    {
+        if (_table.Rows[0].Count >= 12) return Task.CompletedTask;
+        foreach (var row in _table.Rows) row.Insert(index, string.Empty);
+        return Commit();
+    }
+    private async Task AskRemoveRow(int index)
+    {
+        if (_table.Rows.Count <= 1) return;
+        if (_table.Rows[index].Any(s => !string.IsNullOrWhiteSpace(s))) _pending = (true, index);
+        else await RemoveRow(index);
+    }
+    private async Task AskRemoveColumn(int index)
+    {
+        if (_table.Rows[0].Count <= 1) return;
+        if (_table.Rows.Any(r => !string.IsNullOrWhiteSpace(r[index]))) _pending = (false, index);
+        else await RemoveColumn(index);
+    }
+    private Task RemoveRow(int index) { _table.Rows.RemoveAt(index); return Commit(); }
+    private Task RemoveColumn(int index) { foreach (var row in _table.Rows) row.RemoveAt(index); return Commit(); }
+    private void CancelRemoval() => _pending = null;
+    private async Task ConfirmRemoval()
+    {
+        if (_pending is not { } pending) return;
+        _pending = null;
+        if (pending.Row) await RemoveRow(pending.Index);
+        else await RemoveColumn(pending.Index);
+    }
+}

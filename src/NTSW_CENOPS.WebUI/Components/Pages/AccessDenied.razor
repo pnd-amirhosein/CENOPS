@@ -1,0 +1,16 @@
+@page "/access-denied"
+@using NTSW_CENOPS.Components.Layout
+@attribute [AllowAnonymous]
+@layout EmptyLayout
+
+<PageTitle>عدم دسترسی</PageTitle>
+
+<div class="h-screen w-full flex items-center justify-center rtl">
+    <div class="bg-white rounded-3xl shadow-lg p-8 flex flex-col gap-4 max-w-lg text-center">
+        <h1 class="text-2xl font-bold">دسترسی غیرمجاز</h1>
+        <p class="text-gray-500">
+            حساب کاربری شما اجازه دسترسی به این بخش را ندارد.
+        </p>
+        <a href="/dashboard" class="text-primary">بازگشت به داشبورد</a>
+    </div>
+</div>

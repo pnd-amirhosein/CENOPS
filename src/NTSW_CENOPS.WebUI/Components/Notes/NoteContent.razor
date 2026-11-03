@@ -1,0 +1,54 @@
+@using NTSW_CENOPS.Application.Notes
+@using NTSW_CENOPS.Components.Files
+<div class="note-reading-surface" dir="rtl">
+    @if (Blocks.Count == 0)
+    {
+        <p class="note-reading-empty">محتوایی برای این یادداشت ثبت نشده است.</p>
+    }
+    @foreach (var row in Rows())
+    {
+        <div class="note-reading-row @(row.Count > 1 ? "note-reading-inline" : "")" style="--note-cols:@row.Count">
+            @foreach (var block in row)
+            {
+                <div class="note-reading-item">
+                    @switch (block.Kind)
+                    {
+                        case NoteBlockKind.Heading:
+                            <h2 dir="auto" class="note-reading-heading">@block.Content</h2>
+                            break;
+                        case NoteBlockKind.Paragraph:
+                            <p dir="auto" class="note-reading-paragraph">@block.Content</p>
+                            break;
+                        case NoteBlockKind.Code:
+                            <div class="note-reading-code">
+                                <div class="note-reading-code-label">@(!string.IsNullOrWhiteSpace(block.Language) ? block.Language : "CODE")</div>
+                                <pre dir="ltr"><code>@((MarkupString)NoteCodeFormatter.Highlight(block.Content, block.Language))</code></pre>
+                            </div>
+                            break;
+                        case NoteBlockKind.Table:
+                            <NoteTableView Value="@block.Content" />
+                            break;
+                        case NoteBlockKind.File:
+                            <AppFileBlock Value="@block.Content" Mode="FileBlockMode.View" NoteId="NoteId" />
+                            break;
+                    }
+                </div>
+            }
+        </div>
+    }
+</div>
+@code {
+    [Parameter] public IReadOnlyList<NoteBlockModel> Blocks { get; set; } = [];
+    [Parameter] public int? NoteId { get; set; }
+    private List<List<NoteBlockModel>> Rows()
+    {
+        var rows = new List<List<NoteBlockModel>>();
+        foreach (var block in Blocks)
+        {
+            if (block.RowGroup is { } group && rows.Count > 0 && rows[^1][0].RowGroup == group)
+                rows[^1].Add(block);
+            else rows.Add([block]);
+        }
+        return rows;
+    }
+}

@@ -1,0 +1,6 @@
+@page "/wiki/announcements"
+@attribute [AccessAuthorize(AccessKeys.Announcements)]
+@using NTSW_CENOPS.Components.Announcements
+<PageTitle>اطلاعیه‌ها</PageTitle>
+<AnnouncementLibrary StartNew="@(New == 1)" />
+@code { [SupplyParameterFromQuery(Name = "new")] public int? New { get; set; } }

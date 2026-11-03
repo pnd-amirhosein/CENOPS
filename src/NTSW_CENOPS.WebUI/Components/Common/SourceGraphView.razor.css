@@ -1,0 +1,70 @@
+.source-graph{position:relative;height:490px;min-height:420px;overflow:hidden;border:1px solid #badfe6;border-radius:14px;background:#f6fcfd;color:#1d4051}
+.source-graph:fullscreen{width:100vw;height:100vh;max-height:none;min-height:0;border-radius:0}
+.source-graph-stage{position:absolute;inset:0;overflow:hidden;touch-action:none;cursor:grab;background-image:radial-gradient(#96bfca60 1px,transparent 1px);background-size:22px 22px;outline:none}
+.source-graph-stage:active{cursor:grabbing}.source-graph-stage:focus-visible{outline:2px solid #00a9b5;outline-offset:-3px}
+.source-graph-svg{width:100%;height:100%;display:block;direction:ltr;user-select:none}
+.source-graph-tooltip{position:absolute;display:none;pointer-events:none;z-index:8;box-sizing:border-box;
+ width:min(350px,calc(100% - 16px));min-width:0;max-height:min(300px,calc(100% - 16px));overflow:hidden;
+ border:1px solid #9fd1d9;border-radius:13px;background:#fff;box-shadow:0 14px 34px #123c5240;
+ padding:12px;gap:7px;text-align:left;direction:ltr;color:#234657;
+ overflow-wrap:anywhere;word-break:break-word;min-inline-size:0}
+.source-graph-tooltip > *{min-width:0;max-width:100%;box-sizing:border-box}
+.graph-tooltip-header{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
+.graph-tooltip-kind{background:#e1f5f5;border:1px solid #badfe0;padding:3px 8px;border-radius:6px;
+ color:#087e88;font:800 10px/1.4 Tahoma,sans-serif;max-width:65%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.graph-tooltip-count{font:700 10px/1.4 Tahoma,sans-serif;color:#657f8d;white-space:nowrap}
+.source-graph-tooltip strong{display:block;color:#153f50;font:800 13px/1.45 Consolas,Tahoma,monospace;
+ overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.graph-tooltip-owner{font:11px/1.5 Tahoma,sans-serif;color:#477285;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.graph-tooltip-metadata{white-space:pre-line;font:10px/1.55 Consolas,Tahoma,monospace;color:#45707e;
+ overflow:hidden;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3}
+.source-graph-tooltip code{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;min-width:0;
+ background:#eaf4f7;color:#245668;white-space:pre-wrap;overflow:hidden;overflow-wrap:anywhere;
+ font:10px/1.5 Consolas,monospace;padding:7px 8px;border-radius:7px;max-height:58px}
+/* Nodes contain a type badge, title and declaring context; no arbitrary outline or clipped labels. */
+.source-graph-svg .graph-vertex{outline:none;transition:opacity .14s}
+.source-graph-svg .graph-vertex .graph-node-body{transition:fill .15s,stroke .15s;filter:drop-shadow(0 2px 3px #18485813)}
+.source-graph-svg .graph-vertex:hover .graph-node-body{filter:drop-shadow(0 4px 9px #164c6b24)}
+.source-graph-svg .graph-vertex.is-selected .graph-node-body{filter:drop-shadow(0 3px 12px #0698a527)}
+.source-graph-svg .graph-expand{opacity:0;transition:opacity .13s}
+.source-graph-svg .graph-vertex:hover .graph-expand,.source-graph-svg .graph-vertex:focus-within .graph-expand,
+.source-graph-svg .graph-vertex.is-selected .graph-expand{opacity:1}
+.source-graph-actions{position:absolute;left:15px;bottom:17px;z-index:5;display:flex;gap:5px;align-items:center;background:#fffefef2;backdrop-filter:blur(10px);border:1px solid #adced8;padding:6px;border-radius:12px;box-shadow:0 12px 28px #17455728;direction:ltr}
+.source-graph-actions button{display:grid;place-items:center;width:35px;height:35px;padding:0;border:0;border-radius:8px;background:transparent;color:#18798a;cursor:pointer;transition:background .14s,color .14s}
+.source-graph-actions button:hover:not(:disabled),.source-graph-actions button:focus-visible{background:#ddf3f6;color:#006d7e;outline:none}
+.source-graph-actions button:disabled{opacity:.34;cursor:not-allowed}
+.source-graph-actions svg,.source-graph-selection-header svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round;stroke-linecap:round}
+.source-graph-action-divider{width:1px;height:24px;background:#d0e3e7;margin:0 2px}
+.source-graph-legend{position:absolute;right:14px;bottom:17px;padding:8px 12px;border-radius:8px;background:#ffffffdc;color:#59808d;font:10px Consolas,monospace;pointer-events:none}
+.source-graph-legend span{margin:0 6px;color:#99bac2}
+.source-graph-selection{position:absolute;top:15px;right:15px;z-index:5;width:min(355px,calc(100% - 30px));max-height:calc(100% - 95px);overflow:auto;background:#fff;border:1px solid #9cced7;border-radius:12px;box-shadow:0 14px 42px #1746573c;padding:14px;display:grid;gap:10px}
+.source-graph-selection-header{display:flex;justify-content:space-between;align-items:center}
+.source-graph-selection-kind{font-size:10px;font-weight:800;color:#06798b;background:#e4f6f8;border-radius:6px;padding:5px 9px}
+.source-graph-selection-header button{display:grid;place-items:center;width:29px;height:29px;border:1px solid #c8e1e5;border-radius:7px;background:#eef8f9;color:#145e6a;cursor:pointer}
+.source-graph-selection-header button:hover{background:#d6edf0}
+.source-graph-selection-name{text-align:left;color:#153d50;overflow-wrap:anywhere;font:800 13px/1.5 Consolas,monospace}
+.source-graph-selection-metadata{display:grid;grid-template-columns:74px minmax(0,1fr);gap:6px;font-size:10px}
+.source-graph-selection-metadata span{color:#648290}.source-graph-selection-metadata b{text-align:left;overflow-wrap:anywhere;font-weight:700;color:#245066}
+.source-graph-selection ::deep .source-text-preview{max-height:165px;min-height:0;font-size:10px}
+.source-graph-details-action{border:0;border-radius:8px;background:#078c9a;color:#fff;font:800 11px Tahoma,sans-serif;padding:10px;cursor:pointer}.source-graph-details-action:hover{background:#046f7e}
+@media(max-width:740px){.source-graph{height:430px;min-height:340px}.source-graph-legend{display:none}.source-graph-actions{bottom:10px;left:8px;padding:3px;gap:2px}.source-graph-actions button{width:30px;height:32px}.source-graph-selection{top:9px;right:9px;max-height:65%;width:min(290px,calc(100% - 18px))}}
+
+/* The shared modal is a real child of the fullscreen element. Keep it above graph controls. */
+.source-graph:fullscreen ::deep .app-modal-backdrop{z-index:3000;inset:0}
+
+@media (max-width:520px){.source-graph-tooltip{width:min(285px,calc(100% - 16px));max-height:230px}}
+
+.source-graph-selection-count{display:inline-block;color:#077e8a;font:700 11px/1.4 Tahoma,sans-serif}
+
+/* Framework dispatch is distinguishable from a normal static method call. */
+.source-graph-framework-tag{display:inline-flex;justify-self:start;max-width:100%;border:1px solid #c2b3ea;
+ background:#f4efff;color:#69519e;border-radius:7px;padding:5px 9px;
+ font:700 10px/1.4 Consolas,Tahoma,monospace;overflow-wrap:anywhere}
+
+.graph-tooltip-framework{display:block;width:max-content;max-width:100%;background:#f4efff;color:#694a9a;
+ border:1px solid #c9b9e9;border-radius:6px;padding:4px 7px;font:700 10px/1.4 Consolas,Tahoma,monospace;
+ overflow-wrap:anywhere}
+
+/* Per-vertex expansion diagnostics: visible only on the selected graph node. */
+.source-graph-node-notice{font-size:11px;line-height:1.6;color:#8b6221;background:#fff4da;
+    border:1px solid #edd6a9;border-radius:9px;padding:8px 10px;overflow-wrap:anywhere;margin:6px 0}

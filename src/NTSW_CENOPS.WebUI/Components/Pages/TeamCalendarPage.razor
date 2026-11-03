@@ -1,0 +1,355 @@
+@page "/team/events"
+@attribute [AccessAuthorize(AccessKeys.Events)]
+@using System.Security.Claims
+@using NTSW_CENOPS.Application.Events
+@using NTSW_CENOPS.Components.Team
+@using NTSW_CENOPS.Components.Common
+@using NTSW_CENOPS.Components.Common.Dates
+@inject ICalendarEventService Events
+@inject AuthenticationStateProvider AuthState
+@inject NavigationManager Nav
+@rendermode InteractiveServer
+
+<PageTitle>زمان و رویدادها</PageTitle>
+
+<div class="team-calendar" dir="rtl">
+    <header class="team-calendar-toolbar">
+        <div class="team-calendar-actions">
+            <a class="team-calendar-add" href="/team/events/new">+ رویداد جدید</a>
+            <a class="team-calendar-today" href="/team/events/list">فهرست رویدادها</a>
+            <button type="button" class="team-calendar-today" @onclick="GoTodayAsync">امروز</button>
+        </div>
+        <div class="team-calendar-period">
+            <button type="button" title="دوره قبل" aria-label="دوره قبل" @onclick="PreviousAsync">›</button>
+            <h2>@PeriodLabel</h2>
+            <button type="button" title="دوره بعد" aria-label="دوره بعد" @onclick="NextAsync">‹</button>
+        </div>
+        <div class="team-calendar-modes" role="group" aria-label="نمایش تقویم">
+            @foreach (var mode in new[] { CalendarMode.Year, CalendarMode.Month, CalendarMode.Week, CalendarMode.Day })
+            {
+                <button type="button" class="@(View == mode ? "active" : "")" aria-pressed="@(View == mode)" @onclick="() => SetModeAsync(mode)">@ModeName(mode)</button>
+            }
+        </div>
+    </header>
+
+    @if (_loading)
+    { <AppLoading IsLoading="true" Variant="inline" Label="در حال آماده‌سازی تقویم..." /> }
+    else if (!string.IsNullOrWhiteSpace(_error))
+    { <div class="team-calendar-loading">@_error <button type="button" @onclick="LoadAsync">تلاش دوباره</button></div> }
+    else if (View == CalendarMode.Year)
+    {
+        <div class="team-year-grid">
+            @for (var month = 1; month <= 12; month++)
+            {
+                var monthNumber = month;
+                var y = JalaliDate.Parts(_cursor).Year;
+                <section class="team-mini-month">
+                    <button type="button" class="team-mini-title" @onclick="() => OpenMonthAsync(y, monthNumber)">@JalaliDate.Month(monthNumber)</button>
+                    <div class="team-mini-days">
+                        @foreach (var dayName in CalendarDates.Weekdays) { <span class="week-name">@dayName[0]</span> }
+                        @foreach (var date in CalendarDates.MonthCells(y, monthNumber))
+                        {
+                            var included = JalaliDate.Parts(date).Month == monthNumber;
+                            <button type="button" title="@DayTitle(date)" class="mini-day @(!included ? "outside" : "") @(date.Date == DateTime.Today ? "today" : "")"
+                                    @onclick="() => OpenDayAsync(date)">
+                                @JalaliDate.Parts(date).Day
+                                
+                            </button>
+                        }
+                    </div>
+                </section>
+            }
+        </div>
+    }
+    else if (View == CalendarMode.Month)
+    {
+        var parts = JalaliDate.Parts(_cursor);
+        <div class="team-month-view">
+            <div class="team-month-weeknames">
+                @foreach (var name in CalendarDates.Weekdays) { <span>@name</span> }
+            </div>
+            <div class="team-month-cells">
+                @foreach (var date in CalendarDates.MonthCells(parts.Year, parts.Month))
+                {
+                    var items = ItemsOn(date);
+                    <button type="button" class="team-month-cell @(JalaliDate.Parts(date).Month != parts.Month ? "outside" : "") @(date.Date == DateTime.Today ? "today" : "")" title="@DayTitle(date)" aria-label="@DayTitle(date) - نمایش فهرست روز" @onclick="() => ShowDaySummary(date)">
+                        <span class="team-day-number">@JalaliDate.Parts(date).Day</span>
+                        @foreach (var occurrence in items.Take(2))
+                        {
+                            <span class="team-event-chip @(occurrence.EventId < 0 ? "team-birthday-chip" : "")">
+                                <span class="team-event-time">@(occurrence.EventId < 0 ? "🎂" : occurrence.Start.ToString("HH:mm"))</span><span>@occurrence.Title</span>
+                            </span>
+                        }
+                        @if (items.Count > 2) { <span class="team-more-events">+ @(items.Count - 2) رویداد دیگر</span> }
+                        @if (items.Count == 0) { <span class="team-day-empty" aria-hidden="true"></span> }
+                    </button>
+                }
+            </div>
+        </div>
+    }
+    else if (View == CalendarMode.Week)
+    {
+        <div class="team-timeline-outer">
+            <div class="team-week-head">
+                <span class="time-label"></span>
+                @foreach (var day in Enumerable.Range(0, 7).Select(i => CalendarDates.StartOfWeek(_cursor).AddDays(i)))
+                {
+                    <button type="button" class="@(day.Date == DateTime.Today ? "today" : "")" @onclick="() => OpenDayAsync(day)">@CalendarDates.Weekdays[((int)day.DayOfWeek + 1) % 7] <strong>@JalaliDate.Parts(day).Day</strong></button>
+                }
+            </div>
+            <div class="team-timeline-scroller">
+                <div class="team-week-body">
+                    <div class="team-time-ruler">
+                        @for (var hour = 0; hour < 24; hour++) { <span style="top:@(hour * 48)px">@hour.ToString("00"):00</span> }
+                    </div>
+                    @foreach (var day in Enumerable.Range(0, 7).Select(i => CalendarDates.StartOfWeek(_cursor).AddDays(i)))
+                    {
+                        <div class="team-hour-column">
+                            @foreach (var placement in TimedEventLayout.Arrange(ItemsOn(day), day))
+                            {
+                                var entry = placement.Event;
+                                <button type="button" class="team-timed-event @(entry.EventId < 0 ? "team-birthday-event" : "")" style="@placement.Style" title="@entry.Title" @onclick="() => ShowOccurrence(entry)">
+                                    <strong>@entry.Title</strong><small>@(entry.EventId < 0 ? "زادروز مبارک 🎉" : entry.Start.ToString("HH:mm"))</small>
+                                </button>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="team-day-layout">
+            <div class="team-day-timeline">
+                <div class="team-day-heading"><strong>@CalendarDates.Weekdays[((int)_cursor.DayOfWeek + 1) % 7]، @JalaliDate.Date(_cursor)</strong><span>@CountOn(_cursor) رویداد</span></div>
+                <div class="team-timeline-scroller">
+                    <div class="team-week-body team-one-day">
+                        <div class="team-time-ruler">
+                            @for (var hour = 0; hour < 24; hour++) { <span style="top:@(hour * 48)px">@hour.ToString("00"):00</span> }
+                        </div>
+                        <div class="team-hour-column">
+                            @foreach (var placement in TimedEventLayout.Arrange(ItemsOn(_cursor), _cursor))
+                            {
+                                var entry = placement.Event;
+                                <button type="button" class="team-timed-event @(entry.EventId < 0 ? "team-birthday-event" : "")" style="@placement.Style" @onclick="() => ShowOccurrence(entry)">
+                                    <strong>@entry.Title</strong><small>@entry.Start.ToString("HH:mm") @(entry.End.HasValue ? "— " + entry.End.Value.ToString("HH:mm") : "")</small>
+                                </button>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <aside class="team-day-sidebar">
+                <h3>@CalendarDates.Heading(_cursor)</h3>
+                <div class="team-mini-days">
+                    @foreach (var name in CalendarDates.Weekdays) { <span class="week-name">@name[0]</span> }
+                    @foreach (var date in CalendarDates.MonthCells(JalaliDate.Parts(_cursor).Year, JalaliDate.Parts(_cursor).Month))
+                    {
+                        <button type="button" class="mini-day @(date.Date == _cursor.Date ? "today" : "")" @onclick="() => OpenDayAsync(date)">@JalaliDate.Parts(date).Day</button>
+                    }
+                </div>
+                <button type="button" class="team-day-create" @onclick="() => CreateOn(_cursor)">+ رویداد در این روز</button>
+            </aside>
+        </div>
+    }
+</div>
+
+@if (_daySummary is { } summaryDay)
+{
+    <AppModal IsOpen="true" Title="@($"رویدادهای {JalaliDate.Date(summaryDay)}")" Description="فهرست برنامه‌های این روز" MaxWidth="34rem" OnClose="CloseDaySummary">
+        <ChildContent>
+            <div class="team-day-summary" dir="rtl">
+                @if (ItemsOn(summaryDay).Count == 0)
+                { <p class="team-day-summary-empty">در این روز رویدادی ثبت نشده است.</p> }
+                else
+                {
+                    @foreach (var entry in ItemsOn(summaryDay).OrderBy(x => x.Start).ThenBy(x => x.Title))
+                    {
+                        <article class="team-summary-entry @(entry.EventId < 0 ? "birthday" : "")">
+                            <div class="team-summary-entry-meta">
+                                <span class="team-summary-hour">@(entry.EventId < 0 ? "🎂 زادروز" : entry.Start.ToString("HH:mm"))</span>
+                                <span class="team-summary-author"><UserHoverName DisplayName="@entry.Author" /></span>
+                            </div>
+                            <strong>@entry.Title</strong>
+                            @if (entry.End.HasValue) { <small>تا @JalaliDate.DateTime(entry.End.Value)</small> }
+                            <button type="button" class="team-summary-detail" @onclick="() => ShowOccurrenceFromSummary(entry)">جزئیات <span aria-hidden="true">↗</span></button>
+                        </article>
+                    }
+                }
+            </div>
+        </ChildContent>
+        <Footer><button type="button" class="knowledge-button secondary" @onclick="CloseDaySummary">بازگشت</button>
+            <button type="button" class="knowledge-button primary" @onclick="() => CreateOn(summaryDay)">رویداد جدید</button></Footer>
+    </AppModal>
+}
+
+@if (_opened is { } selected)
+{
+    <AppModal IsOpen="true" Title="@selected.Title" OnClose="CloseOccurrence" MaxWidth="32rem">
+        <ChildContent>
+            <div class="team-event-detail" dir="rtl">
+                <span>شروع: @JalaliDate.DateTime(selected.Start)</span>
+                @if (selected.End.HasValue) { <span>پایان: @JalaliDate.DateTime(selected.End.Value)</span> }
+                <span>@(selected.EventId < 0 ? "همکار عزیز:" : "ثبت‌کننده:") <UserHoverName DisplayName="@selected.Author" /></span>
+                @if (!string.IsNullOrWhiteSpace(selected.Description)) { <p>@selected.Description</p> }
+                @if (!string.IsNullOrWhiteSpace(_deleteError) && !_confirmDelete) { <p role="alert" class="team-event-error">@_deleteError</p> }
+            </div>
+        </ChildContent>
+        <Footer><button class="knowledge-button secondary" type="button" @onclick="CloseOccurrence">بازگشت</button>
+            @if (selected.EventId > 0)
+            {
+                <a class="knowledge-button primary" href="@($"/team/events/edit/{selected.EventId}")">مشاهده / ویرایش</a>
+                <button type="button" class="knowledge-button danger" @onclick="AskDeleteAsync">حذف رویداد</button>
+            }
+        </Footer>
+    </AppModal>
+}
+
+
+<AppModal IsOpen="@_confirmDelete" Title="حذف رویداد" Description="تمام تکرارهای این رویداد حذف می‌شوند. ادامه می‌دهید؟"
+          MaxWidth="26rem" OnClose="() => _confirmDelete = false">
+    <ChildContent><p>@_opened?.Title</p>
+        @if (!string.IsNullOrWhiteSpace(_deleteError)) { <p role="alert">@_deleteError</p> }
+    </ChildContent>
+    <Footer>
+        <button type="button" class="knowledge-button secondary" @onclick="() => _confirmDelete = false" disabled="@_deleting">انصراف</button>
+        <button type="button" class="knowledge-button danger" disabled="@_deleting" @onclick="DeleteSelectedAsync">@(_deleting ? "در حال حذف..." : "تأیید حذف")</button>
+    </Footer>
+</AppModal>
+
+@code {
+    private enum CalendarMode { Year, Month, Week, Day }
+    private CalendarMode View = CalendarMode.Month;
+    private DateTime _cursor = DateTime.Today;
+    private bool _loading = true;
+    private string _error = "";
+    private Dictionary<DateTime, List<CalendarOccurrence>> _byDay = new();
+    private CalendarOccurrence? _opened;
+    private DateTime? _daySummary;
+    private void ShowDaySummary(DateTime date) => _daySummary = date.Date;
+    private void CloseDaySummary() => _daySummary = null;
+    private void ShowOccurrenceFromSummary(CalendarOccurrence occurrence)
+    {
+        _daySummary = null;
+        ShowOccurrence(occurrence);
+    }
+    private int _requestVersion;
+    private bool _confirmDelete;
+    private bool _deleting;
+    private string? _deleteError;
+    private async Task AskDeleteAsync()
+    {
+        if (_opened is not { EventId: > 0 } chosen) return;
+        var actor = (await AuthState.GetAuthenticationStateAsync()).User;
+        var eventModel = await Events.FindAsync(chosen.EventId, actor);
+        if (eventModel is null) return;
+        if (eventModel.CreatedById != CurrentUserId(actor) && !actor.IsInRole("admin") &&
+            !actor.IsInRole("owner") && !actor.IsInRole("Admin") && !actor.IsInRole("Owner"))
+        { _deleteError = "فقط سازنده یا مدیر می‌تواند رویداد را حذف کند."; return; }
+        _deleteError = null;
+        _confirmDelete = true;
+    }
+    private static int CurrentUserId(System.Security.Claims.ClaimsPrincipal principal) =>
+        int.TryParse(principal.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var id) ? id : 0;
+    private async Task DeleteSelectedAsync()
+    {
+        if (_deleting || _opened is not { EventId: > 0 } selected) return;
+        _deleting = true; _deleteError = null;
+        try
+        {
+            var actor = (await AuthState.GetAuthenticationStateAsync()).User;
+            var result = await Events.DeleteAsync(selected.EventId, actor);
+            if (!result.Succeeded) { _deleteError = result.Error; return; }
+            _confirmDelete = false; _opened = null;
+            await LoadAsync();
+        }
+        catch (Exception) { _deleteError = "حذف رویداد انجام نشد."; }
+        finally { _deleting = false; }
+    }
+    private static string ModeName(CalendarMode mode) => mode switch { CalendarMode.Year => "سال", CalendarMode.Month => "ماه", CalendarMode.Week => "هفته", _ => "روز" };
+    private string PeriodLabel => View switch
+    {
+        CalendarMode.Year => JalaliDate.Parts(_cursor).Year.ToString(),
+        CalendarMode.Month => CalendarDates.Heading(_cursor),
+        CalendarMode.Week => $"{JalaliDate.Date(CalendarDates.StartOfWeek(_cursor))} — {JalaliDate.Date(CalendarDates.StartOfWeek(_cursor).AddDays(6))}",
+        _ => JalaliDate.Date(_cursor)
+    };
+    [Parameter, SupplyParameterFromQuery(Name = "date")]
+    public string? DateQuery { get; set; }
+    protected override Task OnInitializedAsync()
+    {
+        if (DateTime.TryParseExact(DateQuery, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.None, out var date)) _cursor = date.Date;
+        return LoadAsync();
+    }
+
+    private (DateTime From, DateTime To) Window()
+    {
+        var start = View switch
+        {
+            CalendarMode.Year => CalendarDates.MonthStart(JalaliDate.Parts(_cursor).Year, 1),
+            CalendarMode.Month => CalendarDates.StartOfWeek(CalendarDates.MonthStart(_cursor)),
+            CalendarMode.Week => CalendarDates.StartOfWeek(_cursor),
+            _ => _cursor.Date
+        };
+        var end = View switch
+        {
+            CalendarMode.Year => CalendarDates.MonthStart(JalaliDate.Parts(_cursor).Year + 1, 1),
+            CalendarMode.Month => start.AddDays(42),
+            CalendarMode.Week => start.AddDays(7),
+            _ => start.AddDays(1)
+        };
+        return (start, end);
+    }
+    private async Task LoadAsync()
+    {
+        var sequence = ++_requestVersion;
+        _loading = true; _error = "";
+        try
+        {
+            var user = (await AuthState.GetAuthenticationStateAsync()).User;
+            var (from, to) = Window();
+            var result = await Events.GetOccurrencesAsync(from, to, user);
+            if (sequence != _requestVersion) return;
+            _byDay = new();
+            foreach (var item in result)
+            {
+                var end = (item.End is { } finish && finish.TimeOfDay == TimeSpan.Zero && finish > item.Start ? finish.AddTicks(-1) : item.End ?? item.Start).Date;
+                for (var day = item.Start.Date; day <= end && day < to; day = day.AddDays(1))
+                {
+                    if (day < from) continue;
+                    if (!_byDay.TryGetValue(day, out var list)) _byDay[day] = list = [];
+                    list.Add(item);
+                }
+            }
+        }
+        catch (Exception)
+        {
+            if (sequence == _requestVersion) _error = "بارگذاری تقویم انجام نشد. اتصال سرور و دسترسی را بررسی کنید.";
+        }
+        finally { if (sequence == _requestVersion) _loading = false; }
+    }
+    private IReadOnlyList<CalendarOccurrence> ItemsOn(DateTime day) => _byDay.TryGetValue(day.Date, out var entries) ? entries : [];
+    private int CountOn(DateTime date) => ItemsOn(date).Count;
+    private string DayTitle(DateTime date) => $"{JalaliDate.Date(date)} · {CountOn(date)} رویداد";
+    private async Task SetModeAsync(CalendarMode mode) { View = mode; await LoadAsync(); }
+    private async Task GoTodayAsync() { _cursor = DateTime.Today; await LoadAsync(); }
+    private async Task OpenDayAsync(DateTime date) { _cursor = date; View = CalendarMode.Day; await LoadAsync(); }
+    private async Task OpenMonthAsync(int year, int month) { _cursor = CalendarDates.MonthStart(year, month); View = CalendarMode.Month; await LoadAsync(); }
+    private async Task PreviousAsync() { Move(-1); await LoadAsync(); }
+    private async Task NextAsync() { Move(1); await LoadAsync(); }
+    private void Move(int direction)
+    {
+        _cursor = View switch
+        {
+            CalendarMode.Year => CalendarDates.MonthStart(JalaliDate.Parts(_cursor).Year + direction, 1),
+            CalendarMode.Month => direction > 0 ? CalendarDates.NextMonth(_cursor) : CalendarDates.PreviousMonth(_cursor),
+            CalendarMode.Week => _cursor.AddDays(7 * direction),
+            _ => _cursor.AddDays(direction)
+        };
+    }
+    private void CreateOn(DateTime date) => Nav.NavigateTo($"/team/events/new?date={date:yyyy-MM-dd}");
+    private void ShowOccurrence(CalendarOccurrence item) => _opened = item;
+    private void CloseOccurrence() => _opened = null;
+}

@@ -1,0 +1,220 @@
+@using System.Security.Claims
+@using NTSW_CENOPS.Application.Dashboards
+@inject IDashboardContentService Catalog
+@implements IDisposable
+
+        <div class="dcp-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m16 16 5 5"/></svg>
+            <input type="search" aria-label="جستجوی متن کامل همه محتواها" placeholder="جستجو در عنوان، نویسنده، متن، کد SQL، cURL، کارها و گزارش‌ها..."
+                   value="@_search" @oninput="OnSearchInput" maxlength="150" />
+            @if (!string.IsNullOrEmpty(_search)) { <button type="button" @onclick="ClearSearch" aria-label="پاک‌کردن جستجو">×</button> }
+        </div>
+        <div class="dcp-body">
+            <nav class="dcp-categories" aria-label="دسته‌بندی محتوا">
+                @foreach (var cat in Categories.Where(cat => AllowSmart || cat.Key != "smart"))
+                {
+                    <button type="button" class="@(_category == cat.Key ? "active" : "")" aria-pressed="@(_category == cat.Key)"
+                            @onclick="() => ChangeCategory(cat.Key)">
+                        <svg class="dcp-category-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            @switch (cat.Key)
+                            {
+                                case "all":
+                                    <rect x="3" y="3" width="7" height="7" rx="1.6" />
+                                    <rect x="14" y="3" width="7" height="7" rx="1.6" />
+                                    <rect x="3" y="14" width="7" height="7" rx="1.6" />
+                                    <rect x="14" y="14" width="7" height="7" rx="1.6" />
+                                    break;
+                                case "note":
+                                    <path d="M7 3h8l4 4v14H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" />
+                                    <path d="M14 3v5h5M9 12h6M9 16h6" />
+                                    break;
+                                case "announcement":
+                                    <path d="m3 11 12-5v12L3 13zM15 9l4-2v10l-4-2M5 14l2 6h4l-2-5" />
+                                    break;
+                                case "todo":
+                                    <rect x="3.5" y="3.5" width="17" height="17" rx="3" />
+                                    <path d="m8 12 3 3 5-6" />
+                                    break;
+                                case "sql":
+                                    <ellipse cx="12" cy="5" rx="8" ry="3" />
+                                    <path d="M4 5v7c0 4 16 4 16 0V5M4 12v7c0 4 16 4 16 0v-7" />
+                                    break;
+                                case "curl":
+                                    <path d="m8 7-5 5 5 5m8-10 5 5-5 5M14 4l-4 16" />
+                                    break;
+                                case "events":
+                case "event":
+                                case "events-day":
+                                case "events-week":
+                                case "events-month":
+                                    <rect x="3" y="5" width="18" height="16" rx="2" /><path d="M7 3v4M17 3v4M3 10h18M8 14h3" />
+                                    break;
+                                case "smart":
+                                    <path d="m12 2 2.4 6.1L21 10l-6.6 1.9L12 19l-2.4-7.1L3 10l6.6-1.9Z" />
+                                    break;
+                                case "report":
+                                    <path d="M4 20V4h16M8 16v-4m5 4V8m5 8V6" />
+                                    break;
+                            }
+                        </svg><span class="dcp-category-label" title="@cat.Label">@cat.Label</span>
+                    </button>
+                }
+            </nav>
+            <div class="dcp-results">
+                <div class="dcp-results-header"><strong>محتوای قابل انتخاب</strong><span>@(_loading ? "…" : $"{_results.Count} مورد")</span></div>
+                @if (_loading)
+                {
+                    <AppLoading IsLoading="true" Variant="inline" Label="در حال آماده‌سازی محتوا..." />
+                }
+                else if (_error is not null)
+                {
+                    <div class="dcp-state dcp-error" role="alert">@_error <button type="button" @onclick="RefreshAsync">تلاش مجدد</button></div>
+                }
+                else if (_results.Count == 0)
+                {
+                    <div class="dcp-state">موردی با این جستجو و سطح دسترسی پیدا نشد.</div>
+                }
+                else
+                {
+                    @foreach (var category in Categories.Skip(1))
+                    {
+                        var groupItems = _results.Where(item =>
+                            (category.Key == "events" ? item.Type is "event" or "events-day" or "events-week" or "events-month" : item.Type == category.Key) &&
+                            (AllowSmart || item.Type is not ("smart" or "event"))).ToList();
+                        if (groupItems.Count == 0) continue;
+                        <section class="dcp-group" aria-label="@category.Label">
+                            @if (_category == "all")
+                            {
+                                <div class="dcp-group-heading"><span>@category.Label</span><small>@groupItems.Count مورد</small></div>
+                            }
+                            <div class="dcp-grid dcp-grid-@category.Key">
+                                @foreach (var item in groupItems)
+                                {
+                                    var index = SelectionIndex(item);
+                                    var locked = IsGlobal(item);
+                                    <article @key="(item.Type, item.Id)" class="dcp-card @item.Type @(index > 0 || locked ? "selected" : "") @(locked ? "locked" : "")">
+                                        <button type="button" class="dcp-card-select" @onclick="() => OnToggle.InvokeAsync(item)" disabled="@locked"
+                                                aria-pressed="@(index > 0 || locked)"
+                                                aria-label="@($"{item.Title}، {(locked ? "در داشبورد عمومی؛ غیرقابل تغییر" : index > 0 ? "انتخاب‌شده" : "انتخاب‌نشده")}")">
+                                            <span class="dcp-card-top">
+                                                <span class="dcp-type" title="@($"{Label(item.Type)} - {item.Author}")">@Label(item.Type)@(item.Type == "report" ? "" : $" - {item.Author}")</span>
+                                                @if (locked)
+                                                {
+                                                    <span class="dcp-global-lock" title="این کارت در داشبورد عمومی قرار دارد" aria-label="قفل: داشبورد عمومی">✓ عمومی</span>
+                                                }
+                                                else if (item.Type == "smart")
+                                                { <span class="dcp-selection-icon" title="افزودن نمونه جدید">+</span> }
+                                                else if (index > 0)
+                                                {
+                                                    <span class="dcp-selection-index" aria-label="شماره انتخاب @index">@index</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="dcp-selection-icon" aria-hidden="true">
+                                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>
+                                                    </span>
+                                                }
+                                            </span>
+                                            <strong title="@item.Title">@item.Title</strong>
+                                            @if (item.Type == "todo")
+                                            {
+                                                <span class="dcp-todo-list" aria-label="سه کار نخست">
+                                                    @if (item.TodoItems is { Count: > 0 })
+                                                    {
+                                                        @foreach (var task in item.TodoItems.Take(3))
+                                                        {
+                                                            <span class="dcp-todo-line @(task.IsCompleted ? "completed" : "")">
+                                                                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2.5" y="2.5" width="15" height="15" rx="4"/>@if (task.IsCompleted) { <path d="m6 10 3 3 5-6"/> }</svg>
+                                                                <span title="@task.Text" dir="auto">@task.Text</span>
+                                                            </span>
+                                                        }
+                                                    }
+                                                    else { <span class="dcp-todo-empty">هنوز کاری ثبت نشده است.</span> }
+                                                </span>
+                                            }
+                                            else if (item.Type is "sql" or "curl")
+                                            {
+                                                <span class="dcp-code-description" title="@item.Summary">@(string.IsNullOrWhiteSpace(item.Summary) ? "بدون توضیحات" : item.Summary)</span>
+                                                <span class="dcp-code-snippet" dir="ltr" title="@item.CodePreview">@(string.IsNullOrWhiteSpace(item.CodePreview) ? "کدی ثبت نشده است." : item.CodePreview)</span>
+                                            }
+                                            else if (item.Type == "report")
+                                            {
+                                                <span class="dcp-chart-kind" title="نوع نمودار">نمودار @DashboardChartLabels.Get(item.ChartType)</span>
+                                                <span class="dcp-excerpt" title="@item.Summary">@item.Summary</span>
+                                            }
+                                            else if (item.Type != "announcement")
+                                            {
+                                                <span class="dcp-excerpt" title="@item.Summary">@item.Summary</span>
+                                            }
+                                        </button>
+                                        @if (!DashboardSpecialCards.IsSpecial(item.Type))
+                                        {
+                                        <button type="button" class="dcp-card-peek" title="پیش‌نمایش @item.Title"
+                                                aria-label="مشاهده محتوای @item.Title" @onclick="() => OnPreview.InvokeAsync(item)">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.8 12s3.4-6 9.2-6 9.2 6 9.2 6-3.4 6-9.2 6-9.2-6-9.2-6Z"/><circle cx="12" cy="12" r="2.5"/></svg> مشاهده محتوا
+                                        </button>
+                                        }
+                                    </article>
+                                }
+                            </div>
+                        </section>
+                    }
+                }
+            </div>
+        </div>
+
+@code {
+    [Parameter, EditorRequired] public ClaimsPrincipal Actor { get; set; } = new();
+    [Parameter] public bool PublicOnly { get; set; }
+    [Parameter] public bool AllowSmart { get; set; } = true;
+    [Parameter] public IReadOnlyList<DashboardContentItem> Selected { get; set; } = [];
+    [Parameter] public IReadOnlyList<DashboardContentReference> GlobalItems { get; set; } = [];
+    [Parameter] public EventCallback<DashboardContentItem> OnToggle { get; set; }
+    [Parameter] public EventCallback<DashboardContentItem> OnPreview { get; set; }
+    public static readonly (string Key, string Label)[] Categories =
+    [
+        ("all", "همه موارد"), ("note", "یادداشت‌ها"),
+        ("announcement", "اطلاعیه‌ها"), ("todo", "کارها"),
+        ("sql", "کوئری‌های SQL"), ("curl", "درخواست‌های cURL"),
+        ("report", "گزارش‌ها"), ("events", "رویدادها"),
+        ("smart", "کارت هوشمند")
+    ];
+    private IReadOnlyList<DashboardContentItem> _results = [];
+    private string _search = "", _category = "all";
+    private string? _error;
+    private bool _loading = true;
+    private CancellationTokenSource? _searchDelay;
+    private int _requestNumber;
+    private static string Label(string type) => DashboardSpecialCards.Titles.TryGetValue(type, out var title)
+        ? title : Categories.FirstOrDefault(x => x.Key == type).Label ?? type;
+    private bool IsGlobal(DashboardContentItem item) => GlobalItems.Any(x => x.Type == item.Type && x.Id == item.Id);
+    private int SelectionIndex(DashboardContentItem item) =>
+        item.Type == "smart" ? Selected.Count(x => x.Type == "smart") :
+        Selected.ToList().FindIndex(x => x.Type == item.Type && x.Id == item.Id) + 1;
+    protected override Task OnInitializedAsync() => RefreshAsync();
+    private async Task ChangeCategory(string key) { _category = key; await RefreshAsync(); }
+    private async Task ClearSearch() { _search = ""; _searchDelay?.Cancel(); await RefreshAsync(); }
+    private async Task OnSearchInput(ChangeEventArgs e)
+    {
+        _search = e.Value?.ToString() ?? "";
+        _searchDelay?.Cancel();
+        var delay = new CancellationTokenSource();
+        _searchDelay = delay;
+        try { await Task.Delay(260, delay.Token); await RefreshAsync(); }
+        catch (OperationCanceledException) { }
+    }
+    private async Task RefreshAsync()
+    {
+        var request = ++_requestNumber;
+        _error = null;
+        _loading = true;
+        try
+        {
+            var results = await Catalog.SearchAsync(_search, _category, PublicOnly, Actor);
+            if (request == _requestNumber) _results = results;
+        }
+        catch (Exception) { if (request == _requestNumber) _error = "جستجوی محتوا انجام نشد."; }
+        finally { if (request == _requestNumber) _loading = false; }
+    }
+    public void Dispose() { _searchDelay?.Cancel(); _searchDelay?.Dispose(); }
+}

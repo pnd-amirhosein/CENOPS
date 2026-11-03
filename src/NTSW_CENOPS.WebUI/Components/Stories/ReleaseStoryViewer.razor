@@ -1,0 +1,167 @@
+@using System.Security.Claims
+@using NTSW_CENOPS.Application.Stories
+@using NTSW_CENOPS.Components.Common
+@inject IReleaseStoryService Stories
+@inject AuthenticationStateProvider Auth
+
+@if (IsOpen)
+{
+    <div class="release-story-backdrop" role="presentation" @onkeydown="HandleKeyDown" tabindex="-1">
+        <div class="release-story-window" role="dialog" aria-modal="true" aria-label="داستانچه به‌روزرسانی‌ها" dir="rtl">
+            <header class="release-story-header">
+                <div class="release-story-identity">
+                    <span class="release-story-avatar"><CenopsMark CssClass="h-100 w-auto" /></span>
+                    <div><strong>GLASSWORK · داستانچه انتشار</strong><small>@(Current is null ? "تغییرات سامانه" : $"نسخه {Current.Version} · {_index + 1} از {_items.Count}")</small></div>
+                </div>
+                <div class="release-story-header-actions">
+                    <button type="button" class="release-story-icon" title="مشاهده کاربران" aria-label="مشاهده کاربران" aria-expanded="@_showViewers" @onclick="ToggleViewersAsync">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2.5 12s3.6-6.5 9.5-6.5 9.5 6.5 9.5 6.5-3.6 6.5-9.5 6.5S2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                        @if (_index >= 0 && _index < _items.Count) { <span class="release-story-eye-count">@_items[_index].ViewCount</span> }
+                    </button>
+                    <button type="button" class="release-story-icon" title="بستن" aria-label="بستن داستانچه" @onclick="CloseAsync">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M5 5 19 19M19 5 5 19"/></svg>
+                    </button>
+                </div>
+            </header>
+            <div class="release-story-steps" aria-label="فهرست داستانچه‌ها">
+                @for (var i = 0; i < _items.Count; i++)
+                {
+                    var position = i;
+                    <button type="button" title="@_items[i].Title" aria-label="داستانچه @(i + 1)" aria-current="@(i == _index ? "step" : null)"
+                            class="@StepCssClass(i)" @onclick="() => GoToAsync(position)"><span></span></button>
+                }
+            </div>
+            <div class="release-story-stage">
+                @if (!string.IsNullOrEmpty(_error))
+                {
+                    <div class="release-story-empty">@_error</div>
+                }
+                else if (_loading)
+                {
+                    <div class="release-story-empty">در حال بارگذاری داستانچه…</div>
+                }
+                else if (Current is not null)
+                {
+                    <main class="release-story-reading" @key="Current.Id">
+                        <div class="release-story-reading-top"><span>PATCH NOTES</span><span dir="ltr">@Current.Version</span></div>
+                        <h1>@Current.Title</h1>
+                        <StoryMarkdown Markdown="Current.Markdown" />
+                        <p class="release-story-end">پایان این داستانچه · برای مورد بعدی از سمت راست استفاده کنید</p>
+                    </main>
+                }
+                else { <div class="release-story-empty">هنوز داستانچه‌ای منتشر نشده است.</div> }
+                @if (_index > 0)
+                {
+                    <button type="button" class="release-story-side release-story-side--prev" aria-label="داستانچه قبلی" title="قبلی" @onclick="PreviousAsync"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 5-7 7 7 7"/></svg></button>
+                }
+                @if (_index >= 0 && _index < _items.Count - 1)
+                {
+                    <button type="button" class="release-story-side release-story-side--next" aria-label="داستانچه بعدی" title="بعدی" @onclick="NextAsync"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 5 7 7-7 7"/></svg></button>
+                }
+            </div>
+            <footer class="release-story-footer"><span>بدون پخش خودکار · زمان کافی برای مطالعه</span><span>@(_items.Count == 0 ? 0 : _index + 1) / @_items.Count</span></footer>
+        </div>
+        @if (_showViewers)
+        {
+            <div class="release-story-viewers" aria-label="افرادی که این داستانچه را دیده‌اند" dir="rtl">
+                <div class="release-story-viewers-head"><strong>بازدیدکنندگان</strong><button type="button" aria-label="بستن بازدیدکنندگان" @onclick="() => _showViewers = false">×</button></div>
+                @if (_viewers.Count == 0) { <p class="release-story-viewers-empty">هنوز بازدیدی ثبت نشده است.</p> }
+                <div class="release-story-viewers-list">
+                    @foreach (var viewer in _viewers)
+                    {
+                        <div class="release-story-viewer-row" @key="viewer.UserId">
+                            <div class="release-story-viewer-avatar">@(viewer.DisplayName.Length > 0 ? viewer.DisplayName[..1] : "؟")</div>
+                            <div class="release-story-viewer-name"><UserHoverName DisplayName="@viewer.DisplayName" Username="@viewer.Username" /><small dir="ltr">@@@viewer.Username</small></div>
+                            <time title="@ViewerDateTime(viewer.ViewedAt)">@ViewerDate(viewer.ViewedAt)</time>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnReadChanged { get; set; }
+
+    private List<ReleaseStorySummary> _items = [];
+    private List<ReleaseStoryViewerInfo> _viewers = [];
+    private ReleaseStoryDetail? Current;
+    private int _userId, _index = -1;
+    private bool _wasOpen, _loading, _showViewers;
+    private string? _error;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!IsOpen) { _wasOpen = false; return; }
+        if (_wasOpen) return;
+        _wasOpen = true;
+        _showViewers = false;
+        _error = null;
+        _loading = true;
+        try
+        {
+            var principal = (await Auth.GetAuthenticationStateAsync()).User;
+            if (!int.TryParse(principal.FindFirstValue(ClaimTypes.NameIdentifier), out _userId) || _userId <= 0)
+            {
+                _error = "برای دیدن داستانچه‌ها باید وارد سامانه شوید.";
+                return;
+            }
+            _items = (await Stories.ListAsync(_userId)).ToList();
+            _index = _items.FindIndex(s => !s.Viewed);
+            if (_index < 0) _index = _items.Count - 1;
+            if (_index >= 0) await LoadStoryAsync();
+        }
+        catch { _error = "بارگذاری داستانچه ممکن نشد. اتصال یا نسخه دیتابیس را بررسی کنید."; }
+        finally { _loading = false; }
+    }
+
+    private async Task LoadStoryAsync()
+    {
+        if (_index < 0 || _index >= _items.Count) return;
+        _loading = true;
+        _showViewers = false;
+        _viewers = [];
+        try
+        {
+            var selected = _items[_index];
+            var detail = await Stories.OpenAsync(selected.Id, _userId);
+            if (detail is null) { _error = "این داستانچه پیدا نشد."; return; }
+            Current = detail;
+            _items[_index] = selected with { Viewed = true, ViewCount = selected.ViewCount + (selected.Viewed ? 0 : 1) };
+            await OnReadChanged.InvokeAsync();
+        }
+        catch { _error = "نمایش داستانچه ممکن نشد."; }
+        finally { _loading = false; }
+    }
+    private async Task GoToAsync(int index)
+    {
+        if (index < 0 || index >= _items.Count || index == _index) return;
+        _index = index; _error = null; await LoadStoryAsync();
+    }
+    private Task PreviousAsync() => GoToAsync(_index - 1);
+    private Task NextAsync() => GoToAsync(_index + 1);
+    private async Task ToggleViewersAsync()
+    {
+        _showViewers = !_showViewers;
+        if (_showViewers && Current is not null)
+        {
+            try { _viewers = (await Stories.ViewersAsync(Current.Id)).ToList(); }
+            catch { _viewers = []; }
+        }
+    }
+    private string StepCssClass(int i) =>
+        i == _index ? "release-story-step is-active" :
+        i < _index || _items[i].Viewed ? "release-story-step is-viewed" : "release-story-step is-unread";
+    private static string ViewerDateTime(DateTimeOffset date) => date.ToLocalTime().ToString("g");
+    private static string ViewerDate(DateTimeOffset date) => date.ToLocalTime().ToString("yyyy/MM/dd");
+    private Task CloseAsync() => OnClose.InvokeAsync();
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape") await CloseAsync();
+        if (e.Key == "ArrowLeft") await PreviousAsync();
+        if (e.Key == "ArrowRight") await NextAsync();
+    }
+}

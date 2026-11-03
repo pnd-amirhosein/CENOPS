@@ -1,0 +1,17 @@
+<div class="sidebar-items">
+    @foreach (var item in Items)
+    {
+        if (item.IsParent)
+        {
+            <SidebarGroup Item="item" />
+        }
+        else
+        {
+            <SidebarLink Item="item" />
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public List<SidebarItem> Items { get; set; } = new();
+}

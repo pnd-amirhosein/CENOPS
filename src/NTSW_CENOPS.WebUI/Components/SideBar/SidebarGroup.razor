@@ -1,0 +1,42 @@
+@rendermode InteractiveServer
+@inject NavigationManager Navigation
+
+<AccessGate AccessKey="@(Item.RequiredAccess ?? string.Empty)">
+    <div class="nav-item nav-group">
+        <button type="button" class="nav-group-trigger" aria-expanded="@Item.IsExpanded" @onclick="Toggle">
+            @if (!string.IsNullOrEmpty(Item.IconSvg))
+            {
+                <span class="icon" aria-hidden="true">@((MarkupString)Item.IconSvg)</span>
+            }
+            <span class="text">@Item.Title</span>
+            <span class="accordion-arrow @(Item.IsExpanded ? "expanded" : "")" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" /></svg>
+            </span>
+        </button>
+
+        @if (Item.IsExpanded)
+        {
+            <div class="nav-children">
+                @foreach (var child in Item.Children ?? [])
+                {
+                    <SidebarLink Item="child" />
+                }
+            </div>
+        }
+    </div>
+</AccessGate>
+
+@code {
+    [Parameter] public SidebarItem Item { get; set; } = new();
+    protected override void OnInitialized()
+    {
+        var currentPath = new Uri(Navigation.Uri).AbsolutePath.Trim('/');
+        if (Item.Children?.Any(child => string.Equals(
+                child.Href?.Trim('/'), currentPath, StringComparison.OrdinalIgnoreCase)) == true)
+        {
+            Item.IsExpanded = true;
+        }
+    }
+
+    private void Toggle() => Item.IsExpanded = !Item.IsExpanded;
+}

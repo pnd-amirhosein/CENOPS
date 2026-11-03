@@ -1,0 +1,268 @@
+@import "tailwindcss";
+
+@theme {
+    --color-primary: #19b5de;
+}
+
+.loading-screen {
+    position: fixed;
+    inset: 0;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    background: white;
+    z-index: 99999;
+}
+
+.loading-screen img {
+    width: 250px;
+    height: auto;
+}
+
+.text-primary {
+    color: var(--color-primary) !important;
+}
+.border-primary{
+    border-color: var(--color-primary) !important;
+}
+
+.disposition-text.up {
+    transform: translateY(2px);
+}
+
+.disposition-text.down {
+    transform: translateY(-2px);
+}
+
+.opaque{ 
+    opacity: 0;
+}
+
+html, body {
+    font-family: "Hubot Sans", "Yekan Bakh", Helvetica, Arial, sans-serif;
+    height: 100vh;
+    background: #F3F3F3;
+}
+
+.rtl {
+    direction: rtl;
+    text-align: right;
+}
+
+.ltr {
+    direction: ltr;
+    text-align: left;
+}
+
+p {
+    margin: 0;
+}
+
+input {
+    @apply w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary;
+}
+
+table input {
+    @apply px-2 py-1 bg-white;
+}
+
+table th:first-of-type, table td:first-of-type {
+    @apply pr-4;
+}
+
+table th:last-of-type, table td:last-of-type {
+    @apply pr-4;
+}
+
+table tr {
+    @apply text-sm;
+    border-color: transparent !important;
+}
+
+table tbody tr:nth-child(odd) {
+    background: #00000008 !important;
+}
+
+table thead tr {
+    @apply !bg-primary;
+}
+
+button {
+    @apply flex gap-2 items-center justify-center bg-primary rounded-xl text-white hover:opacity-90 transition font-bold px-4 py-2 text-base;
+}
+
+button.square-button {
+    @apply p-2 text-sm;
+}
+
+button.small-button {
+    @apply px-2 py-1 text-sm rounded-lg;
+}
+
+button.small-button.square-button {
+    @apply p-1 text-sm;
+}
+
+button .text {
+    transform: translateY(-2px);
+}
+
+button.text-button .icon, button.outline-button .icon,
+button.text-button .text, button.outline-button .text {
+    @apply text-gray-700;
+}
+
+button.text-button:disabled .icon, button.outline-button:disabled .icon,
+button.text-button:disabled .text, button.outline-button:disabled .text {
+    @apply text-gray-100;
+}
+
+button.text-button, button.outline-button {
+    background: unset !important;
+}
+
+button.text-button {
+    border: unset !important;
+}
+
+button.outline-button {
+    @apply border border-gray-400;
+}
+
+button.text-button:hover:not(:disabled), button.outline-button:hover:not(:disabled) {
+    @apply !bg-gray-700;
+}
+
+button.text-button:hover:not(:disabled) .text, button.outline-button:hover:not(:disabled) .text,
+button.text-button:hover:not(:disabled) .icon, button.outline-button:hover:not(:disabled) .icon {
+    @apply text-white;
+}
+
+button.text-button.success .icon, button.outline-button.success .icon,
+button.text-button.success .text, button.outline-button.success .text {
+    @apply text-green-700;
+}
+
+button.text-button.success:hover:not(:disabled), button.outline-button.success:hover:not(:disabled) {
+    @apply !bg-green-700;
+}
+
+button.text-button.success:hover:not(:disabled) .text, button.outline-button.success:hover:not(:disabled) .text,
+button.text-button.success:hover:not(:disabled) .icon, button.outline-button.success:hover:not(:disabled) .icon {
+    @apply text-white;
+}
+
+button.text-button.warning .icon, button.outline-button.warning .icon,
+button.text-button.warning .text, button.outline-button.warning .text {
+    @apply text-orange-500;
+}
+
+button.text-button.warning:hover:not(:disabled), button.outline-button.warning:hover:not(:disabled) {
+    @apply !bg-orange-500;
+}
+
+button.text-button.warning:hover:not(:disabled) .text, button.outline-button.warning:hover:not(:disabled) .text,
+button.text-button.warning:hover:not(:disabled) .icon, button.outline-button.warning:hover:not(:disabled) .icon {
+    @apply text-white;
+}
+
+button.text-button.danger .icon, button.outline-button.danger .icon,
+button.text-button.danger .text, button.outline-button.danger .text {
+    @apply text-red-500;
+}
+
+button.text-button.danger:hover:not(:disabled), button.outline-button.danger:hover:not(:disabled) {
+    @apply !bg-red-500;
+} 
+
+button.text-button.danger:hover:not(:disabled) .text, button.outline-button.danger:hover:not(:disabled) .text,
+button.text-button.danger:hover:not(:disabled) .icon, button.outline-button.danger:hover:not(:disabled) .icon {
+    @apply text-white;
+} 
+
+button.outline-button.success {
+    @apply !border-green-700;
+}
+
+button.outline-button .warning {
+    @apply !border-orange-500;
+}
+
+button.outline-button .danger {
+    @apply !border-red-500;
+}
+
+
+button.text-button {
+    @apply !border-0; 
+}
+
+button.filled.success {
+    @apply bg-green-700;
+}
+
+button.filled.success .text, button.filled.success .icon {
+    @apply text-white;
+}
+
+button:not(.filled):disabled .text, button:not(.filled):disabled .icon {
+    @apply text-gray-400;
+}
+
+a.nav-link.flex{
+    display: flex;
+}
+
+.nav-item a.active {
+    color: var(--color-primary);
+}
+
+.navbar-toggler {
+    appearance: none;
+    cursor: pointer;
+    width: .5rem;
+    height: .5rem;
+    position: absolute;
+    top: 0.5rem;
+    right: 1rem;
+    display: none;
+}
+
+.navbar-toggler:checked {
+    background-color: rgba(255, 255, 255, 0.5);
+}
+
+.nav-item {
+    font-size: 1rem;
+    padding-bottom: 0.5rem;
+}
+
+.nav-container>.nav-item:first-of-type {
+    padding-top: 1rem;
+}
+
+.nav-container>.nav-item:last-of-type {
+    padding-bottom: 1rem;
+}
+
+.children .nav-item{
+    padding: 0 !important;
+}
+
+.nav-link {
+    color: black;
+}
+
+.accordion-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    transition: transform 0.2s ease-in-out;
+}
+
+.accordion-arrow.expanded {
+    transform: rotate(180deg);
+}

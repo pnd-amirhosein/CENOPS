@@ -1,0 +1,12 @@
+
+.datatable-confirm-primary[b-8qap9we5to],.datatable-confirm-cancel[b-8qap9we5to]{border-radius:11px;padding:.62rem 1.1rem;font-size:13px;font-weight:750;border:1px solid transparent;cursor:pointer;}
+.datatable-confirm-primary[b-8qap9we5to]{background:#099bad;color:#fff;}
+.datatable-confirm-primary:hover[b-8qap9we5to]{background:#077d90;}
+.datatable-confirm-danger[b-8qap9we5to]{background:#d74747;}
+.datatable-confirm-danger:hover[b-8qap9we5to]{background:#b62d39;}
+.datatable-confirm-cancel[b-8qap9we5to]{background:#f4f8fa;border-color:#dae7ec;color:#395365;}
+.datatable-confirm-cancel:hover[b-8qap9we5to]{background:#e8f4f6;}
+:where(.datatable-confirm-primary,.datatable-confirm-cancel):disabled[b-8qap9we5to]{opacity:.55;cursor:wait;}
+
+.datatable-toolbar-trailing[b-8qap9we5to]{margin-inline-start:auto;display:flex;align-items:center;gap:8px;min-width:0;}
+.datatable-toolbar-custom[b-8qap9we5to]{display:flex;align-items:center;gap:7px;min-width:0;}

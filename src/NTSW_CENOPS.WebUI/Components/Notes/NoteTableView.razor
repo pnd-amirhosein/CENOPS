@@ -1,0 +1,10 @@
+@using NTSW_CENOPS.Application.Notes
+<div class="note-table-read" role="region" aria-label="جدول یادداشت" tabindex="0">
+    <table><tbody>
+        @foreach (var row in NoteTableData.Parse(Value).Rows)
+        {
+            <tr>@foreach (var cell in row) { <td dir="auto">@cell</td> }</tr>
+        }
+    </tbody></table>
+</div>
+@code { [Parameter] public string Value { get; set; } = string.Empty; }

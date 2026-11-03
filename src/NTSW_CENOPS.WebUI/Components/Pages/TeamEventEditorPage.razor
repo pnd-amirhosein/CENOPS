@@ -1,0 +1,223 @@
+@page "/team/events/new"
+@page "/team/events/edit/{Id:int}"
+@attribute [AccessAuthorize(AccessKeys.Events)]
+@using System.Globalization
+@using NTSW_CENOPS.Application.Events
+@using NTSW_CENOPS.Components.Common
+@using NTSW_CENOPS.Components.Common.Dates
+@using NTSW_CENOPS.Components.Common.Notices
+@inject ICalendarEventService Events
+@inject AuthenticationStateProvider AuthState
+@inject NavigationManager Nav
+@inject AppNoticeService Notices
+@rendermode InteractiveServer
+
+<PageTitle>@(Id > 0 ? "ویرایش رویداد" : "رویداد جدید")</PageTitle>
+
+<div class="team-event-editor" dir="rtl">
+    <header class="team-editor-top">
+        <div><span class="team-editor-overline">TEAM / EVENTS</span><h2>@(Id > 0 ? "ویرایش رویداد" : "برنامه‌ریزی رویداد جدید")</h2><p>تاریخ‌ها را شمسی انتخاب کنید؛ اطلاعات در سامانه به تاریخ میلادی ذخیره می‌شوند.</p></div>
+        <a href="/team/events" class="team-calendar-today">بازگشت به تقویم</a>
+    </header>
+    @if (_loading)
+    { <AppLoading IsLoading="true" Variant="inline" Label="در حال آماده‌سازی اطلاعات..." /> }
+    else
+    {
+        <div class="team-editor-grid">
+            <section class="team-editor-section">
+                <h3>اطلاعات رویداد</h3>
+                <label class="team-field"><span>عنوان رویداد <b>*</b></span><input maxlength="180" placeholder="مثلاً جلسه هماهنگی تیم" @bind="_title" @bind:event="oninput" /></label>
+                <label class="team-field"><span>توضیحات (اختیاری)</span><textarea rows="4" maxlength="3000" placeholder="جزئیات رویداد یا دستور جلسه…" @bind="_description"></textarea></label>
+                <div class="team-two-fields">
+                    <div class="team-field"><span>روز شروع <b>*</b></span><AppJalaliDatePicker @bind-Value="_startDate" AriaLabel="روز شروع رویداد" /></div>
+                    <label class="team-field"><span>ساعت شروع</span><input type="time" value="@_startTime" @onchange="OnStartTimeChanged" /></label>
+                </div>
+                <label class="team-checkbox-line"><input type="checkbox" @bind="_hasEnd" /> رویداد بازه‌ای است (تاریخ و ساعت پایان دارد)</label>
+                @if (_hasEnd)
+                {
+                    <div class="team-two-fields">
+                        <div class="team-field"><span>روز پایان</span><AppJalaliDatePicker @bind-Value="_endDate" Min="_startDate" AriaLabel="روز پایان رویداد" /></div>
+                        <label class="team-field"><span>ساعت پایان</span><input type="time" value="@_endTime" @onchange="OnEndTimeChanged" /></label>
+                    </div>
+                }
+            </section>
+            <section class="team-editor-section">
+                <h3>قانون تکرار</h3>
+                <label class="team-field"><span>تکرار</span>
+                    <select @bind="_repeat">
+                        <option value="@EventRepeatKind.None">فقط یک‌بار</option>
+                        <option value="@EventRepeatKind.Daily">روزانه</option>
+                        <option value="@EventRepeatKind.Weekly">هفتگی / هفته‌های انتخابی</option>
+                        <option value="@EventRepeatKind.Monthly">ماهانه / روزهای انتخابی</option>
+                        <option value="@EventRepeatKind.Yearly">سالانه / ماه‌های انتخابی</option>
+                    </select>
+                </label>
+                @if (_repeat != EventRepeatKind.None)
+                {
+                    <div class="team-two-fields">
+                        <label class="team-field"><span>هر چند دوره؟</span><input type="number" min="1" max="365" @bind="_interval" /></label>
+                        <label class="team-field"><span>مبنای ماه و سال</span><select @bind="_calendarBasis"><option value="@EventCalendarBasis.Jalali">شمسی</option><option value="@EventCalendarBasis.Gregorian">میلادی</option></select></label>
+                    </div>
+                    @if (_repeat == EventRepeatKind.Weekly)
+                    {
+                        <div class="team-field"><span>روزهای هفته (انتخاب چندگانه)</span>
+                            <div class="team-weekday-pills">
+                                @foreach (var day in WeekdayOptions)
+                                {
+                                    <label class="@(IsWeekdaySelected(day.Index) ? "checked" : "")"><input type="checkbox" checked="@IsWeekdaySelected(day.Index)" @onchange="e => ToggleWeekday(day.Index, e.Value is true)" /><span>@day.Name</span></label>
+                                }
+                            </div>
+                        </div>
+                        <p class="team-editor-hint">مثال: هر ۲ هفته، فقط شنبه و دوشنبه. اگر روزی انتخاب نشود، روز شروع ملاک است.</p>
+                    }
+                    @if (_repeat is EventRepeatKind.Monthly or EventRepeatKind.Yearly)
+                    {
+                        <label class="team-field"><span>روزهای ماه (اختیاری)</span><input dir="ltr" placeholder="3,13" @bind="_monthDays" /><small>چند عدد از ۱ تا ۳۱ با ویرگول؛ مثال 3,13. خالی: روز شروع رویداد</small></label>
+                    }
+                    @if (_repeat == EventRepeatKind.Yearly)
+                    {
+                        <label class="team-field"><span>شماره ماه‌ها (اختیاری)</span><input dir="ltr" placeholder="1,6" @bind="_months" /><small>شماره ماه بر اساس مبنای انتخابی. 1 در حالت میلادی یعنی January.</small></label>
+                    }
+                    <div class="team-field"><span>پایان تکرار (اختیاری)</span><AppJalaliDatePicker @bind-Value="_repeatUntil" Min="_startDate" AriaLabel="روز پایان تکرار" /></div>
+                    <div class="team-rule-example">@RepeatExample</div>
+                }
+                else
+                { <p class="team-editor-hint">این رویداد تنها یک بار در زمان انتخاب‌شده در تقویم دیده می‌شود.</p> }
+            </section>
+        </div>
+        @if (!string.IsNullOrEmpty(_error)) { <p class="team-editor-error" role="alert">@_error</p> }
+        <footer class="team-editor-footer">
+            @if (Id > 0) { <button type="button" class="team-delete team-compact-delete" disabled="@_saving" @onclick="() => _confirmDelete = true">حذف رویداد</button> }
+            <a href="/team/events" class="team-calendar-today">انصراف</a>
+            <button type="button" class="team-calendar-add" disabled="@_saving" @onclick="SaveAsync">@(_saving ? "در حال ذخیره…" : "ذخیره رویداد")</button>
+        </footer>
+    }
+</div>
+
+<AppModal IsOpen="_confirmDelete" Title="حذف رویداد" Description="این کار تمام تکرارهای این رویداد را حذف می‌کند. ادامه می‌دهید؟" MaxWidth="420px" OnClose="() => _confirmDelete = false">
+    <ChildContent><p>رویداد و همه تکرارهای آن از فهرست حذف خواهند شد.</p></ChildContent>
+    <Footer><button type="button" class="knowledge-button secondary" @onclick="() => _confirmDelete = false">انصراف</button><button type="button" class="knowledge-button danger" disabled="@_saving" @onclick="DeleteAsync">تأیید حذف</button></Footer>
+</AppModal>
+
+@code {
+    [Parameter] public int Id { get; set; }
+    [Parameter, SupplyParameterFromQuery(Name = "date")] public string? DateQuery { get; set; }
+    private int _loadedId = -1;
+    private string? _loadedQuery;
+    private bool _loading = true;
+    private bool _saving;
+    private bool _confirmDelete;
+    private string _error = "";
+    private string _title = "";
+    private string _description = "";
+    private DateTime? _startDate = DateTime.Today;
+    private string _startTime = "09:00";
+    private bool _hasEnd;
+    private DateTime? _endDate;
+    private string _endTime = "10:00";
+    private EventRepeatKind _repeat;
+    private EventCalendarBasis _calendarBasis = EventCalendarBasis.Jalali;
+    private int _interval = 1;
+    private int _weekdaysMask;
+    private string _monthDays = "";
+    private string _months = "";
+    private DateTime? _repeatUntil;
+    private static readonly (string Name, int Index)[] WeekdayOptions = [("شنبه", 6), ("یکشنبه", 0), ("دوشنبه", 1), ("سه‌شنبه", 2), ("چهارشنبه", 3), ("پنجشنبه", 4), ("جمعه", 5)];
+    private bool IsWeekdaySelected(int weekday) => (_weekdaysMask & (1 << weekday)) != 0;
+    private void ToggleWeekday(int weekday, bool checkedValue) { if (checkedValue) _weekdaysMask |= 1 << weekday; else _weekdaysMask &= ~(1 << weekday); }
+    private string RepeatExample => _repeat switch
+    {
+        EventRepeatKind.Daily => $"این رویداد هر {_interval} روز تکرار می‌شود.",
+        EventRepeatKind.Weekly => $"این رویداد هر {_interval} هفته در روزهای انتخابی تکرار می‌شود.",
+        EventRepeatKind.Monthly => $"این رویداد هر {_interval} ماه در روزهای تعیین‌شده تکرار می‌شود.",
+        EventRepeatKind.Yearly => $"این رویداد هر {_interval} سال در ماه‌ها و روزهای تعیین‌شده تکرار می‌شود.",
+        _ => ""
+    };
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_loadedId == Id && _loadedQuery == DateQuery) return;
+        _loadedId = Id;
+        _loadedQuery = DateQuery;
+        ResetForm();
+        _loading = true;
+        _error = "";
+        try
+        {
+            if (Id > 0)
+            {
+                var actor = (await AuthState.GetAuthenticationStateAsync()).User;
+                var saved = await Events.FindAsync(Id, actor);
+                if (saved is null) { _error = "رویداد پیدا نشد یا اجازه مشاهده ندارید."; return; }
+                _title = saved.Title; _description = saved.Description;
+                _startDate = saved.StartsAt.Date; _startTime = saved.StartsAt.ToString("HH:mm");
+                _hasEnd = saved.EndsAt.HasValue; _endDate = saved.EndsAt?.Date; _endTime = saved.EndsAt?.ToString("HH:mm") ?? "10:00";
+                _repeat = saved.Repeat; _calendarBasis = saved.CalendarBasis; _interval = saved.Interval;
+                _weekdaysMask = saved.WeekdaysMask; _monthDays = saved.MonthDays; _months = saved.Months; _repeatUntil = saved.RepeatUntil;
+            }
+            else if (DateTime.TryParseExact(DateQuery, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
+                _startDate = date;
+        }
+        catch (Exception) { _error = "دریافت اطلاعات رویداد ممکن نشد."; }
+        finally { _loading = false; }
+    }
+    private void ResetForm()
+    {
+        _title = ""; _description = "";
+        _startDate = DateTime.Today; _startTime = "09:00";
+        _hasEnd = false; _endDate = null; _endTime = "10:00";
+        _repeat = EventRepeatKind.None; _calendarBasis = EventCalendarBasis.Jalali;
+        _interval = 1; _weekdaysMask = 0; _monthDays = ""; _months = ""; _repeatUntil = null;
+    }
+    // Native time inputs provide HH:mm strings. Handle the change explicitly to avoid
+    // Razor generating a TimeOnly? binder for a string-backed form field.
+    private void OnStartTimeChanged(ChangeEventArgs e) => _startTime = e.Value?.ToString() ?? string.Empty;
+    private void OnEndTimeChanged(ChangeEventArgs e) => _endTime = e.Value?.ToString() ?? string.Empty;
+    private static bool TryTime(string value, out TimeSpan time) => TimeSpan.TryParseExact(value, @"hh\:mm", CultureInfo.InvariantCulture, out time);
+    private async Task SaveAsync()
+    {
+        if (_saving) return;
+        _error = "";
+        if (_startDate is null || !TryTime(_startTime, out var starts)) { _error = "تاریخ و ساعت شروع معتبر نیست."; return; }
+        DateTime? end = null;
+        if (_hasEnd)
+        {
+            if (_endDate is null || !TryTime(_endTime, out var ends)) { _error = "تاریخ و ساعت پایان معتبر نیست."; return; }
+            end = _endDate.Value.Date + ends;
+        }
+        if (_interval is < 1 or > 365) { _error = "بازه تکرار باید بین ۱ تا ۳۶۵ باشد."; return; }
+        _saving = true;
+        try
+        {
+            var actor = (await AuthState.GetAuthenticationStateAsync()).User;
+            var result = await Events.SaveAsync(new CalendarEvent
+            {
+                Id = Id, Title = _title, Description = _description,
+                StartsAt = _startDate.Value.Date + starts, EndsAt = end,
+                Repeat = _repeat, CalendarBasis = _calendarBasis, Interval = _interval,
+                WeekdaysMask = _weekdaysMask, MonthDays = _monthDays, Months = _months,
+                RepeatUntil = _repeatUntil
+            }, actor);
+            if (!result.Succeeded) { _error = result.Error; return; }
+            Notices.Success("رویداد ذخیره شد.");
+            Nav.NavigateTo($"/team/events?date={_startDate!.Value:yyyy-MM-dd}");
+        }
+        catch (Exception) { _error = "ذخیره رویداد انجام نشد. دوباره تلاش کنید."; }
+        finally { _saving = false; }
+    }
+    private async Task DeleteAsync()
+    {
+        if (_saving || Id == 0) return;
+        _saving = true;
+        try
+        {
+            var actor = (await AuthState.GetAuthenticationStateAsync()).User;
+            var result = await Events.DeleteAsync(Id, actor);
+            if (!result.Succeeded) { _error = result.Error; _confirmDelete = false; return; }
+            Notices.Success("رویداد حذف شد.");
+            Nav.NavigateTo("/team/events");
+        }
+        catch (Exception) { _error = "حذف رویداد انجام نشد."; }
+        finally { _saving = false; _confirmDelete = false; }
+    }
+}

@@ -1,0 +1,111 @@
+@page "/tools/clean-code"
+@attribute [Authorize]
+@using NTSW_CENOPS.Components.Notes
+@using NTSW_CENOPS.Components.SideBar
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>پاک‌سازی کد</PageTitle>
+<div class="code-tool-page" dir="rtl">
+    <SectionContent SectionName="cenops-page-actions">
+        <button type="button" class="page-action-button code-tool-saveas" @ref="_saveAsButton" disabled="@string.IsNullOrWhiteSpace(_code)" @onclick="OpenSaveAs">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m-5-5 5 5 5-5M4 18v3h16v-3"/></svg> ذخیره به‌عنوان…
+        </button>
+    </SectionContent>
+    <div class="code-tool-editor">
+        <NoteSnippetBox @bind-Value="_code" @bind-Language="_language" Rows="23" />
+        <div class="code-tool-footer"><span>@LanguageTitle</span><span>@_code.Length نویسه</span>
+</div>
+    </div>
+</div>
+@if (_showSaveAs)
+{
+    <div class="code-tool-backdrop" @onclick="() => _showSaveAs = false" @onkeydown="OnModalKeyDown">
+        <section role="dialog" aria-modal="true" aria-labelledby="code-save-title" class="code-tool-modal" dir="rtl" @onclick:stopPropagation="true">
+            <header><div><small>انتقال کد به دانش‌نامه</small><h2 id="code-save-title">ذخیره به‌عنوان…</h2></div>
+                <button class="code-tool-esc" @ref="_modalClose" type="button" @onclick="() => _showSaveAs = false" title="بستن (Esc)">ESC</button></header>
+            <p>یک نوع را انتخاب کنید؛ فرم جدید با همین کد پر می‌شود و ثبت نهایی پس از تأیید شما انجام خواهد شد.</p>
+            <div class="code-tool-choices">
+                @foreach (var choice in _choices)
+                {
+                    <button type="button" class="code-tool-choice @choice.Kind @(Suggestion == choice.Kind ? "recommended" : "")" @onclick="() => TransferAsync(choice.Kind)">
+                        <span class="code-tool-choice-icon" aria-hidden="true">@((MarkupString)choice.Icon)</span><strong>@choice.Title</strong>
+                        <small>@choice.Description</small>
+                        @if (Suggestion == choice.Kind) { <em>پیشنهادی</em> }
+                    </button>
+                }
+            </div>
+            @if (_transferError is not null) { <p class="code-tool-error" role="alert">@_transferError</p> }
+        </section>
+    </div>
+}
+@code {
+    [SupplyParameterFromQuery(Name = "draft")] public string? DraftToken { get; set; }
+    private string _code = "";
+    private string _language = "plain";
+    private bool _showSaveAs;
+    private bool _modalFocused;
+    private string? _consumedDraft;
+
+    private ElementReference _modalClose;
+    private ElementReference _saveAsButton;
+    private void OpenSaveAs() { _transferError = null; _modalFocused = false; _showSaveAs = true; }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!string.IsNullOrWhiteSpace(DraftToken) && _consumedDraft != DraftToken)
+        {
+            _consumedDraft = DraftToken;
+            try
+            {
+                var draft = await JS.InvokeAsync<SnippetDraft?>("cenopsSnippetDraft.take", DraftToken);
+                if (draft is { Kind: "sql" } && !string.IsNullOrWhiteSpace(draft.Content))
+                {
+                    _code = draft.Content;
+                    _language = "sql";
+                    await InvokeAsync(StateHasChanged);
+                }
+            }
+            catch (JSDisconnectedException) { }
+            catch (JSException) { }
+        }
+        try
+        {
+            if (_showSaveAs && !_modalFocused)
+            {
+                await JS.InvokeVoidAsync("cenopsSnippetDraft.focus", _modalClose);
+                _modalFocused = true;
+            }
+            else if (!_showSaveAs && _modalFocused)
+            {
+                await JS.InvokeVoidAsync("cenopsSnippetDraft.focus", _saveAsButton);
+                _modalFocused = false;
+            }
+        }
+        catch (JSDisconnectedException) { }
+        catch (JSException) { }
+    }
+    private string? _transferError;
+    private readonly (string Kind, string Icon, string Title, string Description)[] _choices =
+    [ ("note", KnowledgeMenuIcons.Note, "یادداشت", "افزودن قطعه کد به یک یادداشت"),
+      ("sql", KnowledgeMenuIcons.Sql, "SQL", "ثبت یک پرس‌وجوی جدید"),
+      ("curl", KnowledgeMenuIcons.Curl, "cURL", "ثبت یک درخواست جدید") ];
+    private string EffectiveLanguage => _language == "plain" ? NoteCodeFormatter.Detect(_code) : _language;
+    private string LanguageTitle => NoteCodeFormatter.Languages.FirstOrDefault(x => x.Id == EffectiveLanguage).Label ?? "Plain text";
+    private string Suggestion => EffectiveLanguage switch { "sql" => "sql", "curl" => "curl", _ => "note" };
+    private void OnModalKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape") _showSaveAs = false;
+    }
+    private async Task TransferAsync(string kind)
+    {
+        if (string.IsNullOrWhiteSpace(_code)) return;
+        try
+        {
+            _transferError = null;
+            var key = await JS.InvokeAsync<string>("cenopsSnippetDraft.store", kind, _code, EffectiveLanguage, "code");
+            var route = kind switch { "sql" => "/wiki/queries/new", "curl" => "/wiki/curls/new", _ => "/wiki/notes/new" };
+            Navigation.NavigateTo($"{route}?draft={Uri.EscapeDataString(key)}");
+        }
+        catch (Exception) { _transferError = "انتقال کد انجام نشد. لطفاً دوباره تلاش کنید."; }
+    }
+}

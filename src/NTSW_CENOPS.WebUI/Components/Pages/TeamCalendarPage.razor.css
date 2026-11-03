@@ -1,0 +1,172 @@
+/* Glasswork 2.22 · CENOPS team calendar — Persian dates, Gregorian event records */
+.team-calendar{--line:#dce9ec;--cyan:#0f95b2;--ink:#193747;--subtle:#65818e;min-width:0;color:var(--ink);font-family:inherit}
+.team-calendar button,.team-event-editor button{font:inherit;cursor:pointer}
+.team-calendar-toolbar{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:15px 18px;margin-bottom:16px;border:1px solid var(--line);border-radius:16px;background:#fff;flex-wrap:wrap}
+.team-calendar-actions,.team-calendar-period,.team-calendar-modes{display:flex;align-items:center;gap:8px}
+.team-calendar-period h2{min-width:170px;text-align:center;font-size:16px;margin:0;font-weight:800;color:#1d4756}
+.team-calendar-period button{display:grid;place-items:center;width:32px;height:32px;border:1px solid var(--line);border-radius:9px;background:#fff;color:#476b7b}
+.team-calendar-period button:hover{background:#e9f7fa}
+.team-calendar-add,.team-calendar-today{display:inline-flex;justify-content:center;align-items:center;gap:6px;text-decoration:none!important;min-height:36px;padding:7px 14px;border-radius:10px;white-space:nowrap;font-size:13px;font-weight:750;border:1px solid #c9dae1;background:#fff;color:#32566b!important}
+.team-calendar-add{background:#079cb8;color:white!important;border-color:#078eaa}
+.team-calendar-add:hover{background:#027f9c;color:white!important}
+.team-calendar-today:hover{background:#edf9fa;color:#148ba3!important}
+.team-calendar-modes{background:#ecf5f7;padding:4px;border-radius:12px}
+.team-calendar-modes button{font-size:12px;font-weight:750;border:0;border-radius:9px;padding:8px 13px;color:#547381;background:transparent}
+.team-calendar-modes button.active{background:#fff;color:#007f99;box-shadow:0 2px 7px #0d567522}
+.team-calendar-loading{min-height:170px;display:grid;place-items:center;gap:12px;text-align:center;background:#fff;border:1px solid var(--line);border-radius:14px;color:var(--subtle)}
+.team-year-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.team-mini-month{border:1px solid var(--line);border-radius:14px;min-width:0;background:#fff;padding:12px;box-shadow:0 2px 8px #153d4f05}
+.team-mini-title{display:block;width:100%;border:0;background:transparent;text-align:center;color:#0c778c;font-size:14px;font-weight:850;margin-bottom:11px}
+.team-mini-title:hover{color:#007db0}
+.team-mini-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}
+.team-mini-days .week-name{display:grid;place-items:center;font-size:10px;color:#798b95;font-weight:800;min-height:21px}
+.team-mini-days .mini-day{position:relative;display:grid;place-items:center;height:31px;min-width:0;font-size:11px;font-weight:650;border:0;border-radius:8px;color:#3e6474;background:transparent;padding:0}
+.team-mini-days .mini-day:hover{background:#eaf7fa}
+.team-mini-days .mini-day.outside{color:#bec9cf}
+.team-mini-days .mini-day.today{background:#15a0ba;color:white;font-weight:850}
+.team-mini-days .mini-dot{position:absolute;bottom:2px;left:50%;width:4px;height:4px;background:#f09b49;border-radius:50%;transform:translateX(-50%)}
+.team-month-view{border:1px solid var(--line);border-radius:15px;overflow:hidden;background:#fff}
+.team-month-weeknames{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));background:#f5fafb}
+.team-month-weeknames span{padding:12px;text-align:center;color:#5a7b8b;font-size:12px;font-weight:800}
+.team-month-cells{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-auto-rows:minmax(126px,auto)}
+.team-month-cell{padding:8px 6px;min-width:0;overflow:hidden;border-top:1px solid #edf2f4;border-left:1px solid #edf2f4}
+.team-month-cell:nth-child(7n){border-left:0}
+.team-month-cell.outside{background:#fafcfd}
+.team-month-cell.outside .team-day-number{color:#bacbd2}
+.team-month-cell.today .team-day-number{background:#0c9eb9;color:white}
+.team-day-number{display:grid;place-items:center;width:30px;height:30px;font-size:12px;font-weight:850;border:0;background:transparent;border-radius:9px;color:#426777;margin-bottom:6px}
+.team-day-number:hover{background:#edf9fc}
+.team-event-chip{display:flex;direction:rtl;align-items:center;width:100%;min-width:0;text-align:right;border:0;background:#e8f5fa;color:#23647e;border-right:3px solid #19a1be;border-radius:6px;padding:5px 6px;gap:5px;margin:3px 0;font-size:10px;font-weight:750;overflow:hidden;white-space:nowrap}
+.team-event-chip:hover{background:#d2ecf7}
+.team-event-chip span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.team-event-time{flex:none;color:#518699;font-size:10px;font-variant-numeric:tabular-nums}
+.team-more-events{font-size:10px;font-weight:800;color:#0a8fad;background:none;border:0;padding:4px}
+.team-timeline-outer,.team-day-timeline{border:1px solid var(--line);background:#fff;border-radius:15px;overflow:hidden;min-width:0}
+.team-week-head{display:grid;grid-template-columns:58px repeat(7,minmax(0,1fr));border-bottom:1px solid var(--line);background:#f5fafb}
+.team-week-head button{border:0;border-right:1px solid #e6eff2;background:transparent;min-width:0;color:#456979;padding:10px 2px;font-size:11px;font-weight:650}
+.team-week-head button.today{color:#0695b0;background:#e5f6f9}
+.team-week-head strong{display:block;font-size:18px}
+.team-timeline-scroller{overflow:auto;max-height:min(75vh,860px);scrollbar-color:#cedfe5 transparent}
+.team-week-body{display:grid;grid-template-columns:58px repeat(7,minmax(0,1fr));min-width:650px;height:1152px}
+.team-time-ruler{position:relative;background:#fafcfd;direction:ltr;border-left:1px solid #eef3f5}
+.team-time-ruler span{position:absolute;right:8px;transform:translateY(-35%);font-size:10px;color:#91a7b0;font-variant-numeric:tabular-nums}
+.team-hour-column{position:relative;min-width:0;border-left:1px solid #e6f0f3;background-image:linear-gradient(to bottom,#e9f0f2 1px,transparent 1px);background-size:100% 48px}
+.team-hour-column:nth-child(8){border-left:0}
+.team-timed-event{position:absolute;right:3px;left:3px;z-index:1;display:flex;flex-direction:column;text-align:right;gap:3px;padding:6px 7px;overflow:hidden;min-width:0;border-radius:7px;border:0;border-right:3px solid #0d93c0;background:#dff1fa;color:#286781;font-size:11px;font-weight:750}
+.team-timed-event:hover{background:#cde9f8;z-index:3;box-shadow:0 3px 10px #24506b22}
+.team-timed-event strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:800}
+.team-timed-event small{font-size:10px;font-variant-numeric:tabular-nums}
+.team-day-layout{display:grid;grid-template-columns:minmax(0,1fr) 268px;gap:13px}
+.team-day-heading{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--line);font-size:13px;color:#345c6d}
+.team-day-heading span{color:#7996a2;font-size:12px}
+.team-one-day{grid-template-columns:58px minmax(0,1fr);min-width:320px}
+.team-day-sidebar{align-self:start;border:1px solid var(--line);border-radius:15px;background:#fff;padding:15px}
+.team-day-sidebar h3{text-align:center;font-size:14px;margin:0 0 14px;color:#2d5768}
+.team-day-create{margin-top:18px;border:1px solid #b6e5ec;color:#087f99;border-radius:9px;background:#e8f9fc;padding:10px;width:100%;font-size:12px;font-weight:800}
+.team-event-detail{display:grid;gap:8px;color:#416678;font-size:13px}
+.team-event-detail span{padding:8px 12px;background:#f1f8fa;border-radius:8px}
+.team-event-detail p{margin:4px 0 0;white-space:pre-wrap;overflow-wrap:anywhere;color:#294b59}
+@media(max-width:1000px){.team-year-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.team-month-cells{grid-auto-rows:minmax(113px,auto)}.team-month-weeknames span{padding:9px 1px}}
+@media(max-width:670px){.team-calendar-toolbar{padding:11px;gap:12px}.team-calendar-period{order:-1;width:100%;justify-content:center}.team-calendar-actions,.team-calendar-modes{flex:1}.team-calendar-modes{justify-content:space-between}.team-calendar-modes button{padding:8px}.team-year-grid{grid-template-columns:1fr}.team-month-view{overflow-x:auto}.team-month-weeknames,.team-month-cells{min-width:580px}.team-month-cells{grid-auto-rows:minmax(104px,auto)}.team-day-layout{grid-template-columns:1fr}.team-day-sidebar{order:-1}}
+
+/* 2.23: Let the application shell own a fixed viewport; scroll only calendar views. */
+.team-calendar{height:100%;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.team-calendar-toolbar{flex:none}
+.team-year-grid,.team-month-view,.team-timeline-outer,.team-day-layout{flex:1 1 auto;min-height:0;overflow:auto;overscroll-behavior:contain}
+.team-month-view{display:flex;flex-direction:column}
+.team-month-weeknames{flex:none}
+.team-month-cells{flex:1;min-height:0;overflow:auto;grid-auto-rows:minmax(108px,1fr)}
+.team-timeline-outer,.team-day-timeline{display:flex;flex-direction:column}
+.team-timeline-scroller{flex:1;min-height:0;max-height:none}
+.team-day-layout{overflow:hidden}
+.team-day-timeline{min-height:0}
+@media(max-width:670px){.team-day-layout{overflow:auto}.team-day-timeline{min-height:320px}}
+
+/* Virtual birthday occurrences are celebrations, not editable event records. */
+.team-event-chip.team-birthday-chip{background:#fff6df;border-right-color:#d6a23a;color:#866323}
+.team-event-chip.team-birthday-chip:hover{background:#ffedc9}
+.team-timed-event.team-birthday-event{background:#fff2d8;border-right-color:#d9a23b;color:#866323}
+
+/* Glasswork 2.25 — livelier calendar with clear states; no added page scroll. */
+.team-calendar{--line:#d4e5ec;--cyan:#079bb4;--ink:#244656;--subtle:#678797}
+.team-calendar-toolbar{background:linear-gradient(115deg,#fff 60%,#ecf9fc);border-color:#cce3e9;box-shadow:0 5px 20px #1e718010}
+.team-calendar-period h2{color:#164d64;font-size:18px}
+.team-calendar-period button{border-color:#c7e2e9;color:#078ea6}
+.team-calendar-modes{background:#e5f4f8;border:1px solid #cbe7ef}
+.team-calendar-modes button{color:#406f81}
+.team-calendar-modes button.active{background:#079bb4;color:#fff;box-shadow:0 3px 11px #0786a540}
+.team-mini-month,.team-month-view,.team-timeline-outer,.team-day-timeline,.team-day-sidebar{border-color:#d4e5eb;box-shadow:0 4px 19px #124e6610}
+.team-mini-title{font-size:15px;color:#067f9c}
+.team-month-weeknames,.team-week-head{background:#e9f6f9}
+.team-month-weeknames span{color:#366b80}
+.team-month-cell{border-top-color:#e2eff3;border-left-color:#e2eff3;transition:background .12s}
+.team-month-cell:hover{background:#f4fcfd}
+.team-month-cell.outside{background:#f7fafb}
+.team-month-cell.today{background:#f0fbfd}
+.team-day-number{color:#26617b;font-weight:900}
+.team-event-chip{background:#ddf2f8;color:#135b76;border-right-color:#0799b7;font-size:11px;font-weight:850;box-shadow:0 2px 7px #0d819711}
+.team-event-chip:hover{background:#c1e9f4;box-shadow:0 3px 9px #0d819722}
+.team-event-time{color:#1b819a;font-weight:750}
+.team-event-chip.team-birthday-chip{background:#fff2cf;color:#8d6020;border-right-color:#e3ac38}
+.team-event-chip.team-birthday-chip:hover{background:#ffe6a8}
+.team-hour-column{background-color:#fdfefe;background-image:linear-gradient(to bottom,#dfeef3 1px,transparent 1px)}
+.team-timed-event{background:#d5eef8;border-right:4px solid #009ab9;border-radius:9px;color:#185e78;box-shadow:0 2px 8px #14728c17}
+.team-timed-event:hover{background:#bde5f4;box-shadow:0 5px 14px #14728c2b}
+.team-timed-event.team-birthday-event{background:#fff0c9;color:#8c631e;border-right-color:#daa02d}
+.team-timed-event.team-birthday-event:hover{background:#ffe4a4}
+.team-day-heading{background:#f0f9fc;color:#17536b}
+.team-week-head button.today{background:#d5f0f7;color:#037f9d}
+.team-week-head button:hover{background:#d9f1f6}
+.team-day-create{background:#dff6f9;border-color:#a6dce6;color:#047d9a}
+.team-day-create:hover{background:#cdf0f6}
+@media(prefers-reduced-motion:reduce){.team-month-cell{transition:none}}
+
+/* 2.26: match the shell's horizontal breathing room at the bottom without a page scrollbar. */
+.team-calendar{height:calc(100% - 16px);max-height:calc(100% - 16px);margin-bottom:16px;box-sizing:border-box}
+@media(max-width:670px){.team-calendar{height:calc(100% - 12px);max-height:calc(100% - 12px);margin-bottom:12px}}
+
+/* 2.27: adjacent timeline events get independent lanes, not overlapping full-width buttons. */
+.team-timed-event{left:auto;box-sizing:border-box;min-width:0;padding:5px 5px;z-index:1}
+.team-timed-event:hover,.team-timed-event:focus-visible{z-index:5}
+.team-timed-event small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.team-month-cell{display:flex;flex-direction:column;min-height:0;overflow:auto;scrollbar-width:thin}
+.team-month-cell .team-event-chip{flex:none;min-height:25px;margin:2px 0}
+.team-month-cell .team-day-number{flex:none}
+.team-event-remove{border:1px solid #f0b7b4;background:#fff0ee;color:#b23a34;padding:8px 13px;border-radius:10px;font-weight:750}
+.team-event-remove:hover{background:#ffe1dd}
+/* Fill the available shell height and retain the same bottom inset as the page sides. */
+.team-calendar{height:auto;max-height:none;flex:1 1 auto;min-height:0;margin:0 0 20px;box-sizing:border-box}
+@media(max-width:670px){.team-calendar{margin-bottom:14px}}
+
+.team-calendar{height:100%;max-height:100%;margin-bottom:0;box-sizing:border-box}
+
+/* 2.28: differentiate overlapping meetings by subtle solid tones, no right stripe. */
+.team-hour-column .team-timed-event {border:1px solid #bcdfed!important;border-right:1px solid #bcdfed!important;background:#e4f4fa!important;box-shadow:0 2px 8px #224d6a11;color:#245e77}
+.team-hour-column .team-timed-event:nth-of-type(4n+2){background:#f3ecff!important;border-color:#e0d1f4!important}
+.team-hour-column .team-timed-event:nth-of-type(4n+3){background:#fff2e6!important;border-color:#f5d8c2!important}
+.team-hour-column .team-timed-event:nth-of-type(4n+4){background:#eaf9f3!important;border-color:#c1e9d8!important}
+.team-hour-column .team-timed-event.team-birthday-event{background:#fff3d8!important;border-color:#efdca7!important;color:#856128}
+.team-hour-column .team-timed-event:hover{filter:brightness(.974);box-shadow:0 5px 12px #275a732a;z-index:5}
+
+/* Glasswork 2.29 — compact month previews, with a full accessible day list in a modal. */
+.team-month-cells{grid-auto-rows:minmax(110px,1fr);overflow:auto}
+.team-month-cell{display:flex;flex-direction:column;align-items:stretch;text-align:right;width:100%;min-height:0;max-height:none;overflow:hidden!important;cursor:pointer;border-radius:0;border-right:0;border-bottom:0;background:#fff;color:inherit;font:inherit;box-sizing:border-box}
+.team-month-cell:focus-visible{outline:2px solid #0c9cb7;outline-offset:-3px;z-index:2}
+.team-month-cell .team-day-number{flex:none;pointer-events:none}
+.team-month-cell .team-event-chip{width:100%;flex:none;max-height:27px;pointer-events:none;text-align:right}
+.team-month-cell .team-more-events{flex:none;pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right;color:#158fa6}
+.team-month-cell .team-day-empty{flex:1}
+.team-day-summary{display:grid;gap:9px;max-height:min(55vh,560px);overflow-y:auto;padding:2px 3px 4px}
+.team-summary-entry{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:12px;row-gap:7px;align-items:center;border:1px solid #d9e8ed;background:#fbfeff;border-radius:13px;padding:13px 14px;min-width:0}
+.team-summary-entry.birthday{background:#fff9e8;border-color:#f0dca8}
+.team-summary-entry-meta{display:flex;align-items:center;justify-content:space-between;gap:12px;grid-column:1/-1;color:#6a8793;font-size:12px}
+.team-summary-entry.birthday .team-summary-entry-meta{color:#a47727}
+.team-summary-hour{font-weight:850;font-variant-numeric:tabular-nums}
+.team-summary-entry>strong{font-size:14px;font-weight:850;color:#275367;overflow-wrap:anywhere}
+.team-summary-entry>small{grid-column:1;color:#7d929c;font-size:11px}
+.team-summary-detail{grid-column:2;grid-row:2/span 2;display:inline-flex;gap:4px;align-items:center;justify-content:center;min-height:33px;border-radius:9px;padding:6px 10px;border:1px solid #b4dbe5;color:#0c8aa4;background:#eaf8fb;font-size:12px;font-weight:800;cursor:pointer}
+.team-summary-detail:hover{background:#d9f1f7}
+.team-day-summary-empty{text-align:center;padding:28px 5px;color:#78909d}
+.team-event-detail{max-height:min(60vh,580px);overflow:auto}
+/* The detail action uses the same sizing as every other modal footer control. */
+.team-event-remove,.team-compact-delete{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;min-height:36px;height:36px;padding:7px 14px;font-size:13px;line-height:1.4;font-weight:800}

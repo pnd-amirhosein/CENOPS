@@ -1,0 +1,8 @@
+.selection-checklist[b-gyzaih1y22]{margin-top:12px;max-height:350px;overflow-y:auto;display:grid;gap:8px;padding:5px;}
+.selection-checklist-item[b-gyzaih1y22]{display:flex;align-items:center;gap:12px;background:#f7fcfd;border:1px solid #dbecef;border-radius:13px;padding:12px 14px;cursor:pointer;transition:border-color .18s,background .18s;}
+.selection-checklist-item:hover[b-gyzaih1y22]{background:#ebf9fb;border-color:#a4d8e0;}
+.selection-checklist-item input[b-gyzaih1y22]{width:17px;height:17px;accent-color:#079eaf;flex-shrink:0;}
+.selection-checklist-item input:disabled[b-gyzaih1y22]{opacity:.5;cursor:not-allowed;}
+.selection-checklist-item-copy[b-gyzaih1y22]{display:grid;gap:3px;font-size:13px;color:#1b3b50;}
+.selection-checklist-item-copy small[b-gyzaih1y22]{font-size:12px;color:#648395;}
+.selection-checklist-empty[b-gyzaih1y22]{padding:14px;text-align:center;color:#718a99;font-size:13px;}

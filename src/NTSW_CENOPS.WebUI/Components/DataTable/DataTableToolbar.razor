@@ -1,0 +1,205 @@
+@using NTSW_CENOPS.Components.DataTable.Core
+@using NTSW_CENOPS.Components.DataTable.Models
+@using NTSW_CENOPS.Components.Common
+@typeparam T
+@implements IDisposable
+
+<div class="datatable-toolbar flex gap-2" dir="rtl">
+
+    @if (Controller.Mode == TableMode.View)
+    {
+        <button class="text-button flex gap-2 items-center border-1 border-green-700 small-button"
+                @onclick="RefreshData">
+            <div class="icon">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                     stroke="currentColor" class="size-6">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 0 0-3.7-3.7 48.678 48.678 0 0 0-7.324 0 4.006 4.006 0 0 0-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 0 0 3.7 3.7 48.656 48.656 0 0 0 7.324 0 4.006 4.006 0 0 0 3.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3-3 3"/>
+                </svg>
+            </div>
+        </button>
+
+        @* Page-specific actions in the original CRUD position (RTL: immediately after refresh). *@
+        @LeadingToolbarContent
+
+        @if (ShowNewButton)
+        {
+        <button class="success outline-button flex gap-2 items-center border-1 border-green-700 small-button"
+                @onclick="NewClicked">
+            <div class="icon text-green-700">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                     stroke="currentColor" class="size-4">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+                </svg>
+            </div>
+            <div class="text text-green-700">جدید</div>
+        </button>
+
+        }
+
+        @if (ShowEditButton)
+        {
+        <button class="warning text-button flex gap-2 items-center small-button" @onclick="EditClicked"
+                disabled="@(!Controller.CanEdit)">
+            <div class="icon flex text-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                     stroke="currentColor" class="size-4">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"/>
+                </svg>
+            </div>
+            <div class="text">ویرایش</div>
+        </button>
+
+        }
+
+        @if (ShowDeleteButton)
+        {
+        <button class="danger text-button flex small-button" @onclick="DeleteClicked"
+                disabled="@(!Controller.CanDelete)">
+            <div class="icon flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                     stroke="currentColor" class="size-4">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/>
+                </svg>
+            </div>
+        </button>
+
+        }
+
+        @if (Columns.Count > 0 || ToolbarContent is not null)
+        {
+            <div class="datatable-toolbar-trailing">
+                @if (ToolbarContent is not null)
+                {
+                    <div class="datatable-toolbar-custom">@ToolbarContent</div>
+                }
+                @if (Columns.Count > 0)
+                {
+                    <DataTableFilter T="T"
+                                     Columns="Columns"
+                                     Filters="ActiveFilters"
+                                     FiltersChanged="FiltersChanged" />
+                }
+            </div>
+        }
+    }
+    else
+    {
+        <button class="button small-button filled success" @onclick="SaveClicked">
+            <div class="icon">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                     stroke="currentColor" class="size-4">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/>
+                </svg>
+            </div>
+            <div class="text">ذخیره</div>
+        </button>
+        <button class="danger small-button text-button button" @onclick="CancelClicked">
+            <div class="icon">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                     stroke="currentColor" class="size-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/>
+                </svg>
+            </div>
+        </button>
+    }
+
+</div>
+
+<AppModal IsOpen="@(_pendingOperation != PendingOperation.None)"
+          CloseOnBackdrop="false"
+          Title="@ConfirmationTitle"
+          Description="@ConfirmationDescription">
+    <Footer>
+        <button type="button" class="datatable-confirm-primary @(_pendingOperation == PendingOperation.Delete ? "datatable-confirm-danger" : "")"
+                disabled="@_confirming" @onclick="ConfirmOperationAsync">تأیید و ادامه</button>
+        <button type="button" class="datatable-confirm-cancel" disabled="@_confirming" @onclick="CancelConfirmation">انصراف</button>
+    </Footer>
+</AppModal>
+
+@code {
+    private enum PendingOperation { None, Save, Delete }
+    private PendingOperation _pendingOperation;
+    private bool _confirming;
+    private string ConfirmationTitle => _pendingOperation == PendingOperation.Delete ? "تأیید حذف" : Controller.IsCreating ? "تأیید ایجاد" : "تأیید ویرایش";
+    private string ConfirmationDescription => _pendingOperation == PendingOperation.Delete
+        ? "آیا از حذف این ردیف اطمینان دارید؟ این عملیات ممکن است قابل بازگشت نباشد."
+        : Controller.IsCreating ? "آیا اطلاعات واردشده ثبت شوند؟" : "آیا تغییرات این ردیف ذخیره شوند؟";
+
+    private void CancelConfirmation() => _pendingOperation = PendingOperation.None;
+    private async Task ConfirmOperationAsync()
+    {
+        if (_confirming || _pendingOperation == PendingOperation.None) return;
+        _confirming = true;
+        try
+        {
+            if (_pendingOperation == PendingOperation.Delete) await Controller.DeleteAsync();
+            else await Controller.SaveAsync();
+            _pendingOperation = PendingOperation.None;
+        }
+        finally { _confirming = false; }
+    }
+
+    // Independently hide default CRUD actions while retaining refresh, filters, and custom toolbar content.
+    [Parameter] public bool ShowNewButton { get; set; } = true;
+    [Parameter] public bool ShowEditButton { get; set; } = true;
+    [Parameter] public bool ShowDeleteButton { get; set; } = true;
+
+    [Parameter] public DataTableController<T> Controller { get; set; } = default!;
+
+    [Parameter] public IReadOnlyList<ColumnDefinition<T>> Columns { get; set; } = Array.Empty<ColumnDefinition<T>>();
+
+    // Actions placed immediately after Refresh, matching the built-in CRUD alignment.
+    [Parameter] public RenderFragment? LeadingToolbarContent { get; set; }
+
+    // Existing trailing slot remains backwards-compatible with other callers.
+    [Parameter] public RenderFragment? ToolbarContent { get; set; }
+
+    [Parameter] public IReadOnlyList<FilterDefinition> ActiveFilters { get; set; } = Array.Empty<FilterDefinition>();
+
+    [Parameter] public EventCallback<List<FilterDefinition>> FiltersChanged { get; set; }
+
+    protected override void OnInitialized()
+    {
+        Controller.StateChanged += OnControllerChanged;
+    }
+
+    private void OnControllerChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        Controller.StateChanged -= OnControllerChanged;
+    }
+
+    private void NewClicked()
+    {
+        Controller.BeginCreate();
+    }
+
+    private async Task RefreshData()
+    {
+        await Controller.RefreshData();
+    }
+
+    private void EditClicked()
+    {
+        Controller.BeginEdit();
+    }
+
+    private void SaveClicked() => _pendingOperation = PendingOperation.Save;
+
+    private void DeleteClicked()
+    {
+        if (Controller.CanDelete) _pendingOperation = PendingOperation.Delete;
+    }
+
+    private void CancelClicked()
+    {
+        Controller.Cancel();
+    }
+}

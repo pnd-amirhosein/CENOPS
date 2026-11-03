@@ -1,0 +1,379 @@
+@using NTSW_CENOPS.Application.Files
+@using Microsoft.AspNetCore.Components.Forms
+@using NTSW_CENOPS.Components.Common
+@inject IAppFileGateway FileGateway
+@inject IFileResourceAccess FileAccess
+@inject AuthenticationStateProvider Auth
+@inject IJSRuntime JS
+
+<div class="cenops-file-block" dir="rtl">
+    @if (Mode == FileBlockMode.Edit)
+    {
+        <div class="cenops-file-drop" @ref="_dropElement">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18a5 5 0 0 1-1.3-9.8A6.5 6.5 0 0 1 18 9a4.5 4.5 0 0 1-.5 9"/><path d="m12 19 0-9m-3 3 3-3 3 3"/></svg>
+            <strong>فایل‌ها را اینجا رها کنید یا برای انتخاب کلیک کنید</strong>
+            <span>می‌توانید چند فایل انتخاب کنید · حداکثر ۲۰ فایل در هر نوبت</span>
+            @* Retain earlier inputs so Blazor's IBrowserFile handles survive later selections. *@
+            @foreach (var pickerKey in _pickerKeys)
+            {
+                <InputFile @key="pickerKey"
+                           class="@GetPickerCssClass(pickerKey)"
+                           multiple disabled="@_uploading"
+                           OnChange="@(args => ChooseFiles(args, pickerKey))"
+                           aria-label="انتخاب فایل‌ها برای پیوست" />
+            }
+        </div>
+        @if (_pending.Count > 0)
+        {
+            <div class="cenops-file-queue" aria-label="فایل‌های انتخاب‌شده">
+                <div class="cenops-file-pending-list">
+                    @foreach (var pending in _pending)
+                    {
+                        <span class="cenops-file-pending @(pending.Error is null ? "" : "invalid")" @key="pending.Id" title="@(pending.Error ?? pending.Name)">
+                            <span class="cenops-file-mini-icon">@FileLabel(pending.Name)</span>
+                            <span class="cenops-file-truncate">@pending.Name</span>
+                            <span>@SizeLabel(pending.Length)</span>
+                            @if (pending.Error is not null) { <span title="@pending.Error">!</span> }
+                            <button type="button" class="cenops-file-pending-remove" title="حذف از فهرست ارسال" aria-label="حذف @pending.Name از فهرست آماده ارسال" disabled="@_uploading" @onclick="() => RemovePending(pending.Id)">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+                            </button>
+                        </span>
+                    }
+                </div>
+                <button class="cenops-file-upload-button" type="button" disabled="@(_uploading || _pending.All(x => x.Error is not null))" @onclick="UploadAsync">
+                    <span class="cenops-file-upload-count" title="تعداد فایل‌های قابل ارسال">@_pending.Count(x => x.Error is null)</span>
+                    @(_uploading ? "در حال ارسال…" : "بارگذاری")
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M12 17V4m-5 5 5-5 5 5M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+            </div>
+        }
+        @if (!string.IsNullOrWhiteSpace(_message))
+        { <p class="cenops-file-feedback" role="status">@_message</p> }
+        @if (_items.Count > 0)
+        {
+            <div class="cenops-file-uploaded-head">فایل‌های بارگذاری‌شده <span>@_items.Count</span></div>
+            <div class="cenops-file-uploaded-list" aria-label="پیوست‌های بارگذاری‌شده">
+                @foreach (var file in _items)
+                {
+                    <div class="cenops-file-square" @key="file.Id" title="@file.FileName">
+                        <button type="button" class="cenops-file-square-main" @onclick="() => Preview(file)">
+                            <span class="cenops-file-large-icon">@FileLabel(file.FileName)</span>
+                            <span class="cenops-file-square-name">@file.FileName</span>
+                        </button>
+                        <button type="button" class="cenops-file-remove" title="حذف پیوست" aria-label="حذف @file.FileName" @onclick="() => _deleteCandidate = file">×</button>
+                    </div>
+                }
+            </div>
+        }
+    }
+    else if (_items.Count == 0)
+    {
+        <p class="cenops-file-empty">فایلی در این بخش ثبت نشده است.</p>
+    }
+    else
+    {
+        <div class="cenops-file-view-switch" aria-label="حالت نمایش پیوست‌ها">
+            <button type="button" class="@(_view == FileViewMode.List ? "active" : "")" @onclick="() => SetView(FileViewMode.List)" aria-pressed="@(_view == FileViewMode.List)">فهرست</button>
+            <button type="button" class="@(_view == FileViewMode.Gallery ? "active" : "")" @onclick="() => SetView(FileViewMode.Gallery)" aria-pressed="@(_view == FileViewMode.Gallery)">گالری</button>
+        </div>
+        <div class="cenops-file-view-canvas">
+            @if (_view == FileViewMode.List)
+            {
+                <section class="cenops-file-list-pane" aria-label="فهرست فایل‌ها">
+                    <div class="cenops-file-view-list">
+                        @foreach (var file in VisibleListItems)
+                        {
+                            <button type="button" class="cenops-file-view-row" @key="file.Id"
+                                    @ondblclick="() => Preview(file)" @onkeydown="@(args => OpenOnEnter(args, file))"
+                                    title="برای پیش‌نمایش دوبار کلیک کنید">
+                                <span class="cenops-file-row-icon">@FileLabel(file.FileName)</span>
+                                <span class="cenops-file-truncate">@file.FileName</span>
+                                <span>@SizeLabel(file.Length)</span>
+                                <span>@FileType(file.FileName)</span>
+                            </button>
+                        }
+                    </div>
+                    <nav class="cenops-file-pagination" aria-label="صفحه‌بندی فایل‌ها">
+                        <span class="cenops-file-page-summary">@_items.Count فایل · صفحه @_listPage از @ListPageCount</span>
+                        <div class="cenops-file-page-actions">
+                            <button type="button" title="صفحه قبل" aria-label="صفحه قبل" disabled="@(_listPage <= 1)" @onclick="() => SetPage(_listPage - 1)">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+                            </button>
+                            @for (var page = 1; page <= ListPageCount; page++)
+                            {
+                                var pageNumber = page;
+                                <button type="button" class="@(_listPage == pageNumber ? "active" : "")" aria-current="@(_listPage == pageNumber ? "page" : null)" @onclick="() => SetPage(pageNumber)">@pageNumber</button>
+                            }
+                            <button type="button" title="صفحه بعد" aria-label="صفحه بعد" disabled="@(_listPage >= ListPageCount)" @onclick="() => SetPage(_listPage + 1)">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
+                            </button>
+                        </div>
+                    </nav>
+                </section>
+            }
+            else
+            {
+                <section class="cenops-file-gallery">
+                    @if (SelectedGalleryFile is { } selected)
+                    {
+                        <div class="cenops-file-gallery-main" @ondblclick="() => Preview(selected)" title="برای باز کردن پنجره پیش‌نمایش دوبار کلیک کنید">
+                            @* Only the active gallery item loads actual preview data. *@
+                            <AppFilePreview File="selected" Compact="true" NoteId="NoteId" MessageId="MessageId" @key="selected.Id" />
+                        </div>
+                        <div class="cenops-file-gallery-caption" title="@selected.FileName">@selected.FileName</div>
+                    }
+                    <div class="cenops-file-gallery-strip" aria-label="انتخاب فایل برای پیش‌نمایش">
+                        @foreach (var file in _items)
+                        {
+                            <button type="button" class="cenops-file-gallery-tile @(file.Id == SelectedGalleryFile?.Id ? "active" : "")"
+                                    aria-pressed="@(file.Id == SelectedGalleryFile?.Id)" @key="file.Id"
+                                    @onclick="() => SelectGalleryFile(file.Id)" @ondblclick="() => Preview(file)"
+                                    @onkeydown="@(args => OpenOnEnter(args, file))" title="@file.FileName">
+                                <span>@FileLabel(file.FileName)</span>
+                            </button>
+                        }
+                    </div>
+                </section>
+            }
+        </div>
+    }
+</div>
+
+<AppModal IsOpen="_deleteCandidate is not null" Title="حذف فایل" Description="آیا از حذف این فایل مطمئن هستید؟" MaxWidth="420px" OnClose="() => _deleteCandidate = null">
+    <ChildContent><p>«@_deleteCandidate?.FileName» از پیوست‌های این بخش حذف می‌شود.</p></ChildContent>
+    <Footer>
+        <button type="button" class="knowledge-button danger" disabled="@_uploading" @onclick="ConfirmDeleteAsync">حذف فایل</button>
+        <button type="button" class="knowledge-button secondary" @onclick="() => _deleteCandidate = null">انصراف</button>
+    </Footer>
+</AppModal>
+<AppModal IsOpen="_preview is not null" Title="@_preview?.FileName" Description="@(_preview is null ? "" : SizeLabel(_preview.Length) + " · " + FileType(_preview.FileName))" MaxWidth="min(96vw, 1500px)" CssClass="cenops-file-preview-dialog" OnClose="() => _preview = null">
+    <ChildContent>
+        @if (_preview is not null)
+        {
+            <div class="cenops-file-modal-preview">
+                <AppFilePreview File="_preview" NoteId="NoteId" MessageId="MessageId" @key="_preview.Id" />
+            </div>
+        }
+    </ChildContent>
+    <Footer>
+        @if (_preview is not null)
+        { <a class="knowledge-button primary cenops-file-download" href="@DownloadUrl(_preview)" download="@_preview.FileName">دریافت فایل</a> }
+        <button class="knowledge-button secondary" type="button" @onclick="() => _preview = null">بستن</button>
+    </Footer>
+</AppModal>
+
+@code {
+    [Parameter] public string Value { get; set; } = string.Empty;
+    [Parameter] public int? NoteId { get; set; }
+    [Parameter] public long? MessageId { get; set; }
+    [Parameter] public EventCallback<AppFileInfo> OnPreviewRequest { get; set; }
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+    [Parameter] public FileBlockMode Mode { get; set; } = FileBlockMode.View;
+    [Parameter] public FileViewMode InitialView { get; set; } = FileViewMode.List;
+    [Parameter] public int MaxBatchSize { get; set; } = 20;
+
+    private sealed record PendingFile(Guid Id, Guid BatchId, IBrowserFile File, string? Error)
+    {
+        public string Name => File.Name;
+        public long Length => File.Size;
+    }
+    private readonly List<AppFileInfo> _items = [];
+    private readonly HashSet<Guid> _uploadedInThisEditor = [];
+    private readonly List<PendingFile> _pending = [];
+    private readonly List<Guid> _pickerKeys = [Guid.NewGuid()];
+    private Guid CurrentPickerKey => _pickerKeys[^1];
+    private string GetPickerCssClass(Guid pickerKey) => pickerKey == CurrentPickerKey
+        ? "cenops-file-native-input cenops-file-native-input--active"
+        : "cenops-file-native-input cenops-file-native-input--retained";
+    private string? _loadedValue;
+    private string? _message;
+    private AppFileInfo? _deleteCandidate, _preview;
+    private Guid? _galleryId;
+    private bool _uploading;
+    private int _listPage = 1;
+    [Parameter] public int ListPageSize { get; set; } = 7;
+    [Parameter] public int MaxQueuedFiles { get; set; } = 40;
+    private int SafePageSize => Math.Max(1, ListPageSize);
+    private int ListPageCount => Math.Max(1, (_items.Count + SafePageSize - 1) / SafePageSize);
+    private IEnumerable<AppFileInfo> VisibleListItems => _items.Skip((_listPage - 1) * SafePageSize).Take(SafePageSize);
+    private FileViewMode _view;
+    private ElementReference _dropElement;
+    private bool _dropAttached;
+    private FileBlockMode? _previousMode;
+
+    private AppFileInfo? SelectedGalleryFile => _items.FirstOrDefault(x => x.Id == _galleryId) ?? _items.FirstOrDefault();
+    protected override void OnInitialized() => _view = InitialView;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_previousMode != Mode)
+        {
+            _previousMode = Mode;
+            _dropAttached = false;
+        }
+        if (Value == _loadedValue) return;
+        _loadedValue = Value;
+        _items.Clear();
+        _listPage = 1;
+        _galleryId = null;
+        // Fetch only file metadata. Preview bytes are requested by the viewer on demand.
+        foreach (var id in FileReferenceCodec.Parse(Value))
+        {
+            var file = await FileGateway.FindAsync(id);
+            if (file is not null) _items.Add(file);
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (Mode != FileBlockMode.Edit || _dropAttached) return;
+        try
+        {
+            await JS.InvokeVoidAsync("cenopsFileDrop.attach", _dropElement);
+            _dropAttached = true;
+        }
+        catch (JSDisconnectedException) { }
+        catch (JSException) { }
+    }
+
+    private void ChooseFiles(InputFileChangeEventArgs args, Guid batchId)
+    {
+        if (_uploading) return;
+        _message = null;
+        try
+        {
+            var files = args.GetMultipleFiles(MaxBatchSize);
+            if (_pending.Count + files.Count > MaxQueuedFiles)
+            {
+                _message = $"حداکثر {MaxQueuedFiles} فایل می‌توانند در صف بارگذاری باشند.";
+                return;
+            }
+            _pending.AddRange(files.Select(file =>
+                new PendingFile(Guid.NewGuid(), batchId, file, FileGateway.Check(file.Name, file.Size).Message)));
+        }
+        catch (InvalidOperationException)
+        {
+            _message = $"در هر نوبت حداکثر {MaxBatchSize} فایل انتخاب کنید.";
+        }
+        finally
+        {
+            // The old InputFile must remain mounted while its IBrowserFile objects
+            // are queued; Blazor invalidates those handles if the input is reused.
+            _pickerKeys.Add(Guid.NewGuid());
+            PruneUnusedPickers();
+        }
+        if (_message is null && _pending.Any(x => x.Error is not null))
+            _message = "برخی فایل‌ها با محدودیت حجم یا پسوند سازگار نیستند؛ جزئیات با نگه‌داشتن نشانگر روی نام فایل دیده می‌شود.";
+    }
+
+    private void RemovePending(Guid id)
+    {
+        if (_uploading) return;
+        _pending.RemoveAll(file => file.Id == id);
+        PruneUnusedPickers();
+        if (_pending.All(file => file.Error is null)) _message = null;
+    }
+
+    private void PruneUnusedPickers()
+    {
+        var current = CurrentPickerKey;
+        _pickerKeys.RemoveAll(key => key != current && !_pending.Any(pending => pending.BatchId == key));
+    }
+
+    private void SetView(FileViewMode view) => _view = view;
+    private void SelectGalleryFile(Guid id) => _galleryId = id;
+    private void SetPage(int page) => _listPage = Math.Clamp(page, 1, ListPageCount);
+    // Enter remains an accessible alternative to pointer double-click.
+    private async Task OpenOnEnter(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs args, AppFileInfo file)
+    {
+        if (args.Key == "Enter") await Preview(file);
+    }
+
+    private async Task UploadAsync()
+    {
+        if (_uploading) return;
+        _uploading = true;
+        var failures = new List<string>();
+        var successes = 0;
+        try
+        {
+            var completed = new HashSet<Guid>();
+            foreach (var pending in _pending.Where(x => x.Error is null).ToArray())
+            {
+                if (_items.Count >= 40)
+                {
+                    failures.Add(pending.Name);
+                    continue;
+                }
+                try
+                {
+                    // Guard against oversized streams even if a client lies about metadata.
+                    await using var stream = pending.File.OpenReadStream(FileGateway.MaximumUploadBytes);
+                    var user = (await Auth.GetAuthenticationStateAsync()).User;
+                    var ownerKey = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                    if (string.IsNullOrWhiteSpace(ownerKey)) throw new InvalidOperationException("برای بارگذاری باید وارد سامانه شوید.");
+                    var uploaded = await FileGateway.UploadAsync(stream, pending.Name, pending.File.ContentType,
+                        ownerKey: ownerKey);
+                    _items.Add(uploaded);
+                    _uploadedInThisEditor.Add(uploaded.Id);
+                    completed.Add(pending.Id);
+                    successes++;
+                    await PublishValueAsync(); // Persist each success in component state.
+                }
+                catch (Exception ex) when (ex is IOException or InvalidDataException or InvalidOperationException or ArgumentException)
+                { failures.Add(pending.Name); }
+            }
+            _pending.RemoveAll(pending => completed.Contains(pending.Id));
+            PruneUnusedPickers();
+            _message = failures.Count == 0 ? $"{successes} فایل با موفقیت بارگذاری شد." :
+                $"{successes} فایل ارسال شد؛ بارگذاری {failures.Count} فایل ناموفق بود.";
+        }
+        finally { _uploading = false; }
+    }
+
+    private async Task ConfirmDeleteAsync()
+    {
+        if (_deleteCandidate is null) return;
+        _uploading = true;
+        try
+        {
+            // Existing note attachments must not be physically deleted before the
+            // parent Note is saved: the user could cancel editing. Only uploads
+            // created in this editor session can be safely deleted immediately.
+            if (_uploadedInThisEditor.Contains(_deleteCandidate.Id))
+            {
+                var actor = (await Auth.GetAuthenticationStateAsync()).User;
+                if (await FileAccess.CanDeleteUnattachedAsync(_deleteCandidate.Id, actor))
+                    await FileGateway.DeleteAsync(_deleteCandidate.Id);
+                _uploadedInThisEditor.Remove(_deleteCandidate.Id);
+            }
+            _items.RemoveAll(x => x.Id == _deleteCandidate.Id);
+            SetPage(_listPage); // Deleting the last item on a page selects the preceding page.
+            await PublishValueAsync();
+            _message = "فایل حذف شد.";
+            _deleteCandidate = null;
+        }
+        catch (IOException) { _message = "حذف فایل انجام نشد."; }
+        finally { _uploading = false; }
+    }
+
+    private async Task PublishValueAsync()
+    {
+        _loadedValue = _items.Count == 0 ? string.Empty : FileReferenceCodec.Serialize(_items.Select(x => x.Id));
+        await ValueChanged.InvokeAsync(_loadedValue);
+    }
+    private async Task Preview(AppFileInfo file)
+    {
+        if (OnPreviewRequest.HasDelegate) await OnPreviewRequest.InvokeAsync(file);
+        else _preview = file;
+    }
+    private string DownloadUrl(AppFileInfo file) => $"/api/files/{file.Id:D}/download" +
+        (NoteId is > 0 ? $"?noteId={NoteId}" : MessageId is > 0 ? $"?messageId={MessageId}" : "");
+    private static string FileType(string name) => Path.GetExtension(name).TrimStart('.').ToUpperInvariant() is { Length: > 0 } type ? type : "FILE";
+    private static string FileLabel(string name) => FileType(name) switch
+    {
+        "JPEG" => "JPG", "DOCX" => "DOC", "XLSX" => "XLS", "PPTX" => "PPT", var ext when ext.Length > 4 => ext[..4], var ext => ext
+    };
+    private static string SizeLabel(long size) => size < 1024 ? $"{size} B" :
+        size < 1024L * 1024 ? $"{size / 1024d:0.#} KB" : $"{size / 1048576d:0.#} MB";
+}

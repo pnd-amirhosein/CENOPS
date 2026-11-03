@@ -1,0 +1,12 @@
+.auth-link {
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.auth-link:hover {
+    text-decoration: underline;
+}
+
+.password-hint {
+    line-height: 1.6;
+}

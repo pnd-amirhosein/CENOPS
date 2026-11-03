@@ -1,0 +1,304 @@
+@using System.Globalization
+@using NTSW_CENOPS.Components.Common.Dates
+@using NTSW_CENOPS.Components.Common
+@using NTSW_CENOPS.Application.Common.Security
+@using Microsoft.AspNetCore.WebUtilities
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthProvider
+@inject NTSW_CENOPS.Application.Users.IUserProfileService Profiles
+@inject NTSW_CENOPS.Components.Common.Notices.AppNoticeService Notices
+
+<div class="account-shell" dir="rtl">
+    <button type="button"
+            class="account-trigger"
+            aria-haspopup="menu"
+            aria-expanded="@_menuOpen"
+            @onclick="ToggleMenu">
+        <span class="account-avatar" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.1" stroke="currentColor" stroke-width="1.5"/><path d="M5.5 19c0-3.1 2.9-5.1 6.5-5.1s6.5 2 6.5 5.1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </span>
+        <span class="account-display-name">@DisplayName</span>
+        <span class="account-chevron @(_menuOpen ? "account-chevron--open" : string.Empty)" aria-hidden="true">
+            <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M8.75 0.75L4.75 4.75L0.75 0.75"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round" />
+            </svg>
+        </span>
+    </button>
+
+    @if (_menuOpen)
+    {
+        <button type="button"
+                class="menu-page-backdrop"
+                aria-label="بستن منوی کاربر"
+                @onclick="CloseMenu"></button>
+
+        <div class="account-menu cenops-liquid-glass" role="menu">
+            <div class="account-menu-header">
+                <span class="account-menu-name"><UserHoverName DisplayName="@DisplayName" Username="@Username" /></span>
+                <span class="account-username">@($"@{Username}")</span>
+            </div>
+
+            <div class="account-menu-separator"></div>
+
+            <button type="button" class="account-menu-option" role="menuitem" @onclick="OpenEditModal">
+                <span class="menu-option-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M15.232 5.232L18.768 8.768M16.732 3.732C17.708 2.756 19.292 2.756 20.268 3.732C21.244 4.708 21.244 6.292 20.268 7.268L7.5 20.036L3 21L3.964 16.5L16.732 3.732Z"
+                              stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                </span>
+                <span>ویرایش اطلاعات کاربری</span>
+            </button>
+
+            <button type="button"
+                    class="account-menu-option"
+                    role="menuitem"
+                    @onclick="OpenChangePasswordConfirmation">
+                <span class="menu-option-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M7.5 10V7.5C7.5 5.015 9.515 3 12 3C14.485 3 16.5 5.015 16.5 7.5V10M6 10H18C19.105 10 20 10.895 20 12V20H4V12C4 10.895 4.895 10 6 10Z"
+                              stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M12 14V16.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                    </svg>
+                </span>
+                <span>تغییر رمز عبور</span>
+            </button>
+        </div>
+    }
+</div>
+
+<AppModal IsOpen="_editModalOpen"
+          Title="ویرایش اطلاعات کاربری"
+          Description="نام نمایشی و نام کاربری خود را ویرایش کنید."
+          OnClose="CancelEdit">
+    <ChildContent>
+        <form id="profile-edit-form" class="profile-form" method="post" action="/auth/profile">
+            <AntiforgeryToken />
+            <input type="hidden" name="returnUrl" value="@ReturnUrl" />
+
+            <div class="profile-field">
+                <label for="profile-display-name">نام نمایشی</label>
+                <input id="profile-display-name"
+                       name="displayName"
+                       maxlength="150"
+                       autocomplete="name"
+                       required
+                       value="@_editDisplayName" />
+            </div>
+
+            <div class="profile-field">
+                <label for="profile-username">نام کاربری</label>
+                <div class="username-input-wrap">
+                    <span class="username-prefix" aria-hidden="true">@@</span>
+                    <input id="profile-username"
+                           name="username"
+                           maxlength="100"
+                           autocomplete="username"
+                           required
+                           dir="ltr"
+                           value="@_editUsername" />
+                </div>
+            </div>
+
+            <div class="profile-field">
+                <label>تاریخ تولد</label>
+                <AppJalaliDatePicker @bind-Value="_editBirthDate" AriaLabel="تاریخ تولد شمسی" Max="DateTime.Today" />
+                <input type="hidden" name="birthDate" value="@(_editBirthDate?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? "")" />
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(_editError))
+            {
+                <div class="profile-error" role="alert">@_editError</div>
+            }
+        </form>
+    </ChildContent>
+    <Footer>
+        <button type="submit" form="profile-edit-form" class="profile-save">ذخیره</button>
+        <button type="button" class="profile-cancel" @onclick="CancelEdit">انصراف</button>
+    </Footer>
+</AppModal>
+
+<AppModal IsOpen="_changePasswordConfirmationOpen"
+          Title="تغییر رمز عبور"
+          Description="برای ادامه، این مورد را تأیید کنید."
+          MaxWidth="28rem"
+          OnClose="CloseChangePasswordConfirmation">
+    <ChildContent>
+        <div class="password-change-warning">
+            <span class="password-change-warning-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 8V12.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+                    <path d="M12 16H12.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    <path d="M10.28 4.56L2.82 17.5C2.05 18.83 3.01 20.5 4.55 20.5H19.45C20.99 20.5 21.95 18.83 21.18 17.5L13.72 4.56C12.95 3.23 11.05 3.23 10.28 4.56Z"
+                          stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" />
+                </svg>
+            </span>
+            <p>
+                پس از تغییر موفق رمز عبور، از حساب کاربری خارج می‌شوید و برای ادامه باید دوباره با رمز جدید وارد شوید.
+            </p>
+        </div>
+    </ChildContent>
+    <Footer>
+        <button type="button" class="profile-save" @onclick="GoToChangePassword">ادامه</button>
+        <button type="button" class="profile-cancel" @onclick="CloseChangePasswordConfirmation">انصراف</button>
+    </Footer>
+</AppModal>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthenticationStateTask { get; set; }
+
+    private bool _menuOpen;
+    private bool _editModalOpen;
+    private bool _changePasswordConfirmationOpen;
+    private bool _modalOpenedFromValidationError;
+    private string _displayName = "کاربر";
+    private string _username = string.Empty;
+    private string _editDisplayName = string.Empty;
+    private string _editUsername = string.Empty;
+    private DateTime? _editBirthDate;
+    private string? _editError;
+
+    private string DisplayName => _displayName;
+    private string Username => _username;
+
+    private string ReturnUrl
+    {
+        get
+        {
+            var relative = Navigation.ToBaseRelativePath(Navigation.Uri);
+            var pathOnly = relative.Split('?', 2)[0];
+            return string.IsNullOrWhiteSpace(pathOnly) ? "/dashboard" : $"/{pathOnly}";
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthenticationStateTask is not null)
+        {
+            var authState = await AuthenticationStateTask;
+            var user = authState.User;
+
+            if (user.Identity?.IsAuthenticated == true)
+            {
+                _displayName = user.FindFirst(AppClaimTypes.DisplayName)?.Value
+                    ?? user.Identity.Name
+                    ?? "کاربر";
+
+                _username = user.Identity.Name ?? string.Empty;
+            }
+        }
+
+        ApplyProfileEditQuery();
+        if (_editModalOpen)
+        {
+            try
+            {
+                var auth = AuthenticationStateTask is not null
+                    ? await AuthenticationStateTask
+                    : await AuthProvider.GetAuthenticationStateAsync();
+                _editBirthDate = await Profiles.GetCurrentBirthDateAsync(auth.User);
+            }
+            catch (Exception) { /* Leave the optional birthdate empty. */ }
+        }
+    }
+
+    private void ApplyProfileEditQuery()
+    {
+        var query = QueryHelpers.ParseQuery(new Uri(Navigation.Uri).Query);
+
+        if (query.TryGetValue("profileUpdated", out var updated) && updated.ToString() == "1")
+        {
+            Notices.Success("اطلاعات حساب کاربری به‌روزرسانی شد.");
+            return;
+        }
+
+        if (!query.TryGetValue("profileEdit", out var profileEdit) || profileEdit.ToString() != "1")
+        {
+            return;
+        }
+
+        _editDisplayName = query.TryGetValue("profileDisplayName", out var displayName)
+            ? displayName.ToString()
+            : DisplayName;
+
+        _editUsername = query.TryGetValue("profileUsername", out var username)
+            ? username.ToString()
+            : Username;
+
+
+        var errorCode = query.TryGetValue("profileError", out var error)
+            ? error.ToString()
+            : "failed";
+
+        _editError = ToErrorMessage(errorCode);
+        Notices.Error(_editError);
+        _modalOpenedFromValidationError = true;
+        _editModalOpen = true;
+    }
+
+    private void ToggleMenu() => _menuOpen = !_menuOpen;
+
+    private void CloseMenu() => _menuOpen = false;
+
+    private async Task OpenEditModal()
+    {
+        _menuOpen = false;
+        _editDisplayName = DisplayName;
+        _editUsername = Username;
+        try
+        {
+            var auth = AuthenticationStateTask is not null
+                ? await AuthenticationStateTask
+                : await AuthProvider.GetAuthenticationStateAsync();
+            _editBirthDate = await Profiles.GetCurrentBirthDateAsync(auth.User);
+        }
+        catch (Exception) { Notices.Error("بارگذاری تاریخ تولد انجام نشد."); return; }
+        _editError = null;
+        _modalOpenedFromValidationError = false;
+        _editModalOpen = true;
+    }
+
+    private void CancelEdit()
+    {
+        _editModalOpen = false;
+        _editError = null;
+
+        if (_modalOpenedFromValidationError)
+        {
+            _modalOpenedFromValidationError = false;
+            Navigation.NavigateTo(ReturnUrl, replace: true);
+        }
+    }
+
+    private void OpenChangePasswordConfirmation()
+    {
+        _menuOpen = false;
+        _changePasswordConfirmationOpen = true;
+    }
+
+    private void CloseChangePasswordConfirmation() => _changePasswordConfirmationOpen = false;
+
+    private void GoToChangePassword()
+    {
+        _changePasswordConfirmationOpen = false;
+        Navigation.NavigateTo("/change-password");
+    }
+
+    private static string ToErrorMessage(string errorCode) => errorCode switch
+    {
+        "required" => "نام نمایشی و نام کاربری الزامی است.",
+        "invalid-birth-date" => "تاریخ تولد معتبر نیست.",
+        "duplicate-display-name" => "این نام نمایشی قبلا استفاده شده است.",
+        "duplicate-username" => "این نام کاربری قبلا استفاده شده است.",
+        "invalid-username" => "نام کاربری معتبر نیست. از حروف انگلیسی، عدد و کاراکترهای - . _ @ + استفاده کنید.",
+        "display-name-too-long" => "نام نمایشی نمی‌تواند بیشتر از ۱۵۰ کاراکتر باشد.",
+        "username-too-long" => "نام کاربری نمی‌تواند بیشتر از ۱۰۰ کاراکتر باشد.",
+        "user-not-found" => "اطلاعات کاربر پیدا نشد. لطفا دوباره وارد حساب شوید.",
+        _ => "ذخیره تغییرات انجام نشد. لطفا دوباره تلاش کنید."
+    };
+}

@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "0mYDc6hxVIE=",
+  "success": true,
+  "projectFilePath": "C:\\Repos\\NTSW_CENOPS_Glasswork_2_67_BuildFix\\NTSW_CENOPS_Glasswork_2_67\\src\\NTSW_CENOPS.Application\\NTSW_CENOPS.Application.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\mardani.ah\\.nuget\\packages\\microsoft.extensions.dependencyinjection.abstractions\\8.0.0\\microsoft.extensions.dependencyinjection.abstractions.8.0.0.nupkg.sha512",
+    "C:\\Users\\mardani.ah\\.nuget\\packages\\microsoft.extensions.logging.abstractions\\8.0.0\\microsoft.extensions.logging.abstractions.8.0.0.nupkg.sha512"
+  ],
+  "logs": []
+}

@@ -1,0 +1,188 @@
+.skyline-action {
+    width: 2.5rem;
+    height: 2.5rem;
+}
+
+.logout-warning {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.8rem;
+    padding: 0.9rem 1rem;
+    border: 1px solid #fee2e2;
+    border-radius: 1rem;
+    background: #fff7f7;
+    color: #475569;
+}
+
+.logout-warning p {
+    margin: 0;
+    font-size: 0.84rem;
+    line-height: 1.9;
+}
+
+.logout-warning-icon {
+    display: inline-flex;
+    width: 1.35rem;
+    height: 1.35rem;
+    flex: 0 0 1.35rem;
+    margin-top: 0.1rem;
+    color: #ef4444;
+}
+
+.logout-warning-icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+.logout-post-form {
+    display: flex;
+    margin: 0;
+}
+
+.logout-confirm-button,
+.logout-cancel-button {
+    min-width: 5.75rem;
+    height: 2.65rem;
+    padding: 0 1rem;
+    border-radius: 0.85rem;
+    font: inherit;
+    font-size: 0.84rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 100ms ease, background-color 130ms ease, border-color 130ms ease;
+}
+
+.logout-confirm-button {
+    border: 1px solid #ef4444;
+    background: #ef4444;
+    color: #ffffff;
+    box-shadow: 0 7px 18px rgba(239, 68, 68, 0.18);
+}
+
+.logout-confirm-button:hover {
+    background: #dc2626;
+    border-color: #dc2626;
+}
+
+.logout-cancel-button {
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    color: #475569;
+}
+
+.logout-cancel-button:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+}
+
+.logout-confirm-button:active,
+.logout-cancel-button:active {
+    transform: translateY(1px);
+}
+/* Quick-create control sits next to the brand title, on the logo's left in RTL. */
+.skyline-create-wrap{position:relative;display:flex;align-items:center;z-index:35}
+.skyline-create-button{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-width:105px;height:35px;padding:0 10px!important;border:1px solid #addde5!important;border-radius:10px!important;background:#e4f7fa!important;color:#078da8!important;cursor:pointer;transition:background .15s ease,border-color .15s ease,box-shadow .15s ease}
+.skyline-create-button:hover{background:#d2f1f5!important;border-color:#77c5d3!important;box-shadow:0 2px 10px #0d94b018}
+.skyline-create-button:focus-visible{outline:2px solid #087f9a;outline-offset:3px}
+.skyline-create-plus{font-size:25px;font-weight:550;line-height:1;display:inline-flex;align-items:center;justify-content:center}
+.skyline-create-button .skyline-create-shortcut{pointer-events:none;background:#fff;color:#315b69;border-color:#bbdce3}
+.skyline-create-scrim{position:fixed;inset:0;background:transparent!important;border:0!important;z-index:40}
+.skyline-create-menu{position:absolute;top:42px;right:0;z-index:41;width:220px;padding:7px;animation:knowledge-menu-in .18s ease-out;}
+.skyline-create-menu button{width:100%;text-align:right;display:flex;gap:12px;align-items:center;color:#25485e!important;border:0!important;border-radius:10px!important;padding:11px!important;background:transparent!important;font-size:13px!important;font-weight:700!important}
+.skyline-create-menu button:hover{background:#eaf8fa!important;color:#007d99!important}
+.skyline-create-menu span{width:24px;display:inline-grid;place-items:center;color:#07a0bb;font-weight:800}
+@keyframes knowledge-menu-in{from{transform:translateY(-6px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+/* 2.8: keep the chat entry visible in Skyline, independently of asynchronous access lookup. */
+.skyline-brand>.skyline-chat-launch{display:inline-flex!important;visibility:visible!important;opacity:1!important;align-items:center;justify-content:center;flex:0 0 34px;width:34px;height:34px;padding:0!important;border:1px solid #b2dee7!important;border-radius:10px!important;background:#e3f7fa!important;color:#087f9a!important;position:relative;cursor:pointer}
+.skyline-brand>.skyline-chat-launch:hover{background:#c7edf4!important;border-color:#71bdcf!important}
+.skyline-brand>.skyline-chat-launch>svg{display:block!important;width:21px!important;height:21px!important;stroke:currentColor!important}
+
+/* Glasswork 2.8.2 — quick-create keys use the same small kbd affordance as Ctrl+K. */
+.skyline-create-shortcut,
+.skyline-create-menu kbd{
+    display:inline-flex;align-items:center;justify-content:center;
+    min-width:18px;height:19px;padding:1px 5px;
+    border:1px solid #d7e5e9;border-radius:5px;
+    background:#f7fafb;color:#677f8d;
+    font:700 10px/1 "Hubot Sans",sans-serif;
+    direction:ltr;white-space:nowrap;letter-spacing:.2px;
+}
+
+.skyline-create-menu{width:244px;}
+.skyline-create-menu button{gap:10px!important;min-height:43px!important;padding:8px 10px!important;font-size:13px!important;}
+.skyline-create-menu .skyline-create-menu-icon{
+    display:grid;place-items:center;flex:0 0 29px;width:29px;height:29px;
+    border-radius:8px;background:#eaf5f8;color:#0786a4;
+}
+.skyline-create-menu .skyline-create-menu-icon svg{width:17px;height:17px;}
+.skyline-create-menu button[data-create-shortcut="n"] .skyline-create-menu-icon{background:#fff0df;color:#c36b1f;}
+.skyline-create-menu button[data-create-shortcut="s"] .skyline-create-menu-icon{background:#f1ebff;color:#7755b5;}
+.skyline-create-menu .skyline-create-menu-name{width:auto!important;display:inline-block!important;flex:1;white-space:nowrap;color:inherit;font-weight:750;}
+.skyline-create-menu kbd{margin-right:auto;flex:none;}
+@media(max-width:700px){.skyline-create-button{min-width:35px!important;padding:0 7px!important;gap:0}.skyline-create-button>.skyline-create-shortcut{display:none}}
+
+/* 2.8.4: Skyline's chat and creation actions share one icon + shortcut style. */
+.skyline-brand > .skyline-chat-launch {
+    box-sizing:border-box;display:inline-flex!important;align-items:center;justify-content:center;
+    gap:8px;flex:0 0 auto;width:auto!important;min-width:105px!important;
+    height:35px!important;padding:0 10px!important;border-radius:10px!important;
+}
+.skyline-brand > .skyline-chat-launch > svg { flex:none;width:20px!important;height:20px!important; }
+.skyline-chat-shortcut {
+    display:inline-flex;align-items:center;justify-content:center;flex:none;
+    min-height:19px;padding:1px 5px;border:1px solid #bbdce3;border-radius:5px;
+    background:#fff;color:#315b69;font:700 10px/1 "Hubot Sans",sans-serif;
+    white-space:nowrap;pointer-events:none;direction:ltr;
+}
+@media(max-width:700px){
+    .skyline-brand > .skyline-chat-launch{min-width:35px!important;padding:0 7px!important;gap:0}
+    .skyline-brand > .skyline-chat-launch > .skyline-chat-shortcut{display:none}
+}
+
+/* 2.13.1: shortcut icons match their sidebar SVGs and feature identity. */
+.skyline-create-menu button[data-create-shortcut="t"] .skyline-create-menu-icon{background:#e9f8ef!important;color:#23885b!important}
+.skyline-create-menu button[data-create-shortcut="a"] .skyline-create-menu-icon{background:#ffedf3!important;color:#bd4864!important}
+
+.skyline-create-menu button[data-create-shortcut="e"] .skyline-create-menu-icon{background:#e3f6fa!important;color:#078da8!important}
+
+/* Six visible creation actions per column; seventh starts a new column. */
+.skyline-create-menu{display:grid!important;grid-auto-flow:column;grid-template-rows:repeat(6,minmax(43px,auto));grid-auto-columns:244px;width:max-content!important;max-width:min(95vw,740px);gap:2px 8px;overflow-x:auto;direction:rtl;}
+.skyline-create-menu button{min-width:0;white-space:nowrap}
+
+/* 2.27: shared tool drawer style and its visible Ctrl+I hint. */
+.skyline-tools-wrap{z-index:36}
+.skyline-tools-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:35px;padding:0 10px;border:1px solid #addde5;border-radius:10px;background:#e4f7fa;color:#087f9a;cursor:pointer;transition:background .16s,border-color .16s}
+.skyline-tools-button:hover,.skyline-tools-button[aria-expanded="true"]{background:#c9edf5;border-color:#69b9cf}
+.skyline-tools-button:focus-visible{outline:2px solid #087f9a;outline-offset:2px}
+.skyline-tools-button>svg{flex:none;stroke:currentColor}
+.skyline-tools-button>kbd{padding:3px 5px;border:1px solid #b9dae2;border-radius:5px;background:white;color:#376477;font:700 10px Consolas,monospace;white-space:nowrap}
+.skyline-tools-menu{grid-template-rows:repeat(6,minmax(43px,auto));grid-auto-columns:244px}
+.skyline-tools-menu button[data-tool-shortcut="c"] .skyline-create-menu-icon{background:#e5f4ff;color:#207ba2}
+@media(max-width:700px){.skyline-tools-button{padding:0 8px}.skyline-tools-button>kbd{display:none}}
+
+/* 2.28: the tools shortcut uses the same hint treatment as Create. */
+.skyline-tools-button .skyline-create-shortcut{pointer-events:none;background:#fff;color:#315b69;border-color:#bbdce3}
+.skyline-brand>.skyline-tools-wrap{margin-inline-start:0}
+
+/* 2.48: create and tools use the same six-entries-per-column grid. Empty row tracks
+   must never stretch the menu or reserve space for hidden/unauthorized entries. */
+.skyline-create-menu{
+  display:grid!important;grid-auto-flow:column!important;
+  grid-template-rows:repeat(6, min-content)!important;
+  grid-auto-columns:minmax(0,244px)!important;
+  align-content:start;justify-content:start;
+  max-width:min(calc(100vw - 30px),760px);width:max-content!important;
+  overflow-x:auto;overflow-y:hidden;
+}.skyline-tools-menu{
+  display:grid!important;grid-auto-flow:column!important;
+  grid-template-rows:repeat(6, min-content)!important;
+  grid-auto-columns:minmax(0,244px)!important;
+  align-content:start;justify-content:start;
+  max-width:min(calc(100vw - 30px),760px);width:max-content!important;
+  overflow-x:auto;overflow-y:hidden;
+}
+.skyline-create-menu > button,.skyline-tools-menu > button{height:43px;min-height:43px!important}
+/* AccessGate is a Razor fragment. Visible buttons participate directly in the grid. */
+
+.skyline-tools-menu button[data-tool-shortcut="i"] .skyline-create-menu-icon{background:#e2f8f5;color:#008f81}

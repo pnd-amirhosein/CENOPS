@@ -1,0 +1,159 @@
+/* About presentation only. AppModal provides the optional edge-to-edge shell. */
+.cenops-about[b-elgmp86uv1] {
+    color: #173344;
+    text-align: right;
+    width: 100%;
+}
+
+/* In RTL the first grid track is on the right, flush with the modal edge.
+   The gap deliberately separates the cyan panel from the text without
+   padding the left column on its right edge. */
+.cenops-about-main[b-elgmp86uv1] {
+    display: grid;
+    grid-template-columns: minmax(0, 45%) minmax(0, 1fr);
+    align-items: stretch;
+    column-gap: 36px;
+}
+
+.cenops-about-brand[b-elgmp86uv1] {
+    position: relative;
+    min-width: 0;
+    min-height: 0;
+    align-self: stretch;
+    background: #19b5de;
+    border-top-right-radius: 1.5rem;
+    overflow: hidden;
+}
+.cenops-about-brand[b-elgmp86uv1]  .cenops-about-mark {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.cenops-about-details[b-elgmp86uv1] {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    gap: 0;
+    padding: 22px 0 24px 25px;
+}
+.cenops-about-identity h2[b-elgmp86uv1] {
+    margin: 0;
+    font-size: clamp(1.35rem, 2.5vw, 1.65rem);
+    font-weight: 800;
+    line-height: 1.65;
+}
+.cenops-about-name[b-elgmp86uv1] {
+    margin: 1px 0 0;
+    width: fit-content;
+    color: #16738e;
+    font: 800 1.05rem/1.5 "Hubot Sans", sans-serif;
+    letter-spacing: .13em;
+}
+.cenops-about-description[b-elgmp86uv1] {
+    margin: 6px 0 0;
+    color: #708995;
+    font-size: .82rem;
+    line-height: 1.8;
+}
+
+.cenops-about-release[b-elgmp86uv1] {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    margin: 15px 0;
+    padding: 11px 14px;
+    border: 1px solid #dcecf0;
+    border-radius: 13px;
+    background: #f2f8fa;
+}
+.cenops-about-release > div[b-elgmp86uv1] {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+.cenops-about-release dt[b-elgmp86uv1] { color: #788d98; font-size: .72rem; }
+.cenops-about-release dd[b-elgmp86uv1] {
+    margin: 0;
+    width: fit-content;
+    font: 750 .96rem/1.4 "Hubot Sans", sans-serif;
+    color: #1c586a;
+    letter-spacing: .03em;
+}
+
+.cenops-about-credits p[b-elgmp86uv1] {
+    margin: 0;
+    color: #728893;
+    font-size: .79rem;
+    line-height: 1.95;
+}
+.cenops-about-credits strong[b-elgmp86uv1] { color: #335968; font-weight: 750; }
+
+.cenops-about-legal[b-elgmp86uv1] {
+    margin-top: 15px;
+    padding-top: 12px;
+    border-top: 1px solid #e3edf0;
+}
+.cenops-about-legal p[b-elgmp86uv1] {
+    margin: 0;
+    color: #748a95;
+    font-size: .71rem;
+    line-height: 1.9;
+    text-wrap: pretty;
+}
+.cenops-about-legal bdi[b-elgmp86uv1] { font-family: "Hubot Sans", sans-serif; font-weight: 650; }
+
+/* The footer owns the full-width divider and breathing room at the bottom. */
+.cenops-about-footer[b-elgmp86uv1] {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin-top: 0;
+    padding: 17px 24px 19px;
+    border-top: 1px solid #e3edf0;
+    text-align: center;
+}
+.cenops-about-copyright[b-elgmp86uv1] {
+    margin: 0;
+    color: #8aa1ab;
+    font: 400 .71rem/1.5 "Hubot Sans", sans-serif;
+    letter-spacing: .025em;
+}
+.cenops-about-powered[b-elgmp86uv1] {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: #0066ff;
+    font-family: "Hubot Sans", sans-serif;
+    white-space: nowrap;
+}
+.cenops-about-powered > span[b-elgmp86uv1] { color: inherit; font-size: .72rem; font-weight: 350; }
+.cenops-about-powered img[b-elgmp86uv1] { width: 29px; height: 17px; object-fit: contain; display: block; }
+.cenops-about-powered strong[b-elgmp86uv1] { color: inherit; font-size: 1rem; font-weight: 850; letter-spacing: .035em; }
+
+@media (max-width: 700px) {
+    .cenops-about-main[b-elgmp86uv1] {
+        grid-template-columns: minmax(0, 1fr);
+        column-gap: 0;
+    }
+    .cenops-about-brand[b-elgmp86uv1] {
+        width: 100%;
+        height: clamp(130px, 35vw, 175px);
+        border-top-right-radius: 1.2rem;
+    }
+    .cenops-about-brand[b-elgmp86uv1]  .cenops-about-mark {
+        width: min(50vw, 175px);
+        height: 100%;
+        margin: auto;
+    }
+    .cenops-about-details[b-elgmp86uv1] { padding: 20px 18px 23px; }
+    .cenops-about-identity[b-elgmp86uv1] { text-align: center; }
+    .cenops-about-name[b-elgmp86uv1] { margin-inline: auto; }
+    .cenops-about-release[b-elgmp86uv1] { justify-content: center; }
+    .cenops-about-footer[b-elgmp86uv1] { padding: 16px 16px 22px; }
+}

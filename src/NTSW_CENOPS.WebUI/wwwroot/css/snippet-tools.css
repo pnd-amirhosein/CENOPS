@@ -1,0 +1,44 @@
+/* Glasswork 2.26 — ephemeral code-formatting tool; design tokens drawn from wiki editors. */
+.code-tool-page{display:flex;flex-direction:column;gap:17px;min-width:0;padding:0 0 24px;direction:rtl;color:#254a5d}
+.code-tool-heading{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;padding:20px 24px;border:1px solid #dae8ee;background:linear-gradient(120deg,#fff,#f1fafc);border-radius:17px}
+.code-tool-heading h2{margin:3px 0 6px;font-size:21px;color:#18495f;font-weight:900}
+.code-tool-heading p{margin:0;font-size:12px;line-height:1.9;color:#728d9b}
+.code-tool-eyebrow{display:block;color:#098dac;font-size:10px;font-weight:850;letter-spacing:.06em}
+.code-tool-saveas{display:inline-flex;align-items:center;gap:9px;background:#098eaa;border:1px solid #087b9a;color:#fff;padding:11px 16px;border-radius:11px;font:800 12px/1.3 inherit;cursor:pointer;white-space:nowrap;box-shadow:0 4px 13px #18809f21;transition:background .15s,transform .15s}
+.code-tool-saveas:hover:not(:disabled){background:#08728e;transform:translateY(-1px)}
+.code-tool-saveas:disabled{cursor:not-allowed;opacity:.45;box-shadow:none}
+.code-tool-editor{background:#fff;border:1px solid #dce8ee;border-radius:16px;padding:16px;box-shadow:0 7px 25px #174b670b;min-width:0}
+.code-tool-editor .note-code-surface{min-width:0;width:100%;border-radius:12px;overflow:hidden}
+.code-tool-editor .note-code-editarea{min-height:min(60vh,570px)}
+.code-tool-editor .note-code-editarea textarea{min-height:min(60vh,570px);resize:vertical}
+.code-tool-footer{display:flex;align-items:center;gap:14px;margin-top:13px;color:#7b97a5;font-size:11px}
+.code-tool-footer button{margin-right:auto;border:1px solid #bcdde7;color:#087b97;background:#e9f8fb;border-radius:8px;padding:8px 13px;font-size:12px;font-weight:800;cursor:pointer}
+.code-tool-footer button:hover{background:#d5f1f7}
+.code-tool-backdrop{position:fixed;inset:0;z-index:18000;display:grid;place-items:center;background:#102c43aa;backdrop-filter:blur(5px);padding:17px}
+.code-tool-modal{width:min(760px,96vw);max-height:92dvh;overflow:auto;background:#fff;border:1px solid #d8e8ee;border-radius:18px;box-shadow:0 22px 90px #081f3359;padding:22px;color:#254a5a}
+.code-tool-modal>header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.code-tool-modal header small{font-size:11px;font-weight:700;color:#849fab}
+.code-tool-modal h2{font-weight:900;font-size:20px;margin:4px 0;color:#244b60}
+.code-tool-modal>p{font-size:12px;color:#698997;line-height:1.95;margin:12px 0 23px}
+.code-tool-esc{display:grid;place-items:center;min-width:43px;height:31px;border:1px solid #ccdee5;border-radius:8px;background:#f7fbfc;color:#477a8e;font:800 11px Consolas,monospace;cursor:pointer}
+.code-tool-esc:hover{background:#e7f6fa;color:#067e9a}
+.code-tool-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}
+.code-tool-choice{position:relative;min-height:184px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:10px;text-align:center;background:#fff;border:2px solid #dce9ee;border-radius:16px;color:#37647a;cursor:pointer;padding:20px 10px;transition:transform .15s,box-shadow .15s,border-color .15s}
+.code-tool-choice:hover{transform:translateY(-3px);box-shadow:0 12px 25px #255b7620}
+.code-tool-choice-icon{display:grid;place-items:center;width:55px;height:55px;border-radius:16px;background:var(--type-tint);color:var(--type-accent);font-size:31px;line-height:1;font-weight:900}
+.code-tool-choice strong{font-size:17px;font-weight:900;color:var(--type-accent)}
+.code-tool-choice small{font-size:11px;color:#7894a3;line-height:1.6}
+.code-tool-choice.note{--type-tint:#fff2e7;--type-accent:#be7934}
+.code-tool-choice.sql{--type-tint:#f2eafb;--type-accent:#7d4fac}
+.code-tool-choice.curl{--type-tint:#dff6fa;--type-accent:#078aab}
+.code-tool-choice:hover,.code-tool-choice.recommended{border-color:var(--type-accent)}
+.code-tool-choice.recommended{background:color-mix(in srgb,var(--type-tint) 38%,white);box-shadow:0 0 0 3px color-mix(in srgb,var(--type-accent) 16%,transparent)}
+.code-tool-choice em{position:absolute;top:10px;right:10px;font-style:normal;border-radius:7px;background:var(--type-accent);color:#fff;font-size:10px;font-weight:850;padding:4px 8px}
+.code-tool-error{color:#af3c52;font-size:11px;margin:12px 0 0}
+@media(max-width:670px){.code-tool-heading,.code-tool-modal{padding:15px}.code-tool-choices{gap:8px}.code-tool-choice{min-height:150px;padding:14px 6px}.code-tool-choice-icon{width:40px;height:40px;font-size:23px}.code-tool-choice strong{font-size:13px}.code-tool-choice small{font-size:10px}}
+@media(max-width:460px){.code-tool-choices{grid-template-columns:1fr}.code-tool-choice{min-height:115px;display:grid;grid-template-columns:55px 1fr;text-align:right;justify-items:start;padding:13px}.code-tool-choice small{grid-column:2}.code-tool-choice em{top:8px;left:10px;right:auto}}
+@media(prefers-reduced-motion:reduce){.code-tool-saveas,.code-tool-choice{transition:none}}
+
+/* Shared SVGs from the knowledge sidebar fit the Save As choice treatment. */
+.code-tool-choice-icon svg{width:25px;height:25px;display:block;flex:none}
+@media(max-width:670px){.code-tool-choice-icon svg{width:21px;height:21px}}

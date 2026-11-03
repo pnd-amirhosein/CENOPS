@@ -1,0 +1,158 @@
+@using System.Security.Claims
+@using NTSW_CENOPS.Application.Dashboards
+@using NTSW_CENOPS.Application.Notes
+@using NTSW_CENOPS.Application.Announcements
+@using NTSW_CENOPS.Application.Tasks
+@using NTSW_CENOPS.Application.Knowledge
+@using NTSW_CENOPS.Application.Reports
+@using NTSW_CENOPS.Components.Notes
+@inject INoteService Notes
+@inject IAnnouncementService Announcements
+@inject ITodoService Todos
+@inject ICurlService Curls
+@inject ISqlQueryService SqlQueries
+@inject IMonitoringReportService Reports
+@inject IMonitoringReportChartService ReportCharts
+
+        @if (Item is not null)
+        {
+            <div class="dcp-overlay" @onclick="OnClose">
+                <section class="dcp-detail-modal @(Item.Type == "announcement" ? "announcement-detail" : "")" role="dialog" aria-modal="true" aria-labelledby="dcp-detail-title" @onclick:stopPropagation="true">
+                    <header class="dcp-detail-header">
+                        <div class="dcp-detail-heading">
+                            <span class="dcp-detail-kicker">@Label(Item.Type) · <UserHoverName DisplayName="@Item.Author" /></span>
+                            <h3 id="dcp-detail-title">@(_detailAnnouncement?.Content ?? Item.Title)</h3>
+                        </div>
+                        <button type="button" class="dcp-close modal-esc-key" aria-label="بستن پیش‌نمایش" title="بستن (Esc)" @onclick="OnClose">ESC</button>
+                    </header>
+                    @if (_detailAnnouncement is null || _detailLoading || _detailError is not null)
+                    {
+                    <div class="dcp-detail-body" dir="rtl">
+                        @if (_detailLoading) { <AppLoading IsLoading="true" Variant="inline" Label="در حال آماده‌سازی جزئیات..." /> }
+                        else if (_detailError is not null) { <p class="dcp-detail-message dcp-error" role="alert">@_detailError</p> }
+                        else if (_detailNote is not null) { <NoteContent Blocks="_detailNote.Blocks" /> }
+                        else if (_detailTodo is not null)
+                        {
+                            <div class="dcp-detail-todos">
+                                @foreach (var todo in _detailTodo.Items)
+                                {
+                                    <div class="dcp-detail-todo-row"><input type="checkbox" disabled checked="@todo.IsCompleted" aria-label="وضعیت انجام"/><span class="@(todo.IsCompleted ? "done" : "")" dir="auto">@todo.Text</span></div>
+                                }
+                                @if (_detailTodo.Items.Count == 0) { <p>هنوز کاری اضافه نشده است.</p> }
+                            </div>
+                        }
+                        else if (_detailCode is not null)
+                        {
+                            @if (!string.IsNullOrWhiteSpace(_detailCode.Description)) { <p class="dcp-detail-text" dir="auto">@_detailCode.Description</p> }
+                            <pre class="dcp-detail-code" dir="ltr"><code>@_detailCode.Value</code></pre>
+                        }
+                        else if (_detailReport is not null)
+                        {
+                            <div class="dcp-report-facts">
+                                <div><span>کار مرتبط</span><strong>@_detailReport.JobName</strong></div>
+                                <div><span>نوع نمودار</span><strong>@_detailReport.ChartType</strong></div>
+                                <div><span>محور مقایسه</span><strong>@_detailReport.ComparisonField</strong></div>
+                                <div><span>فیلدهای اندازه‌گیری</span><strong>@string.Join("، ", _detailReport.MeasureFields)</strong></div>
+                            </div>
+                            @if (_detailChart is not null) { <MonitoringReportChart Data="_detailChart" AllowExpand="false" /> }
+                            else { <p class="dcp-detail-message">داده‌ای برای ترسیم نمودار این گزارش موجود نیست.</p> }
+                        }
+                    </div>
+                    }
+                    @if (CanSelect)
+                    {
+                        <footer class="dcp-detail-footer">
+                            <button type="button" class="dcp-btn dcp-personal-add" disabled="@(_detailLoading || _detailError is not null)" @onclick="OnToggleSelection">@(IsSelected ? "حذف از انتخاب‌ها" : "انتخاب این کارت")</button>
+                        </footer>
+                    }
+                </section>
+            </div>
+        }
+@code {
+    [Parameter, EditorRequired] public DashboardContentItem Item { get; set; } = default!;
+    [Parameter, EditorRequired] public ClaimsPrincipal Actor { get; set; } = new();
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public bool CanSelect { get; set; }
+    [Parameter] public bool IsSelected { get; set; }
+    [Parameter] public EventCallback OnToggleSelection { get; set; }
+    private NoteModel? _detailNote;
+    private TodoModel? _detailTodo;
+    private AnnouncementModel? _detailAnnouncement;
+    private KnowledgeItemModel? _detailCode;
+    private MonitoringReportModel? _detailReport;
+    private MonitoringChartData? _detailChart;
+    private string? _detailError;
+    private bool _detailLoading;
+    private int _detailRequest;
+    private (string, long)? _lastKey;
+    protected override async Task OnParametersSetAsync()
+    {
+        var key = (Item.Type, Item.Id);
+        if (_lastKey == key) return;
+        _lastKey = key;
+        await LoadAsync(Item);
+    }
+    private static string Label(string type) => type switch
+    {
+        "note" => "یادداشت", "todo" => "کارها", "announcement" => "اطلاعیه",
+        "sql" => "SQL", "curl" => "cURL", "report" => "گزارش", _ => type
+    };
+    private async Task LoadAsync(DashboardContentItem item)
+    {
+        _detailNote = null;
+        _detailTodo = null;
+        _detailAnnouncement = null;
+        _detailCode = null;
+        _detailReport = null;
+        _detailChart = null;
+        _detailError = null;
+        _detailLoading = true;
+        var request = ++_detailRequest;
+        try
+        {
+            // These read-only details always come from existing permission-aware services.
+            if (item.Id <= 0 || (item.Type != "report" && item.Id > int.MaxValue))
+                throw new ArgumentException("شناسه محتوا نامعتبر است.");
+            NoteModel? note = null;
+            TodoModel? todo = null;
+            AnnouncementModel? announcement = null;
+            KnowledgeItemModel? code = null;
+            MonitoringReportModel? report = null;
+            MonitoringChartData? chart = null;
+            switch (item.Type)
+            {
+                case "note": note = await Notes.FindAsync((int)item.Id, Actor); break;
+                case "announcement": announcement = await Announcements.FindAsync((int)item.Id, Actor); break;
+                case "todo": todo = await Todos.FindAsync((int)item.Id, Actor); break;
+                case "sql": code = await SqlQueries.FindAsync((int)item.Id, Actor); break;
+                case "curl": code = await Curls.FindAsync((int)item.Id, Actor); break;
+                case "report":
+                    report = await Reports.GetAsync(item.Id, Actor);
+                    if (report is not null)
+                    {
+                        // Metadata remains previewable even when chart data is unavailable.
+                        try { chart = (await ReportCharts.GetGalleryAsync(Actor)).FirstOrDefault(x => x.ReportId == item.Id); }
+                        catch (Exception) { chart = null; }
+                    }
+                    break;
+                default: throw new ArgumentException("نوع محتوا معتبر نیست.");
+            }
+            // Ignore an old response when another preview opened or the dialog closed.
+            if (request != _detailRequest) return;
+            _detailNote = note;
+            _detailTodo = todo;
+            _detailAnnouncement = announcement;
+            _detailCode = code;
+            _detailReport = report;
+            _detailChart = chart;
+            if (note is null && todo is null && announcement is null && code is null && report is null)
+                _detailError = "این مورد حذف شده یا اجازه مشاهده آن را ندارید.";
+        }
+        catch (Exception)
+        {
+            if (request == _detailRequest) _detailError = "دریافت محتوای پیش‌نمایش انجام نشد.";
+        }
+        finally { if (request == _detailRequest) _detailLoading = false; }
+    }
+
+}

@@ -1,0 +1,138 @@
+@using NTSW_CENOPS.Components.Common.Menus
+@* Shared shell for source and SQL graph renderers. Renderers own the data, layout, and gestures;
+   the shell owns the stage, corner controls, selection overlay, legend and fullscreen-safe modal slot. *@
+<div class="graph-workspace" dir="rtl">
+    <div class="graph-workspace-stage @StageClass" tabindex="0" aria-label="@StageLabel">
+        @StageContent
+    </div>
+    @InspectorContent
+    <div class="graph-workspace-controls source-graph-actions" role="toolbar" aria-label="ابزارهای نمودار">
+        @if (ShowClearWorkspace)
+        {
+            <button type="button" class="graph-clear-workspace" @onclick="() => OnClearWorkspace.InvokeAsync()" title="پاک کردن تمام جدول‌ها (قابل بازگردانی با Undo)" aria-label="پاک‌سازی کل نمودار">
+                <svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v5M14 11v5"/></svg>
+            </button>
+            <span class="graph-workspace-divider" aria-hidden="true"></span>
+        }
+        <button type="button" @onclick="() => OnReset.InvokeAsync()" title="بازنشانی چینش و بزرگ‌نمایی" aria-label="بازنشانی نمودار">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+        </button>
+        @if (ShowHistoryTools)
+        {
+            <button type="button" disabled="@(!CanUndo)" @onclick="() => OnUndo.InvokeAsync()" title="بازگردانی آخرین تغییر (Ctrl + Z)" aria-label="بازگردانی تغییر">
+                <svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-2"/></svg>
+                <span class="graph-ctrl-badge" aria-hidden="true">Ctrl+Z</span>
+            </button>
+            <div class="graph-history-container">
+                <button type="button" class="graph-history-trigger" aria-expanded="@HistoryOpen" aria-label="تاریخچه تغییرات نمودار" title="تاریخچه تغییرات" @onclick="() => OnToggleHistory.InvokeAsync()">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>
+                </button>
+                @if (HistoryOpen)
+                {
+                    <div class="graph-history-popover cenops-liquid-glass" role="group" aria-label="تاریخچه تغییرات" dir="rtl">
+                        <div class="graph-history-title">تاریخچه تغییرات <span>@(HistoryCursor + 1) / @HistoryEntries.Count</span></div>
+                        <div class="graph-history-list">
+                            @foreach (var entry in HistoryEntries.Reverse())
+                            {
+                                <button @key="entry.Index" type="button" class="graph-history-item @(HistoryCursor == entry.Index ? "current" : entry.Index > HistoryCursor ? "future" : "")"
+                                        aria-current="@(HistoryCursor == entry.Index ? "step" : null)" @onclick="() => OnNavigateHistory.InvokeAsync(entry.Index)">
+                                    <span class="graph-history-dot" aria-hidden="true"></span>
+                                    <span class="graph-history-item-text">@entry.Label</span>
+                                    <span class="graph-history-number">@(entry.Index + 1)</span>
+                                </button>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+            <button type="button" disabled="@(!CanRedo)" @onclick="() => OnRedo.InvokeAsync()" title="انجام دوباره تغییر (Ctrl + Y / Ctrl + Shift + Z)" aria-label="انجام دوباره تغییر">
+                <svg viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h2"/></svg>
+                <span class="graph-ctrl-badge" aria-hidden="true">Ctrl+Y</span>
+            </button>
+            <span class="graph-workspace-divider" aria-hidden="true"></span>
+        }
+        <button type="button" @onclick="() => OnZoomIn.InvokeAsync()" title="بزرگ‌نمایی" aria-label="بزرگ‌نمایی">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M11 7v8M7 11h8m1.5 5.5L21 21"/></svg>
+        </button>
+        <button type="button" @onclick="() => OnZoomOut.InvokeAsync()" title="کوچک‌نمایی" aria-label="کوچک‌نمایی">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M7 11h8m1.5 5.5L21 21"/></svg>
+        </button>
+        @if (ShowPathTools)
+        {
+            <span class="graph-workspace-divider" aria-hidden="true"></span>
+            <button class="graph-shift-action" type="button" disabled="@(!PathToolsEnabled)" @onclick="args => OnHighlightPath.InvokeAsync(args)" title="نمایش همه مسیرهای بین دو گره انتخاب‌شده؛ Shift + کلیک برای جداسازی" aria-label="برجسته کردن مسیر انتخاب‌شده">
+                <svg viewBox="0 0 24 24"><circle cx="5" cy="5" r="2"/><circle cx="19" cy="19" r="2"/><path d="M7 5h6a5 5 0 0 1 5 5v7"/></svg>
+                <span class="graph-shift-badge" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m12 3-9 9h5v8h8v-8h5l-9-9Z"/></svg></span>
+            </button>
+            <button class="graph-shift-action" type="button" disabled="@(!FocusToolsEnabled)" @onclick="args => OnFocusBranch.InvokeAsync(args)" title="برجسته کردن ارتباط‌های نزدیک؛ Shift + کلیک برای جداسازی" aria-label="تمرکز بر شاخه انتخاب‌شده">
+                <svg viewBox="0 0 24 24"><rect x="3" y="4" width="6" height="5" rx="1"/><rect x="15" y="3" width="6" height="5" rx="1"/><rect x="15" y="16" width="6" height="5" rx="1"/><path d="M9 6.5h3v12h3M12 6h3"/></svg>
+                <span class="graph-shift-badge" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m12 3-9 9h5v8h8v-8h5l-9-9Z"/></svg></span>
+            </button>
+        }
+        <span class="graph-workspace-divider" aria-hidden="true"></span>
+        <button type="button" @onclick="() => OnFullscreen.InvokeAsync()" title="تمام صفحه" aria-label="تمام صفحه">
+            <svg viewBox="0 0 24 24"><path d="M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5"/></svg>
+        </button>
+        @if (ShowExport)
+        {
+            <span class="graph-workspace-divider" aria-hidden="true"></span>
+            <AppNestedMenu CssClass="graph-export-menu" TriggerLabel="اشتراک‌گذاری و خروجی نمودار" MenuLabel="انتخاب نوع خروجی"
+                           Items="@ExportMenuItems" OnSelected="OnExportSelected">
+                <TriggerContent>
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3m0 0L7.5 7.5M12 3l4.5 4.5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>
+                </TriggerContent>
+            </AppNestedMenu>
+        }
+    </div>
+    <div class="graph-workspace-legend source-graph-legend">@LegendContent</div>
+    @* Must be within the fullscreen ancestor so browser top-layer retains the modal. *@
+    @ModalContent
+    @if (ShowFullscreenNotices)
+    {
+        <div class="graph-workspace-fullscreen-notices"><AppNoticeHost /></div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public RenderFragment StageContent { get; set; } = default!;
+    [Parameter] public RenderFragment? InspectorContent { get; set; }
+    [Parameter] public RenderFragment? ModalContent { get; set; }
+    [Parameter] public RenderFragment? LegendContent { get; set; }
+    [Parameter] public string StageClass { get; set; } = "";
+    [Parameter] public string StageLabel { get; set; } = "نمودار";
+    [Parameter] public bool ShowFullscreenNotices { get; set; }
+    [Parameter] public bool ShowPathTools { get; set; } = true;
+    [Parameter] public bool ShowHistoryTools { get; set; }
+    [Parameter] public bool ShowExport { get; set; }
+    [Parameter] public EventCallback<string> OnExportSelected { get; set; }
+    [Parameter] public IReadOnlyList<AppNestedMenuItem> ExportMenuItems { get; set; } = DefaultExportMenuItems;
+    private static readonly IReadOnlyList<AppNestedMenuItem> DefaultExportMenuItems =
+    [
+        new("image", "خروجی تصویر", Children:
+        [
+            new("image:png", "PNG", "دقیق"),
+            new("image:svg", "SVG", "برداری"),
+            new("image:webp", "WebP", "کم‌حجم")
+        ]),
+        new("query", "خروجی کوئری", Disabled: true, Count: 0)
+    ];
+    [Parameter] public bool ShowClearWorkspace { get; set; }
+    [Parameter] public EventCallback OnClearWorkspace { get; set; }
+    [Parameter] public bool HistoryOpen { get; set; }
+    [Parameter] public IReadOnlyList<GraphHistoryItem> HistoryEntries { get; set; } = [];
+    [Parameter] public int HistoryCursor { get; set; }
+    [Parameter] public EventCallback OnToggleHistory { get; set; }
+    [Parameter] public EventCallback<int> OnNavigateHistory { get; set; }
+    [Parameter] public bool CanUndo { get; set; }
+    [Parameter] public bool CanRedo { get; set; }
+    [Parameter] public EventCallback OnUndo { get; set; }
+    [Parameter] public EventCallback OnRedo { get; set; }
+    [Parameter] public bool PathToolsEnabled { get; set; }
+    [Parameter] public bool FocusToolsEnabled { get; set; }
+    [Parameter] public EventCallback OnReset { get; set; }
+    [Parameter] public EventCallback OnZoomIn { get; set; }
+    [Parameter] public EventCallback OnZoomOut { get; set; }
+    [Parameter] public EventCallback<Microsoft.AspNetCore.Components.Web.MouseEventArgs> OnHighlightPath { get; set; }
+    [Parameter] public EventCallback<Microsoft.AspNetCore.Components.Web.MouseEventArgs> OnFocusBranch { get; set; }
+    [Parameter] public EventCallback OnFullscreen { get; set; }
+}

@@ -1,0 +1,190 @@
+@using System.Security.Claims
+@using System.Globalization
+@using NTSW_CENOPS.Application.Dashboards
+@using NTSW_CENOPS.Application.Events
+@using NTSW_CENOPS.Components.Common.Dates
+@using NTSW_CENOPS.Components.Team
+@inject ICalendarEventService Events
+
+<div class="dash-event-content @(Item.Type == "event" ? "single" : "period")" dir="rtl">
+    <div class="dash-event-header">
+        <strong>@Title</strong>
+        <a href="/team/events" class="dash-event-calendar-link" title="رفتن به تقویم">تقویم <span aria-hidden="true">↗</span></a>
+    </div>
+    @if (Item.Type == "event" && Editable)
+    {
+        <select class="dash-event-choice" aria-label="انتخاب رویداد برای نمایش" value="@(_selectedEventId?.ToString() ?? "")" @onchange="SelectEvent">
+            <option value="">یک رویداد انتخاب کنید…</option>
+            @foreach (var choice in _choices.Where(c => !c.IsBirthday && c.Id > 0))
+            { <option value="@choice.Id">@choice.Title</option> }
+        </select>
+    }
+    @if (_loading) { <AppLoading IsLoading="true" Variant="inline" Label="در حال آماده‌سازی رویدادها..." /> }
+    else if (_error is not null) { <p class="dash-event-state">@_error</p> }
+    else if (Item.Type == "event")
+    {
+        @if (_selectedEventId is null)
+        { <p class="dash-event-state">در حالت ویرایش، یک رویداد انتخاب کنید.</p> }
+        else if (_selectedDefinition is null)
+        { <p class="dash-event-state">رویداد انتخاب‌شده در دسترس نیست.</p> }
+        else
+        {
+            <div class="dash-event-feature">
+                <span class="dash-event-feature-kind">@RecurrenceTitle</span>
+                <h3>@_selectedDefinition.Title</h3>
+                <div class="dash-event-feature-author"><UserHoverName DisplayName="@_selectedDefinition.CreatedByName" /></div>
+                <div class="dash-event-feature-schedule">
+                    <div class="dash-event-fact">
+                        <span class="dash-event-fact-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="9" />
+                                <path d="M12 7v5l3 2" />
+                            </svg>
+                        </span>
+                        <div><small>شروع</small><strong>@JalaliDate.DateTime(_selectedDefinition.StartsAt)</strong></div>
+                    </div>
+                    @if (_selectedDefinition.EndsAt is { } ends)
+                    {
+                        <div class="dash-event-fact">
+                            <span class="dash-event-fact-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M5 3v18M5 5h13l-4 5 4 5H5" />
+                                </svg>
+                            </span>
+                            <div><small>پایان</small><strong>@JalaliDate.DateTime(ends)</strong></div>
+                        </div>
+                    }
+                    <div class="dash-event-fact">
+                        <span class="dash-event-fact-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 7v5h-5M4 17v-5h5" />
+                                <path d="M6.1 9A7 7 0 0 1 18.6 7L20 12M4 12l1.4 5A7 7 0 0 0 17.9 15" />
+                            </svg>
+                        </span>
+                        <div><small>الگوی برگزاری</small><strong>@RecurrenceDescription</strong></div>
+                    </div>
+                    @if (_occurrences.FirstOrDefault() is { } next)
+                    {
+                        <div class="dash-event-fact">
+                            <span class="dash-event-fact-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="3" y="5" width="18" height="16" rx="2" />
+                                    <path d="M7 3v4M17 3v4M3 10h18M9 15h6m-2-2 2 2-2 2" />
+                                </svg>
+                            </span>
+                            <div><small>نوبت بعدی در بازه</small><strong>@JalaliDate.DateTime(next.Start)</strong></div>
+                        </div>
+                    }
+                </div>
+                <button type="button" class="dash-event-details-link" @onclick="OpenSelectedDetails">مشاهده جزئیات <span aria-hidden="true">↗</span></button>
+            </div>
+        }
+    }
+    else if (_occurrences.Count == 0)
+    { <p class="dash-event-state">رویدادی در این بازه ثبت نشده است.</p> }
+    else
+    {
+        <div class="dash-event-list">
+            @foreach (var entry in _occurrences)
+            {
+                <div class="dash-event-row @(entry.EventId < 0 ? "birthday" : "")" @key="(entry.EventId, entry.Start)">
+                    <div class="dash-event-row-main">
+                        <strong title="@entry.Title">@entry.Title</strong>
+                        <div class="dash-event-row-sub"><small><UserHoverName DisplayName="@entry.Author" /></small>
+                            @if (_repeatLabels.TryGetValue(entry.EventId, out var label))
+                            { <span class="dash-event-repeat-badge" title="@label">@label</span> }
+                        </div>
+                    </div>
+                    <time datetime="@(entry.Start.ToString("s", CultureInfo.InvariantCulture))">@JalaliDate.Date(entry.Start) @((entry.Start.TimeOfDay == TimeSpan.Zero || entry.EventId < 0) ? "" : entry.Start.ToString("HH:mm"))</time>
+                    <button class="dash-event-more" type="button" title="جزئیات رویداد" aria-label="مشاهده جزئیات @entry.Title" @onclick="() => ShowDetails(entry)">⋯</button>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public DashboardContentItem Item { get; set; } = default!;
+    [Parameter, EditorRequired] public DashboardContentReference Layout { get; set; } = default!;
+    [Parameter, EditorRequired] public ClaimsPrincipal Actor { get; set; } = default!;
+    [Parameter] public bool Editable { get; set; }
+    [Parameter] public EventCallback<int?> OnEventChanged { get; set; }
+    [Parameter] public EventCallback<CalendarOccurrence> OnDetailsRequested { get; set; }
+    private IReadOnlyList<CalendarEventChoice> _choices = [];
+    private IReadOnlyList<CalendarOccurrence> _occurrences = [];
+    private IReadOnlyDictionary<int, string> _repeatLabels = new Dictionary<int, string>();
+    private CalendarEvent? _selectedDefinition;
+    private int? _selectedEventId;
+    private string? _error, _key;
+    private bool _loading;
+    private string Title => Item.Title;
+    private string RecurrenceTitle => _selectedDefinition?.Repeat == EventRepeatKind.None ? "رویداد یک‌باره" : "رویداد تکرارشونده";
+    private string RecurrenceDescription => _selectedDefinition is null ? "" : CalendarRecurrenceLabel.Get(_selectedDefinition);
+    protected override async Task OnParametersSetAsync()
+    {
+        var key = $"{Item.Type}:{Layout.Options?.EventId}:{Actor.Identity?.Name}:{DateTime.Today:yyyyMMdd}";
+        if (key == _key) return;
+        _key = key;
+        _selectedEventId = Layout.Options?.EventId;
+        _error = null;
+        _loading = true;
+        _selectedDefinition = null;
+        _repeatLabels = new Dictionary<int, string>();
+        try
+        {
+            var today = DateTime.Today;
+            var beginning = today;
+            var end = today.AddDays(1);
+            if (Item.Type == "events-week")
+            {
+                beginning = today.AddDays(-(((int)today.DayOfWeek + 1) % 7));
+                end = beginning.AddDays(7);
+            }
+            else if (Item.Type == "events-month")
+            {
+                var persian = new PersianCalendar();
+                var year = persian.GetYear(today); var month = persian.GetMonth(today);
+                beginning = persian.ToDateTime(year, month, 1, 0, 0, 0, 0);
+                end = month == 12 ? persian.ToDateTime(year + 1, 1, 1, 0, 0, 0, 0)
+                    : persian.ToDateTime(year, month + 1, 1, 0, 0, 0, 0);
+            }
+            else if (Item.Type == "event") end = today.AddDays(366);
+            if (Item.Type == "event")
+            {
+                _choices = (await Events.GetChoicesAsync(Actor)).Where(c => c.Id > 0 && !c.IsBirthday).ToArray();
+                if (_selectedEventId is > 0) _selectedDefinition = await Events.FindAsync(_selectedEventId.Value, Actor);
+            }
+            if (Item.Type == "event" && _selectedDefinition is null) _occurrences = [];
+            else
+            {
+                var entries = await Events.GetOccurrencesAsync(beginning, end, Actor);
+                _occurrences = Item.Type == "event" ? entries.Where(e => e.EventId == _selectedEventId).Take(1).ToArray() : entries.ToArray();
+                if (Item.Type != "event" && _occurrences.Count > 0)
+                {
+                    var repeating = await Events.GetRecurringAsync(_occurrences.Select(e => e.EventId).Where(id => id > 0).Distinct().ToArray(), Actor);
+                    _repeatLabels = repeating.ToDictionary(e => e.Id, CalendarRecurrenceLabel.Brief);
+                }
+                if (Item.Type == "event" && _occurrences.Count == 0 && _selectedDefinition is { Repeat: EventRepeatKind.None } selected)
+                    _occurrences = [new CalendarOccurrence(selected.Id, selected.Title, selected.Description, selected.StartsAt, selected.EndsAt, selected.CreatedByName)];
+            }
+        }
+        catch (Exception) { _error = "دریافت رویدادها انجام نشد."; }
+        finally { _loading = false; }
+    }
+    private async Task SelectEvent(ChangeEventArgs e)
+    {
+        if (!Editable) return;
+        var selection = int.TryParse(e.Value?.ToString(), out var id) && id > 0 ? id : (int?)null;
+        _selectedEventId = selection;
+        _key = null;
+        await OnEventChanged.InvokeAsync(selection);
+    }
+    private Task OpenSelectedDetails()
+    {
+        if (_selectedDefinition is not { } selected) return Task.CompletedTask;
+        var occurrence = _occurrences.FirstOrDefault() ?? new CalendarOccurrence(selected.Id,
+            selected.Title, selected.Description, selected.StartsAt, selected.EndsAt, selected.CreatedByName);
+        return OnDetailsRequested.InvokeAsync(occurrence);
+    }
+    private Task ShowDetails(CalendarOccurrence entry) => OnDetailsRequested.InvokeAsync(entry);
+}

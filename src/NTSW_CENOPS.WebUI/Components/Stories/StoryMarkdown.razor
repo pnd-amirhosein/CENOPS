@@ -1,0 +1,5 @@
+@using NTSW_CENOPS.Components.Stories
+<div class="release-story-markdown" dir="auto">@((MarkupString)StoryMarkdownRenderer.Render(Markdown))</div>
+@code {
+    [Parameter] public string Markdown { get; set; } = "";
+}

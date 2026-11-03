@@ -1,0 +1,540 @@
+@page "/tools/database-inspector"
+@attribute [AccessAuthorize(AccessKeys.DatabaseInspector)]
+@rendermode InteractiveServer
+@using NTSW_CENOPS.Application.DatabaseInspector
+@using NTSW_CENOPS.Components.Common
+@using NTSW_CENOPS.Components.Common.Selection
+@using NTSW_CENOPS.Components.Common.Notices
+@using Microsoft.Data.SqlClient
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+@inject IDatabaseInspectorService Inspector
+@inject AuthenticationStateProvider Authentication
+@inject AppNoticeService Notices
+
+<PageTitle>Database Inspector | CENOPS</PageTitle>
+<div class="dbi-page" dir="rtl">
+    <SectionContent SectionName="cenops-page-actions">
+        <button type="button" class="page-action-button" disabled="@_busy" @onclick="RefreshSourcesAsync">بروزرسانی اتصال‌ها</button>
+    </SectionContent>
+    <section class="dbi-picker" aria-label="انتخاب پایگاه داده و جدول">
+        <div class="dbi-field">
+            <span>پایگاه داده</span>
+            <AppDropdown Label="پایگاه داده خارجی" Placeholder="انتخاب پایگاه داده…"
+                         Options="@SourceOptions" Value="@_source" ValueChanged="SelectSourceAsync" Disabled="@_busy" />
+        </div>
+        <div class="dbi-field dbi-tables-field">
+            <span>جدول متمرکز</span>
+            <AppDropdown Label="جدول‌های متمرکز" Placeholder="انتخاب یک یا چند جدول…" Multiple="true"
+                         Options="@TableOptions" SelectedValues="@FocusedValues"
+                         SelectedValuesChanged="SelectFocusedTablesAsync"
+                         Disabled="@(_busy || string.IsNullOrWhiteSpace(_source))" />
+        </div>
+        <span class="dbi-picker-count">@SelectableTables.Count() جدول قابل انتخاب · @_focusedTableIds.Count انتخاب‌شده</span>
+    </section>
+
+    @if (_sources.Count == 0 && !_busy)
+    {
+        <div class="dbi-empty">
+            <strong>پایگاه داده خارجی قابل دسترسی پیدا نشد.</strong>
+            <p>تنها اتصال‌های خارجی با دسترسی به metadata و دست‌کم یک جدول قابل مشاهده نمایش داده می‌شوند. اتصال داخلی Default عمداً حذف شده است.</p>
+        </div>
+    }
+    else if (_focusedTableIds.Count == 0 && !_graphInitialized)
+    {
+        <div class="dbi-empty">
+            <strong>برای نمایش نمودار، یک یا چند جدول انتخاب کنید.</strong>
+            <p>روی PK بزنید تا فرزندان در سمت راست، و روی FK بزنید تا والدها در سمت چپ اضافه شوند.</p>
+        </div>
+    }
+    else
+    {
+        <DatabaseGraphView @key="_diagramKey" Nodes="@_graphNodes" Edges="@_graphEdges"
+                           SelectedDesign="@_design" MenuTableId="@_menuTableId" MenuIsPrimary="@(_pendingDirection == RelationDirection.Children)"
+                           OnRestoreGraph="RestoreGraph" OnReplaceGraph="ReplaceGraph"
+                           OnSelect="InspectTableAsync" OnPrimary="ExpandChildrenAsync"
+                           OnForeign="ExpandParentsAsync" OnCloseDetails="CloseDesign" OnCloseForeign="CloseForeignMenu"
+                           OnQueryExport="GenerateQueryAsync">
+            <ModalContent>
+
+                @if (_menuTableId.HasValue)
+                {
+                    <div class="dbi-fk-menu cenops-liquid-glass" role="dialog" aria-label="انتخاب ارتباط‌های جدول">
+                        <h3>انتخاب ارتباط‌های @(_pendingDirection == RelationDirection.Parents ? "FK" : "PK")</h3>
+                        <small>@(_pendingDirection == RelationDirection.Parents
+                            ? "جداول والد در سمت چپ جدول انتخاب‌شده ظاهر می‌شوند."
+                            : "جداول فرزند در سمت راست جدول انتخاب‌شده ظاهر می‌شوند.")</small>
+                        <label class="dbi-select-all">
+                            <input type="checkbox" checked="@(_chosenFks.Count == _pendingFks.Count && _pendingFks.Count > 0)" @onchange="SelectAllFks" />
+                            <strong>انتخاب همه</strong>
+                        </label>
+                        <div class="dbi-fk-options">
+                            @foreach (var fk in _pendingFks)
+                            {
+                                <label @key="fk.Id">
+                                    <input type="checkbox" checked="@_chosenFks.Contains(fk.Id)" @onchange="e => ToggleFk(fk.Id, e)" />
+                                    <span dir="ltr"><strong>@(_pendingDirection == RelationDirection.Parents ? fk.Parent.FullName : fk.Child.FullName)</strong><br/><small>@string.Join(", ", fk.Columns.Select(x => x.ChildColumn + " → " + x.ParentColumn))</small></span>
+                                </label>
+                            }
+                        </div>
+                        <div class="dbi-fk-actions">
+                            <button type="button" @onclick="CloseForeignMenu">انصراف</button>
+                            <button type="button" class="primary" disabled="@(_chosenFks.Count == 0 || _busy)" @onclick="ApplyForeignMenuAsync">@(_pendingDirection == RelationDirection.Parents ? "نمایش والدها" : "نمایش فرزندان") (@_chosenFks.Count)</button>
+                        </div>
+                    </div>
+                }
+            </ModalContent>
+        </DatabaseGraphView>
+        <footer class="dbi-footer">
+            <span>@_graphNodes.Count جدول · @_graphEdges.Count ارتباط</span>
+            <span>Ctrl + A: انتخاب همه · Ctrl + کشیدن: انتخاب گروهی · حذف: × · Backspace: حذف انتخاب‌ها · Ctrl + حذف: فرزندان مستقیم PK · Shift + حذف: والدهای مستقیم FK · Ctrl + Z / Y: بازگردانی / انجام دوباره</span>
+        </footer>
+    }
+    @if (_busy) { <div class="dbi-loading" role="status">در حال خواندن ساختار پایگاه داده…</div> }
+</div>
+
+@* Render query dialogs in the application overlay layer, never inside the clipped graph. *@
+<SectionContent SectionName="cenops-global-overlays">
+                <AppModal IsOpen="@(_querySql is not null)" Title="@_queryTitle" Description="کوئری پیش‌نمایش است و اجرا نمی‌شود. تمام ستون‌ها به‌صورت صریح فهرست شده‌اند."
+                          MaxWidth="min(880px, 94vw)" CssClass="dbi-query-modal" OnClose="CloseQueryPreview">
+                    <div class="dbi-query-preview">
+                        <pre dir="ltr"><code>@_querySql</code></pre>
+                        <div class="dbi-query-preview-actions">
+                            <button type="button" @onclick="CloseQueryPreview">بستن</button>
+                            <button type="button" @onclick="CopyQueryAsync">کپی کوئری</button>
+                            <button class="primary" type="button" @onclick="OpenInCleanCodeAsync">باز کردن در پاک‌سازی کد</button>
+                        </div>
+                    </div>
+                </AppModal>
+</SectionContent>
+
+@code {
+    private const int MaxGraphTables = 400;
+    private string _diagramKey => _source;
+    private IReadOnlyList<AppDropdownOption> SourceOptions => _sources
+        .Select(x => new AppDropdownOption(x.Key, $"{x.Key} · {x.Database} ({x.Server})")).ToArray();
+    // Relationship targets can be discoverable even when the base table listing omits
+    // them. Keep those verified metadata endpoints selectable after an expansion/removal.
+    private IEnumerable<DatabaseTable> SelectableTables => _tables
+        .Concat(_discoveredTables.Values).DistinctBy(table => table.Id);
+    private IReadOnlyList<AppDropdownOption> TableOptions => SelectableTables
+        .Select(x => new AppDropdownOption(x.Id.ToString(), x.FullName)).ToArray();
+    private IReadOnlySet<string> FocusedValues => _focusedTableIds.Select(x => x.ToString()).ToHashSet();
+    private IReadOnlyList<DatabaseSource> _sources = [];
+    private IReadOnlyList<DatabaseTable> _tables = [];
+    private string _source = "";
+    private readonly HashSet<int> _focusedTableIds = [];
+    private bool _busy;
+    private bool _graphInitialized; // Keep workspace mounted after last removal so Undo still works.
+    private DatabaseTableDesign? _design;
+    private readonly Dictionary<int, DatabaseGraphNode> _vertices = [];
+    private readonly Dictionary<int, DatabaseTable> _discoveredTables = [];
+    private readonly Dictionary<int, DatabaseGraphEdge> _relationships = [];
+    // Metadata is cached per table for this connection; completeness is always derived from visible edges.
+    private readonly Dictionary<int, IReadOnlyList<DatabaseForeignKey>> _relationCatalog = [];
+    private IReadOnlyList<DatabaseGraphNode> _graphNodes = [];
+    private IReadOnlyList<DatabaseGraphEdge> _graphEdges = [];
+    private enum RelationDirection { Parents, Children }
+    private RelationDirection _pendingDirection;
+    private int? _menuTableId;
+    private IReadOnlyList<DatabaseForeignKey> _pendingFks = [];
+    private readonly HashSet<int> _chosenFks = [];
+    private readonly Dictionary<int, DatabaseTableDesign> _designCatalog = [];
+    private string? _querySql;
+    private string _queryTitle = "خروجی SQL";
+
+    protected override Task OnInitializedAsync() => RefreshSourcesAsync();
+
+    private async Task PerformAsync(Func<System.Security.Claims.ClaimsPrincipal, Task> operation)
+    {
+        if (_busy) return;
+        _busy = true;
+        await InvokeAsync(StateHasChanged);
+        try
+        {
+            var auth = await Authentication.GetAuthenticationStateAsync();
+            await operation(auth.User);
+        }
+        catch (SqlException) { Notices.Error("خواندن ساختار پایگاه داده انجام نشد. اتصال، سطح دسترسی و دسترسی شبکه را بررسی کنید."); }
+        catch (Exception error) when (error is InvalidOperationException or UnauthorizedAccessException or ArgumentException)
+        { Notices.Error(error.Message); }
+        finally { _busy = false; }
+    }
+
+    private Task RefreshSourcesAsync() => PerformAsync(async actor =>
+    {
+        _sources = await Inspector.GetAvailableSourcesAsync(actor);
+        if (!string.IsNullOrWhiteSpace(_source) && !_sources.Any(x => x.Key == _source))
+        { _source = ""; _tables = []; ResetGraph(); }
+    });
+
+    private Task SelectSourceAsync(string selected)
+    {
+        _source = selected;
+        _tables = []; ResetGraph();
+        if (string.IsNullOrWhiteSpace(selected)) return Task.CompletedTask;
+        return PerformAsync(async actor =>
+        {
+            var tables = await Inspector.GetTablesAsync(actor, selected);
+            if (_source == selected) _tables = tables;
+        });
+    }
+
+    // The dropdown represents the *actual graph membership*, including PK/FK expansions.
+    // Removing a check removes exactly that table and its incident relationships;
+    // other discovered tables remain until explicitly removed.
+    private Task SelectFocusedTablesAsync(IReadOnlyList<string> selected)
+    {
+        if (_busy) return Task.CompletedTask;
+        var available = SelectableTables.ToDictionary(table => table.Id);
+        var ids = selected.Select(value => int.TryParse(value, out var id) ? id : 0)
+            .Where(available.ContainsKey).Distinct().ToArray();
+        if (ids.Length > MaxGraphTables)
+            Notices.Info($"حداکثر {MaxGraphTables} جدول می‌توان به نمودار اضافه کرد.");
+
+        var desired = ids.Take(MaxGraphTables).ToHashSet();
+        if (_vertices.Keys.ToHashSet().SetEquals(desired)) return Task.CompletedTask;
+        var inserted = desired.Where(id => !_vertices.ContainsKey(id)).ToArray();
+
+        // Deletions don't require SQL metadata. Newly inserted nodes do: discover
+        // their FK endpoints before changing the graph to keep updates atomic.
+        if (inserted.Length == 0)
+        {
+            UpdateFocusedGraph(desired, available, []);
+            return Task.CompletedTask;
+        }
+        return PerformAsync(async actor =>
+        {
+            var relations = await LoadRelationsForNodesAsync(actor, inserted);
+            UpdateFocusedGraph(desired, available, relations);
+        });
+    }
+
+    private void UpdateFocusedGraph(IReadOnlySet<int> desired, IReadOnlyDictionary<int, DatabaseTable> available,
+        IReadOnlyList<DatabaseForeignKey> insertedRelations)
+    {
+        var inserted = desired.Where(id => !_vertices.ContainsKey(id)).ToHashSet();
+        foreach (var id in _vertices.Keys.Where(id => !desired.Contains(id)).ToArray()) _vertices.Remove(id);
+        foreach (var id in inserted)
+        {
+            var table = available[id];
+            _vertices.Add(id, new DatabaseGraphNode(table.Id, table.Schema, table.Name, 0));
+        }
+        RemoveDanglingRelations();
+        ConnectInsertedNodes(inserted, insertedRelations);
+        CloseForeignMenu(); _design = null;
+        RefreshGraph();
+    }
+
+    // An FK line is visible whenever both endpoints are present. Query metadata
+    // for newly added nodes, not the entire diagram on each edit. The indexed
+    // per-table cache also serves PK/FK expansion and completeness indicators.
+    private async Task<IReadOnlyList<DatabaseForeignKey>> LoadRelationsForNodesAsync(
+        System.Security.Claims.ClaimsPrincipal actor, IReadOnlyCollection<int> nodeIds)
+    {
+        var missing = nodeIds.Where(id => !_relationCatalog.ContainsKey(id)).Distinct().ToArray();
+        if (missing.Length > 6)
+        {
+            // One round trip is cheaper than issuing dozens of independent FK reads.
+            var fullCatalog = await Inspector.GetAllRelationsAsync(actor, _source);
+            var byTable = missing.ToDictionary(id => id, _ => new List<DatabaseForeignKey>());
+            foreach (var fk in fullCatalog)
+            {
+                if (byTable.TryGetValue(fk.Child.Id, out var childRelations)) childRelations.Add(fk);
+                if (fk.Parent.Id != fk.Child.Id && byTable.TryGetValue(fk.Parent.Id, out var parentRelations))
+                    parentRelations.Add(fk);
+            }
+            foreach (var (id, relations) in byTable)
+                _relationCatalog[id] = relations;
+        }
+        else
+        {
+            foreach (var id in missing)
+                _relationCatalog[id] = await Inspector.GetRelationsAsync(actor, _source, id);
+        }
+        return nodeIds.SelectMany(id => _relationCatalog[id]).DistinctBy(fk => fk.Id).ToArray();
+    }
+
+    private void ConnectInsertedNodes(IReadOnlySet<int> inserted, IEnumerable<DatabaseForeignKey> relations)
+    {
+        foreach (var fk in relations)
+        {
+            // Preserve deliberately pruned connections between old nodes.
+            if (!inserted.Contains(fk.Child.Id) && !inserted.Contains(fk.Parent.Id)) continue;
+            if (!_vertices.ContainsKey(fk.Child.Id) || !_vertices.ContainsKey(fk.Parent.Id)) continue;
+            _discoveredTables[fk.Child.Id] = fk.Child;
+            _discoveredTables[fk.Parent.Id] = fk.Parent;
+            _relationships[fk.Id] = ToGraphEdge(fk);
+        }
+    }
+
+    private static DatabaseGraphEdge ToGraphEdge(DatabaseForeignKey fk) =>
+        new(fk.Id, fk.Child.Id, fk.Parent.Id, fk.Name,
+            string.Join(", ", fk.Columns.Select(column => column.ChildColumn + " → " + column.ParentColumn)));
+
+    private void RemoveDanglingRelations()
+    {
+        foreach (var id in _relationships.Where(pair =>
+                     !_vertices.ContainsKey(pair.Value.ChildId) || !_vertices.ContainsKey(pair.Value.ParentId))
+                     .Select(pair => pair.Key).ToArray()) _relationships.Remove(id);
+    }
+
+    private void ResetGraph()
+    {
+        _focusedTableIds.Clear(); _vertices.Clear(); _relationships.Clear(); _relationCatalog.Clear(); _designCatalog.Clear(); _discoveredTables.Clear();
+        _querySql = null;
+        _graphNodes = []; _graphEdges = []; _graphInitialized = false; _design = null; CloseForeignMenu();
+    }
+    private void RefreshGraph()
+    {
+        if (_vertices.Count > 0) _graphInitialized = true;
+        // One source of truth: every displayed node is checked in the focused-table picker.
+        _focusedTableIds.Clear();
+        foreach (var id in _vertices.Keys) _focusedTableIds.Add(id);
+        _graphNodes = _vertices.Values.Select(x => x with
+        {
+            PkLoaded = AreAllRelationsVisible(x.Id, RelationDirection.Children),
+            FkLoaded = AreAllRelationsVisible(x.Id, RelationDirection.Parents)
+        }).ToArray();
+        _graphEdges = _relationships.Values.ToArray();
+    }
+    private Task InspectTableAsync(int tableId) => PerformAsync(async actor =>
+    {
+        if (!_vertices.ContainsKey(tableId)) return;
+        CloseForeignMenu();
+        if (!_designCatalog.TryGetValue(tableId, out var design))
+            _designCatalog[tableId] = design = await Inspector.GetDesignAsync(actor, _source, tableId);
+        _design = design;
+    });
+    private Task ExpandChildrenAsync(int tableId) => ExpandRelationsAsync(tableId, RelationDirection.Children);
+    private Task ExpandParentsAsync(int tableId) => ExpandRelationsAsync(tableId, RelationDirection.Parents);
+
+    // An expansion is complete only when *every* declared relationship has both endpoints
+    // and its line in the visible graph. Attempting a partial expansion never marks it complete.
+    private static bool MatchesDirection(DatabaseForeignKey relation, int tableId, RelationDirection direction) =>
+        direction == RelationDirection.Parents ? relation.Child.Id == tableId : relation.Parent.Id == tableId;
+
+    private bool IsRelationVisible(DatabaseForeignKey relation) =>
+        _vertices.ContainsKey(relation.Child.Id) && _vertices.ContainsKey(relation.Parent.Id) &&
+        _relationships.ContainsKey(relation.Id);
+
+    private bool AreAllRelationsVisible(int tableId, RelationDirection direction)
+    {
+        if (!_relationCatalog.TryGetValue(tableId, out var catalog)) return false;
+        var relations = catalog.Where(relation => MatchesDirection(relation, tableId, direction)).ToArray();
+        return relations.Length > 0 && relations.All(IsRelationVisible);
+    }
+
+    private void NotifyAlreadyExpanded(RelationDirection direction) =>
+        Notices.Info(direction == RelationDirection.Parents
+            ? "تمام جدول‌ها و ارتباط‌های مرتبط با FK قبلاً به نمودار اضافه شده‌اند."
+            : "تمام جدول‌ها و ارتباط‌های مرتبط با PK قبلاً به نمودار اضافه شده‌اند.");
+
+    // PK and FK share one selection flow; a complete branch reports through the system toast.
+    private Task ExpandRelationsAsync(int tableId, RelationDirection direction)
+    {
+        if (AreAllRelationsVisible(tableId, direction))
+        {
+            CloseForeignMenu();
+            NotifyAlreadyExpanded(direction);
+            return Task.CompletedTask;
+        }
+
+        return PerformAsync(async actor =>
+        {
+            if (!_vertices.TryGetValue(tableId, out var node)) return;
+            CloseForeignMenu();
+            if (!_relationCatalog.TryGetValue(tableId, out var catalog))
+            {
+                catalog = (await Inspector.GetRelationsAsync(actor, _source, tableId)).ToArray();
+                _relationCatalog[tableId] = catalog;
+            }
+            var relations = catalog.Where(relation => MatchesDirection(relation, tableId, direction)).ToArray();
+            if (relations.Length == 0)
+            {
+                Notices.Info(direction == RelationDirection.Parents
+                    ? "جدول انتخاب‌شده هیچ foreign key ثبت‌شده‌ای ندارد."
+                    : "جدول انتخاب‌شده هیچ فرزند دارای foreign key ثبت‌شده‌ای ندارد.");
+                return;
+            }
+
+            var missing = relations.Where(relation => !IsRelationVisible(relation)).ToArray();
+            if (missing.Length == 0)
+            {
+                NotifyAlreadyExpanded(direction);
+                RefreshGraph();
+            }
+            else if (relations.Length == 1)
+            {
+                var addParents = direction == RelationDirection.Parents;
+                var incoming = PendingRelationTargets(missing, addParents);
+                var insertedCatalog = await LoadRelationsForNodesAsync(actor, incoming);
+                var inserted = AddRelations(missing, node.Level + (addParents ? -1 : 1), addParents);
+                ConnectInsertedNodes(inserted, insertedCatalog);
+                RefreshGraph();
+            }
+            else
+            {
+                // Reopening a partially expanded branch offers only still-missing relations.
+                _pendingDirection = direction;
+                _menuTableId = tableId;
+                _pendingFks = missing;
+                _chosenFks.Clear();
+            }
+        });
+    }
+    // Preload only those FK endpoints we have room to insert. Do this before
+    // mutating the diagram so a metadata error cannot leave a half-added graph.
+    private IReadOnlyList<int> PendingRelationTargets(IEnumerable<DatabaseForeignKey> relations, bool addParents) =>
+        relations.Select(fk => addParents ? fk.Parent.Id : fk.Child.Id)
+            .Distinct().Where(id => !_vertices.ContainsKey(id))
+            .Take(Math.Max(0, MaxGraphTables - _vertices.Count)).ToArray();
+
+    private IReadOnlySet<int> AddRelations(IEnumerable<DatabaseForeignKey> relations, int level, bool addParents)
+    {
+        var inserted = new HashSet<int>();
+        var omitted = 0;
+        foreach (var fk in relations)
+        {
+            var target = addParents ? fk.Parent : fk.Child;
+            _discoveredTables[fk.Child.Id] = fk.Child;
+            _discoveredTables[fk.Parent.Id] = fk.Parent;
+            // Expand a verified FK endpoint. Keep a single vertex per SQL object_id, including cycles.
+            if (!_vertices.ContainsKey(target.Id))
+            {
+                if (_vertices.Count >= MaxGraphTables) { omitted++; continue; }
+                _vertices.Add(target.Id, new(target.Id, target.Schema, target.Name, level));
+                inserted.Add(target.Id);
+            }
+            if (_vertices.ContainsKey(fk.Child.Id) && _vertices.ContainsKey(fk.Parent.Id))
+                _relationships[fk.Id] = ToGraphEdge(fk);
+        }
+        if (omitted > 0) Notices.Info($"نمودار به سقف {MaxGraphTables} جدول رسید؛ {omitted} جدول جدید اضافه نشد.");
+        return inserted;
+    }
+    private Task ApplyForeignMenuAsync()
+    {
+        var id = _menuTableId;
+        if (id is not int nodeId || !_vertices.TryGetValue(nodeId, out var node)) return Task.CompletedTask;
+        var chosen = _pendingFks.Where(x => _chosenFks.Contains(x.Id)).ToArray();
+        var level = node.Level + (_pendingDirection == RelationDirection.Parents ? -1 : 1);
+        var addParents = _pendingDirection == RelationDirection.Parents;
+        return PerformAsync(async actor =>
+        {
+            var incoming = PendingRelationTargets(chosen, addParents);
+            var catalog = await LoadRelationsForNodesAsync(actor, incoming);
+            var inserted = AddRelations(chosen, level, addParents);
+            ConnectInsertedNodes(inserted, catalog);
+            CloseForeignMenu(); RefreshGraph();
+        });
+    }
+    private void SelectAllFks(ChangeEventArgs change)
+    {
+        _chosenFks.Clear();
+        if (change.Value is true || string.Equals(change.Value?.ToString(), "true", StringComparison.OrdinalIgnoreCase))
+            foreach (var fk in _pendingFks) _chosenFks.Add(fk.Id);
+    }
+    private void ToggleFk(int id, ChangeEventArgs change)
+    {
+        if (change.Value is true || string.Equals(change.Value?.ToString(), "true", StringComparison.OrdinalIgnoreCase)) _chosenFks.Add(id);
+        else _chosenFks.Remove(id);
+    }
+    private void CloseForeignMenu() { _menuTableId = null; _pendingFks = []; _chosenFks.Clear(); }
+
+    // User removals and history replay use the same validated topology transaction.
+    // No SQL metadata is deleted: only nodes/edges in the diagram are changed.
+    private void ReplaceGraph(DatabaseGraphSnapshot snapshot) => ApplyGraphSnapshot(snapshot);
+    private void RestoreGraph(DatabaseGraphSnapshot snapshot) => ApplyGraphSnapshot(snapshot);
+
+    private void ApplyGraphSnapshot(DatabaseGraphSnapshot snapshot)
+    {
+        if (_busy) return;
+        var allowed = SelectableTables.Select(table => table.Id).ToHashSet();
+        if (snapshot.Nodes.Count > MaxGraphTables ||
+            snapshot.Nodes.Select(node => node.Id).Distinct().Count() != snapshot.Nodes.Count ||
+            snapshot.Nodes.Any(node => !allowed.Contains(node.Id))) return;
+        var ids = snapshot.Nodes.Select(node => node.Id).ToHashSet();
+        if (snapshot.Edges.Any(edge => !ids.Contains(edge.ChildId) || !ids.Contains(edge.ParentId)) ||
+            snapshot.Edges.Select(edge => edge.Id).Distinct().Count() != snapshot.Edges.Count) return;
+
+        _vertices.Clear(); _relationships.Clear();
+        foreach (var node in snapshot.Nodes) _vertices[node.Id] = node;
+        foreach (var edge in snapshot.Edges) _relationships[edge.Id] = edge;
+        CloseForeignMenu(); _design = null;
+        RefreshGraph();
+    }
+    private void CloseDesign() => _design = null;
+
+    // Export is metadata-only. It never executes the SQL or sends credentials to the browser.
+    private Task GenerateQueryAsync(DatabaseQueryExportRequest request) => PerformAsync(async actor =>
+    {
+        if (request.Mode is not ("select" or "join") || string.IsNullOrWhiteSpace(_source)) return;
+        var selectedIds = request.TableIds.Distinct().ToArray();
+        if (selectedIds.Length == 0 || selectedIds.Any(id => !_vertices.ContainsKey(id)))
+        {
+            Notices.Error("ابتدا جدول‌های موردنظر را در نمودار انتخاب کنید.");
+            return;
+        }
+
+        var module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/database-query-export.js?v=2.57");
+        try
+        {
+            // Unlike the diagram, SQL join routing searches the entire FK catalog.
+            // Intermediates may be neither displayed nor selected by the user.
+            IReadOnlyList<int> neededIds = selectedIds;
+            IReadOnlyList<DatabaseForeignKey> chosenRelations = [];
+            if (request.Mode == "join")
+            {
+                var catalog = await Inspector.GetAllRelationsAsync(actor, _source);
+                var plan = await module.InvokeAsync<DatabaseJoinPlan>("planJoinPaths", selectedIds, catalog);
+                if (plan is null || plan.TableIds.Count > MaxGraphTables ||
+                    selectedIds.Any(id => !plan.TableIds.Contains(id)))
+                    throw new InvalidOperationException("مسیر JOIN بیش از اندازه بزرگ است یا ساختار ارتباط‌ها معتبر نیست.");
+                var relationshipIds = plan.RelationshipIds.ToHashSet();
+                chosenRelations = catalog.Where(fk => relationshipIds.Contains(fk.Id)).ToArray();
+                if (chosenRelations.Count != relationshipIds.Count)
+                    throw new InvalidOperationException("اطلاعات برخی ارتباط‌های انتخاب‌شده موجود نیست.");
+                neededIds = plan.TableIds;
+            }
+
+            var designs = new List<DatabaseTableDesign>(neededIds.Count);
+            foreach (var id in neededIds)
+            {
+                if (!_designCatalog.TryGetValue(id, out var design))
+                    _designCatalog[id] = design = await Inspector.GetDesignAsync(actor, _source, id);
+                designs.Add(design);
+            }
+            _querySql = await module.InvokeAsync<string>("buildSqlQueries", designs, chosenRelations,
+                request.Mode, selectedIds);
+            _queryTitle = request.Mode == "join" ? "خروجی SQL · INNER JOIN" : "خروجی SQL · SELECT";
+        }
+        catch (JSException)
+        {
+            Notices.Error("ساخت خروجی SQL انجام نشد. ستون‌ها و ارتباط‌های جدول را بررسی کنید.");
+        }
+        finally { await module.DisposeAsync(); }
+    });
+
+    private void CloseQueryPreview() => _querySql = null;
+    private async Task CopyQueryAsync()
+    {
+        if (string.IsNullOrEmpty(_querySql)) return;
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", _querySql);
+            Notices.Info("کوئری در کلیپ‌بورد کپی شد.");
+        }
+        catch (JSException) { Notices.Error("دسترسی به کلیپ‌بورد ممکن نیست. از محیط امن HTTPS استفاده کنید."); }
+    }
+    private async Task OpenInCleanCodeAsync()
+    {
+        if (string.IsNullOrEmpty(_querySql)) return;
+        try
+        {
+            var token = await JS.InvokeAsync<string>("cenopsSnippetDraft.store", "sql", _querySql, "sql", "code");
+            Navigation.NavigateTo($"/tools/clean-code?draft={Uri.EscapeDataString(token)}");
+        }
+        catch (JSException) { Notices.Error("انتقال کوئری به ابزار پاک‌سازی کد انجام نشد."); }
+    }
+
+}

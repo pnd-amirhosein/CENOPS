@@ -1,0 +1,140 @@
+{
+  "format": 1,
+  "restore": {
+    "C:\\Repos\\NTSW_CENOPS_Glasswork_2_67_BuildFix\\NTSW_CENOPS_Glasswork_2_67\\src\\NTSW_CENOPS.Application\\NTSW_CENOPS.Application.csproj": {}
+  },
+  "projects": {
+    "C:\\Repos\\NTSW_CENOPS_Glasswork_2_67_BuildFix\\NTSW_CENOPS_Glasswork_2_67\\src\\NTSW_CENOPS.Application\\NTSW_CENOPS.Application.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "C:\\Repos\\NTSW_CENOPS_Glasswork_2_67_BuildFix\\NTSW_CENOPS_Glasswork_2_67\\src\\NTSW_CENOPS.Application\\NTSW_CENOPS.Application.csproj",
+        "projectName": "NTSW_CENOPS.Application",
+        "projectPath": "C:\\Repos\\NTSW_CENOPS_Glasswork_2_67_BuildFix\\NTSW_CENOPS_Glasswork_2_67\\src\\NTSW_CENOPS.Application\\NTSW_CENOPS.Application.csproj",
+        "packagesPath": "C:\\Users\\mardani.ah\\.nuget\\packages\\",
+        "outputPath": "C:\\Repos\\NTSW_CENOPS_Glasswork_2_67_BuildFix\\NTSW_CENOPS_Glasswork_2_67\\src\\NTSW_CENOPS.Application\\obj\\",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "C:\\Users\\mardani.ah\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://package-mirror.liara.ir/repository/nuget/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "C:\\Repos\\NTSW_CENOPS_Glasswork_2_67_BuildFix\\NTSW_CENOPS_Glasswork_2_67\\src\\NTSW_CENOPS.Domain\\NTSW_CENOPS.Domain.csproj": {
+                "projectPath": "C:\\Repos\\NTSW_CENOPS_Glasswork_2_67_BuildFix\\NTSW_CENOPS_Glasswork_2_67\\src\\NTSW_CENOPS.Domain\\NTSW_CENOPS.Domain.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "9.0.300"
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "Microsoft.Extensions.DependencyInjection.Abstractions": {
+              "target": "Package",
+              "version": "[8.0.0, )"
+            },
+            "Microsoft.Extensions.Logging.Abstractions": {
+              "target": "Package",
+              "version": "[8.0.0, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.304/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "C:\\Repos\\NTSW_CENOPS_Glasswork_2_67_BuildFix\\NTSW_CENOPS_Glasswork_2_67\\src\\NTSW_CENOPS.Domain\\NTSW_CENOPS.Domain.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "C:\\Repos\\NTSW_CENOPS_Glasswork_2_67_BuildFix\\NTSW_CENOPS_Glasswork_2_67\\src\\NTSW_CENOPS.Domain\\NTSW_CENOPS.Domain.csproj",
+        "projectName": "NTSW_CENOPS.Domain",
+        "projectPath": "C:\\Repos\\NTSW_CENOPS_Glasswork_2_67_BuildFix\\NTSW_CENOPS_Glasswork_2_67\\src\\NTSW_CENOPS.Domain\\NTSW_CENOPS.Domain.csproj",
+        "packagesPath": "C:\\Users\\mardani.ah\\.nuget\\packages\\",
+        "outputPath": "C:\\Repos\\NTSW_CENOPS_Glasswork_2_67_BuildFix\\NTSW_CENOPS_Glasswork_2_67\\src\\NTSW_CENOPS.Domain\\obj\\",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "C:\\Users\\mardani.ah\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://package-mirror.liara.ir/repository/nuget/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "9.0.300"
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.304/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}

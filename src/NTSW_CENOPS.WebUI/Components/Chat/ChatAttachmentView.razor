@@ -1,0 +1,52 @@
+@using NTSW_CENOPS.Application.Files
+@using NTSW_CENOPS.Components.Files
+@inject IAppFileGateway FileGateway
+
+@if (_file is not null)
+{
+    <div class="chat-inline-attachment" dir="rtl">
+        @if (IsImage)
+        {
+            <button type="button" class="chat-inline-media" title="نمایش پیوست" @onclick="OpenPreviewAsync">
+                <img src="@ContentUrl" alt="@_file.FileName" loading="lazy" />
+            </button>
+        }
+        else if (IsVideo)
+        {
+            <video class="chat-inline-video" controls preload="metadata" src="@ContentUrl"></video>
+        }
+        else
+        {
+            <button type="button" class="chat-inline-document" @onclick="OpenPreviewAsync" title="مشاهده فایل">
+                <span class="chat-inline-document-icon">@Extension</span>
+                <span class="chat-inline-document-name">@_file.FileName</span>
+                <span class="chat-inline-document-size">@SizeLabel(_file.Length)</span>
+            </button>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public Guid FileId { get; set; }
+    [Parameter] public long MessageId { get; set; }
+    private AppFileInfo? _file;
+    [Parameter] public EventCallback<AppFileInfo> OnPreviewRequest { get; set; }
+    private Guid _loadedId;
+    private async Task OpenPreviewAsync()
+    {
+        if (_file is not null) await OnPreviewRequest.InvokeAsync(_file);
+    }
+    private string Extension => _file is null ? "FILE" : Path.GetExtension(_file.FileName).TrimStart('.').ToUpperInvariant();
+    private bool IsImage => Extension is "PNG" or "JPG" or "JPEG" or "GIF" or "WEBP";
+    private bool IsVideo => Extension is "MP4" or "WEBM";
+    private string ContentUrl => $"/api/files/{FileId:D}/content?messageId={MessageId}";
+    private string DownloadUrl => $"/api/files/{FileId:D}/download?messageId={MessageId}";
+    private static string SizeLabel(long bytes) => bytes < 1024 ? $"{bytes} B" : bytes < 1024 * 1024 ? $"{bytes / 1024d:0.#} KB" : $"{bytes / 1048576d:0.#} MB";
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_loadedId == FileId) return;
+        _loadedId = FileId;
+        _file = await FileGateway.FindAsync(FileId);
+
+    }
+}

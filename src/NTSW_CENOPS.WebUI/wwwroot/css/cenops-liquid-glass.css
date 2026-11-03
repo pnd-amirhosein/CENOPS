@@ -1,0 +1,77 @@
+/*
+ * CENOPS Liquid Glass — one outer-surface material for opted-in components.
+ * Component styles own geometry, positioning, animation and child controls.
+ * This stylesheet owns the entire *surface*: fill, edge, radius, shadows
+ * and backdrop sampling. Never duplicate those properties on opted-in boxes.
+ *
+ * .cenops-liquid-glass               regular menus / floating panels
+ * .cenops-liquid-glass--shell        topbar / sidebar (backdrop on a layer)
+ *
+ * Deliberate opt-outs: AppDropdown, Jalali date picker, DataTable filters.
+ */
+:root {
+    --cenops-glass-fill: rgba(219, 237, 242, .43);
+    --cenops-glass-edge: 1px solid rgba(255, 255, 255, .92);
+    --cenops-glass-radius: 21px;
+    --cenops-glass-blur: blur(24px) saturate(155%);
+    --cenops-glass-shadow:
+        0 2px 3px rgba(42, 69, 91, .045),
+        0 14px 30px rgba(36, 74, 92, .105),
+        0 34px 64px rgba(35, 81, 98, .075),
+        0 0 0 .5px rgba(49, 105, 132, .10);
+}
+
+.cenops-liquid-glass {
+    border: var(--cenops-glass-edge);
+    border-radius: var(--cenops-glass-radius);
+    background: var(--cenops-glass-fill);
+    box-shadow: var(--cenops-glass-shadow);
+    -webkit-backdrop-filter: var(--cenops-glass-blur);
+    backdrop-filter: var(--cenops-glass-blur);
+    background-clip: padding-box;
+}
+
+/* Backdrop-filter on a layout shell would trap position:fixed overlay children.
+ * Its optically identical before-layer leaves content and dialogs unfiltered.
+ * Both shell and popovers read exactly the same material variables above. */
+.cenops-liquid-glass.cenops-liquid-glass--shell {
+    isolation: isolate;
+    background: transparent;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+}
+.cenops-liquid-glass--shell::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    border-radius: inherit;
+    background: var(--cenops-glass-fill);
+    -webkit-backdrop-filter: var(--cenops-glass-blur);
+    backdrop-filter: var(--cenops-glass-blur);
+}
+.app-shell .cenops-liquid-glass--shell.shell-sidebar > .sidebar-frame {
+    position: relative;
+    z-index: 1;
+}
+/* Skyline already sits above the shell layer in operations-shell.css. */
+
+@media (prefers-reduced-transparency: reduce) {
+    :root { --cenops-glass-fill: rgba(244, 250, 252, .97); }
+    .cenops-liquid-glass,
+    .cenops-liquid-glass--shell::before {
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+    }
+}
+@media (forced-colors: active) {
+    .cenops-liquid-glass {
+        background: Canvas;
+        border-color: CanvasText;
+        box-shadow: none;
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+    }
+    .cenops-liquid-glass--shell::before { display: none; }
+}

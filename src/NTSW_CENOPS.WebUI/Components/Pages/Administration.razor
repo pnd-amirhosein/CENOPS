@@ -1,0 +1,432 @@
+@using NTSW_CENOPS.Components.Common.Dates
+@page "/settings"
+@using NTSW_CENOPS.Application.Administration
+@using NTSW_CENOPS.Application.Access
+@using NTSW_CENOPS.Application.Jobs
+@using NTSW_CENOPS.Components.Notes
+@using NTSW_CENOPS.Components.Common.Tabs
+@using NTSW_CENOPS.Components.Common.Selection
+@using NTSW_CENOPS.Components.Common
+@using NTSW_CENOPS.Domain.Authorization
+@attribute [AccessAuthorize(AccessKeys.Settings)]
+@rendermode InteractiveServer
+
+<PageTitle>مدیریت سیستم</PageTitle>
+
+<div class="administration-page" dir="rtl">
+    
+    <div class="administration-tabs">
+        <AppTabs Items="_tabs"
+                 @bind-ActiveKey="_activeTab" />
+    </div>
+
+    <div class="administration-table" aria-live="polite">
+        @if (_activeTab == RolesTab)
+        {
+            <DataTableToolbar @key="RolesToolbarKey" T="AdminRoleModel"
+                              Controller="_rolesController"
+                              Columns="_roleColumns"
+                              ActiveFilters="_roleFilters"
+                              FiltersChanged="OnRoleFiltersChanged" />
+
+            <DataTable @key="RolesTableKey" T="AdminRoleModel"
+                       Controller="_rolesController"
+                       Items="_filteredRoles"
+                       Columns="_roleColumns">
+                <RowContextMenu Context="role">
+                    @if (_canManageAccess)
+                    {
+                        <button type="button" class="role-editor-menu-action" @onclick="() => OpenAccessEditorAsync(role)">
+                            <span aria-hidden="true">◈</span> مدیریت دسترسی‌های نقش
+                        </button>
+                    }
+                    @if (CanChangeRole(role))
+                    {
+                        <button type="button" class="role-editor-menu-action" @onclick="() => OpenRoleUsersEditorAsync(role)">
+                            <span aria-hidden="true">♙</span> مدیریت کاربران نقش
+                        </button>
+                    }
+                </RowContextMenu>
+            </DataTable>
+        }
+        else if (_activeTab == UsersTab)
+        {
+            <DataTableToolbar @key="UsersToolbarKey" T="AdminUserModel"
+                              Controller="_usersController"
+                              Columns="_userColumns"
+                              ActiveFilters="_userFilters"
+                              FiltersChanged="OnUserFiltersChanged" />
+
+            <DataTable @key="UsersTableKey" T="AdminUserModel"
+                       Controller="_usersController"
+                       Items="_filteredUsers"
+                       Columns="_userColumns">
+                <RowContextMenu Context="user">
+                    <button type="button" class="role-editor-menu-action" @onclick="() => OpenRoleEditor(user)">
+                        <span aria-hidden="true">✦</span> ویرایش نقش‌های کاربر
+                    </button>
+                </RowContextMenu>
+            </DataTable>
+        }
+        else if (_activeTab == JobsTab && _canViewJobs)
+        {
+            @if (_canManageJobs)
+            {
+                <DataTableToolbar T="AutomatedJobModel" Controller="_jobsController"
+                                  Columns="_jobColumns" ActiveFilters="_jobFilters"
+                                  FiltersChanged="OnJobFiltersChanged" />
+            }
+            else
+            {
+                <p class="jobs-readonly-note">مجوز مشاهده دارید؛ ویرایش تنظیمات مجاز نیست.</p>
+            }
+            <DataTable T="AutomatedJobModel" Controller="_jobsController" Items="_filteredJobs"
+                       Columns="_jobColumns">
+                <RowContextMenu Context="job">
+                    <button type="button" class="jobs-row-menu-action" @onclick="() => OpenJobSql(job)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 7-5 5 5 5m8-10 5 5-5 5M14 5l-4 14"/></svg>
+                        مقدار SQL کار
+                    </button>
+                    <button type="button" class="jobs-row-menu-action" @onclick="() => OpenJobHistoryAsync(job)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2M3 5v4h4"/></svg>
+                        تاریخچه اجرا
+                    </button>
+                    @if (_canTestJobs)
+                    {
+                        <button type="button" class="jobs-row-menu-action" @onclick="() => OpenJobTestAsync(job)">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 5 11 7-11 7V5Z"/><circle cx="12" cy="12" r="10"/></svg>
+                            اجرای آزمایشی
+                        </button>
+                    }
+                </RowContextMenu>
+            </DataTable>
+            <p class="jobs-table-hint">تناوب از ساعت ۰۰:۰۰ منطقهٔ زمانی تنظیم‌شده محاسبه می‌شود.
+                @if (_jobSources.Count > 0)
+                {
+                    <span>پایگاه‌های مجاز: @string.Join("، ", _jobSources.Select(x => x.DisplayName))</span>
+                }
+                else
+                {
+                    <strong>هیچ منبع داده‌ای در تنظیمات Jobs:SourceConnectionNames تعریف نشده است.</strong>
+                }
+            </p>
+        }
+        else if (_activeTab == AccessTab && _canManageAccess)
+        {
+            <DataTableToolbar @key="AccessToolbarKey" T="AccessModel"
+                              Controller="_accessController"
+                              Columns="_accessColumns"
+                              ActiveFilters="_accessFilters"
+                              FiltersChanged="OnAccessFiltersChanged">
+                <ToolbarContent>
+                    <button type="button" class="access-help-trigger" @onclick="() => _showAccessGuide = true" title="راهنمای استفاده از دسترسی‌ها">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.8-2.5 2-2.5 4"/><path d="M12 17h.01"/>
+                        </svg>
+                        راهنمای دسترسی‌ها
+                    </button>
+                </ToolbarContent>
+            </DataTableToolbar>
+            <DataTable @key="AccessTableKey" T="AccessModel"
+                       Controller="_accessController" Items="_filteredAccesses" Columns="_accessColumns">
+                <RowContextMenu Context="access">
+                    <button type="button" class="role-editor-menu-action" @onclick="() => OpenAccessRolesEditorAsync(access)">
+                        <span aria-hidden="true">◈</span> مدیریت نقش‌های این دسترسی
+                    </button>
+                </RowContextMenu>
+            </DataTable>
+        }
+    </div>
+</div>
+
+<AppModal IsOpen="@(_roleEditorUser is not null)" CloseOnBackdrop="false"
+          Title="مدیریت نقش‌های کاربر"
+          Description="برای افزودن یا برداشتن نقش، نشان آن را انتخاب کنید. تغییرات پس از ذخیره اعمال می‌شوند."
+          MaxWidth="760px" CssClass="roles-editor-modal">
+    <ChildContent>
+        @if (_roleEditorUser is not null)
+        {
+            <p class="role-editor-username"><UserHoverName DisplayName="@_roleEditorUser.DisplayName" Username="@_roleEditorUser.Username" /> <span dir="ltr">@($"@{_roleEditorUser.Username}")</span></p>
+            <div class="role-editor-grid">
+                <section class="role-editor-panel">
+                    <div class="role-editor-panel-title"><strong>همه نقش‌ها</strong><span>@AvailableRoles.Count()</span></div>
+                    <input class="role-editor-search" placeholder="جستجوی نقش‌ها..." aria-label="جستجو در همه نقش‌ها"
+                           @bind="_availableRoleSearch" @bind:event="oninput" />
+                    <div class="role-editor-badges">
+                        @foreach (var role in AvailableRoles)
+                        {
+                            <AppBadge Label="@role.Name" Tone="cyan" Disabled="@(!CanChangeRole(role))" Title="افزودن نقش"
+                                      ActionLabel="@($"افزودن نقش {role.Name}")"
+                                      OnClick="() => AssignRole(role.Id)" />
+                        }
+                        @if (!AvailableRoles.Any()) { <span class="role-editor-empty">نقشی برای افزودن وجود ندارد.</span> }
+                    </div>
+                </section>
+                <section class="role-editor-panel">
+                    <div class="role-editor-panel-title"><strong>نقش‌های کاربر</strong><span>@AssignedRoles.Count()</span></div>
+                    <input class="role-editor-search" placeholder="جستجوی نقش‌های کاربر..." aria-label="جستجو در نقش‌های کاربر"
+                           @bind="_assignedRoleSearch" @bind:event="oninput" />
+                    <div class="role-editor-badges">
+                        @foreach (var role in AssignedRoles)
+                        {
+                            <AppBadge Label="@role.Name" Tone="violet" Disabled="@(!CanChangeRole(role))" Title="برداشتن نقش"
+                                      ActionLabel="@($"برداشتن نقش {role.Name}")"
+                                      OnClick="() => UnassignRole(role.Id)" />
+                        }
+                        @if (!AssignedRoles.Any()) { <span class="role-editor-empty">نقشی اختصاص داده نشده است.</span> }
+                    </div>
+                </section>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(_roleEditorError))
+            {
+                <p class="role-editor-error" role="alert">@_roleEditorError</p>
+            }
+        }
+    </ChildContent>
+    <Footer>
+        <button type="button" class="role-editor-save" disabled="@_savingRoles" @onclick="SaveRoleAssignmentsAsync">@(_savingRoles ? "در حال ذخیره..." : "ذخیره نقش‌ها")</button>
+        <button type="button" class="role-editor-cancel" disabled="@_savingRoles" @onclick="CloseRoleEditor">انصراف</button>
+    </Footer>
+</AppModal>
+
+<AppModal IsOpen="@(_accessEditorRole is not null)" CloseOnBackdrop="false"
+          Title="مدیریت دسترسی‌های نقش"
+          Description="مجوزها را انتخاب کنید و سپس ذخیره کنید. تغییرات فوراً بر دسترسی‌های جدید کاربران اثر می‌گذارد."
+          MaxWidth="620px">
+    <ChildContent>
+        @if (_accessEditorRole is not null)
+        {
+            <p class="role-editor-username">نقش: <strong>@_accessEditorRole.Name</strong></p>
+            <input class="role-editor-search" placeholder="جستجوی مجوز..." aria-label="جستجوی دسترسی‌ها"
+                   @bind="_accessSearch" @bind:event="oninput" />
+            <AppCheckboxList Options="AccessCheckboxOptions" SelectedIds="_selectedAccessIds" DisabledIds="OwnerRequiredAccessIds"
+                             AriaLabel="دسترسی‌های نقش" OnChange="OnRoleAccessSelection" />
+            @if (!string.IsNullOrWhiteSpace(_accessEditorError))
+            {
+                <p class="role-editor-error" role="alert">@_accessEditorError</p>
+            }
+        }
+    </ChildContent>
+    <Footer>
+        <button type="button" class="role-editor-save" disabled="@_savingAccesses" @onclick="SaveRoleAccessesAsync">ذخیره دسترسی‌ها</button>
+        <button type="button" class="role-editor-cancel" disabled="@_savingAccesses" @onclick="CloseAccessEditor">انصراف</button>
+    </Footer>
+</AppModal>
+
+@* Owner: change which roles grant a specific access. Persisted only on Save. *@
+<AppModal IsOpen="@(_roleEditorAccess is not null)" CloseOnBackdrop="false"
+          Title="مدیریت نقش‌های دسترسی"
+          Description="نقش‌هایی را که باید این دسترسی را داشته باشند انتخاب کنید. تغییرات پس از ذخیره اعمال می‌شوند."
+          MaxWidth="620px">
+    <ChildContent>
+        @if (_roleEditorAccess is not null)
+        {
+            <p class="role-editor-username">دسترسی: <strong>@_roleEditorAccess.Name</strong> <span dir="ltr">@_roleEditorAccess.Key</span></p>
+            <input class="role-editor-search" placeholder="جستجوی نقش‌ها..." aria-label="جستجوی نقش‌ها"
+                   @bind="_accessRolesSearch" @bind:event="oninput" />
+            <AppCheckboxList Options="RoleCheckboxOptions" SelectedIds="_accessRoleIds" DisabledIds="RecoveryProtectedRoleIds"
+                             AriaLabel="نقش‌های دارای این دسترسی" OnChange="UpdateAccessRoleSelection" />
+            @if (!string.IsNullOrWhiteSpace(_accessRolesError))
+            {
+                <p class="role-editor-error" role="alert">@_accessRolesError</p>
+            }
+        }
+    </ChildContent>
+    <Footer>
+        <button type="button" class="role-editor-save" disabled="@_savingAccessRoles" @onclick="SaveAccessRolesAsync">
+            @(_savingAccessRoles ? "در حال ذخیره..." : "ذخیره نقش‌ها")
+        </button>
+        <button type="button" class="role-editor-cancel" disabled="@_savingAccessRoles" @onclick="CloseAccessRolesEditor">انصراف</button>
+    </Footer>
+</AppModal>
+
+@* Role -> Users: a two-panel badge picker with independent search inputs. *@
+<AppModal IsOpen="@(_userEditorRole is not null)" CloseOnBackdrop="false"
+          Title="مدیریت کاربران نقش"
+          Description="با انتخاب نشان کاربر، او را به این نقش اضافه یا از آن حذف کنید. تغییرات فقط پس از ذخیره ثبت می‌شوند."
+          MaxWidth="820px" CssClass="roles-editor-modal">
+    <ChildContent>
+        @if (_userEditorRole is not null)
+        {
+            <p class="role-editor-username">نقش: <strong>@_userEditorRole.Name</strong></p>
+            <div class="role-editor-grid">
+                <section class="role-editor-panel">
+                    <div class="role-editor-panel-title"><strong>همه کاربران</strong><span>@AvailableUsers.Count()</span></div>
+                    <input class="role-editor-search" placeholder="جستجوی کاربر..." aria-label="جستجو در کاربران موجود"
+                           @bind="_availableUserSearch" @bind:event="oninput" />
+                    <div class="role-editor-badges">
+                        @foreach (var user in AvailableUsers)
+                        {
+                            <AppBadge Label="@user.DisplayName" Tone="cyan" Title="@user.Username"
+                                      ActionLabel="@($"افزودن {user.DisplayName} به نقش")"
+                                      OnClick="() => AddUserToRole(user.Id)" />
+                        }
+                        @if (!AvailableUsers.Any()) { <span class="role-editor-empty">کاربری برای افزودن پیدا نشد.</span> }
+                    </div>
+                </section>
+                <section class="role-editor-panel">
+                    <div class="role-editor-panel-title"><strong>کاربران این نقش</strong><span>@AssignedUsers.Count()</span></div>
+                    <input class="role-editor-search" placeholder="جستجوی اعضا..." aria-label="جستجو در کاربران عضو"
+                           @bind="_assignedUserSearch" @bind:event="oninput" />
+                    <div class="role-editor-badges">
+                        @foreach (var user in AssignedUsers)
+                        {
+                            <AppBadge Label="@user.DisplayName" Tone="violet" Title="@user.Username"
+                                      ActionLabel="@($"حذف {user.DisplayName} از نقش")"
+                                      OnClick="() => RemoveUserFromRole(user.Id)" />
+                        }
+                        @if (!AssignedUsers.Any()) { <span class="role-editor-empty">کاربری عضو این نقش نیست.</span> }
+                    </div>
+                </section>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(_roleUsersError))
+            {
+                <p class="role-editor-error" role="alert">@_roleUsersError</p>
+            }
+        }
+    </ChildContent>
+    <Footer>
+        <button type="button" class="role-editor-save" disabled="@_savingRoleUsers" @onclick="SaveRoleUsersAsync">
+            @(_savingRoleUsers ? "در حال ذخیره..." : "ذخیره کاربران")
+        </button>
+        <button type="button" class="role-editor-cancel" disabled="@_savingRoleUsers" @onclick="CloseRoleUsersEditor">انصراف</button>
+    </Footer>
+</AppModal>
+
+@* Short in-app developer instructions, adjacent to the Access DataTable filter. *@
+<AppModal IsOpen="_showAccessGuide" CloseOnBackdrop="true"
+          Title="راهنمای مدیریت دسترسی‌ها"
+          Description="تعریف یک دسترسی، اختصاص به نقش و محافظت از صفحات و اجزای برنامه"
+          MaxWidth="730px" OnClose="() => _showAccessGuide = false">
+    <ChildContent>
+        <div class="access-help-guide" dir="rtl">
+            <section>
+                <h3>۱. ایجاد دسترسی</h3>
+                <p>در تب «دسترسی‌ها»، روی «جدید» بزنید؛ یک کد ثابت انگلیسی مانند <code dir="ltr">reports.view</code>، عنوان فارسی و توضیح وارد کنید. کد دسترسی را بعد از استفاده در برنامه تغییر ندهید.</p>
+            </section>
+            <section>
+                <h3>۲. اختصاص به نقش</h3>
+                <p>از منوی سه‌نقطهٔ همان دسترسی، «مدیریت نقش‌های این دسترسی» را انتخاب کنید و نقش‌ها را علامت بزنید؛ یا از تب نقش‌ها گزینهٔ «مدیریت دسترسی‌های نقش» را باز کنید. کاربران مجوزها را از مجموع نقش‌هایشان به ارث می‌برند.</p>
+            </section>
+            <section>
+                <h3>۳. محافظت از مسیر (Razor)</h3>
+                <pre dir="ltr"><code>@@page "/reports"
+@@attribute [AccessAuthorize("reports.view")]</code></pre>
+                <p>این ویژگی مسیر را در سرور هم محافظت می‌کند؛ تنها مخفی کردن لینک کافی نیست.</p>
+            </section>
+            <section>
+                <h3>۴. نمایش شرطی یک عنصر</h3>
+                <pre dir="ltr"><code>&lt;AccessGate AccessKey="reports.view"&gt;
+    &lt;button&gt;مشاهده گزارش‌ها&lt;/button&gt;
+&lt;/AccessGate&gt;</code></pre>
+                <p>برای عملیات حساس در سرویس‌ها نیز مجوز کاربر را با <code dir="ltr">IAccessService.HasAccessAsync</code> بررسی کنید.</p>
+            </section>
+            <p class="access-help-note">نکته: مدیریت این تب فقط برای Owner مجاز است؛ حذف دسترسی‌های پایه یا سلب دسترسی‌های ضروری از Owner مسدود می‌شود.</p>
+        </div>
+    </ChildContent>
+    <Footer>
+        <button type="button" class="role-editor-save" @onclick="() => _showAccessGuide = false">متوجه شدم</button>
+    </Footer>
+</AppModal>
+
+
+<AppModal IsOpen="@(_sqlJob is not null)" CloseOnBackdrop="false"
+          Title="دستور SQL کار خودکار" Description="فقط دستور SELECT با دسترسی خواندنی اجرا می‌شود."
+          MaxWidth="790px" CssClass="jobs-sql-modal">
+    <ChildContent>
+        @if (_sqlJob is not null)
+        {
+            <div class="jobs-modal-subtitle"><strong>@_sqlJob.Name</strong><span dir="ltr">@SourceLabel(_sqlJob.SourceKey)</span></div>
+            @if (!_editingSql)
+            {
+                @if (string.IsNullOrWhiteSpace(_sqlJob.SqlValue))
+                {
+                    <div class="jobs-sql-empty"><strong>هنوز دستوری برای این کار ثبت نشده است.</strong><p>با انتخاب «افزودن دستور»، یک کوئری SELECT تعریف کنید.</p></div>
+                }
+                else
+                {
+                    <div class="jobs-sql-preview" dir="ltr"><div class="jobs-sql-caption">SQL · READ ONLY</div><pre><code>@((MarkupString)NoteCodeFormatter.Highlight(_sqlJob.SqlValue, "sql"))</code></pre></div>
+                }
+            }
+            else
+            {
+                <NoteSnippetBox @bind-Value="_sqlDraft" Language="sql" Rows="12" />
+                <p class="jobs-sql-warning">این SQL روی پایگاه انتخابی اجرا می‌شود؛ حتماً از حساب SQL با مجوز فقط خواندن استفاده کنید.</p>
+            }
+            @if (!string.IsNullOrWhiteSpace(_jobModalError)) { <p class="role-editor-error">@_jobModalError</p> }
+        }
+    </ChildContent>
+    <Footer>
+        @if (_canManageJobs && !_editingSql)
+        {
+            <button class="role-editor-save" @onclick="() => _editingSql = true">@(string.IsNullOrWhiteSpace(_sqlJob?.SqlValue) ? "افزودن دستور" : "ویرایش دستور")</button>
+        }
+        else if (_canManageJobs && _editingSql)
+        {
+            <button class="role-editor-save" disabled="@_savingSql" @onclick="() => _showSqlSaveConfirmation = true">ذخیره دستور</button>
+            <button class="role-editor-cancel" @onclick="() => _editingSql = false">بازگشت</button>
+        }
+        <button class="role-editor-cancel" @onclick="CloseJobSql">بستن</button>
+    </Footer>
+</AppModal>
+
+<AppModal IsOpen="@_showSqlSaveConfirmation" CloseOnBackdrop="false" Title="تأیید ذخیره SQL"
+          Description="آیا دستور این کار خودکار ذخیره شود؟">
+    <Footer>
+        <button class="role-editor-save" disabled="@_savingSql" @onclick="SaveJobSqlAsync">تأیید ذخیره</button>
+        <button class="role-editor-cancel" @onclick="() => _showSqlSaveConfirmation = false">انصراف</button>
+    </Footer>
+</AppModal>
+
+<AppModal IsOpen="@(_historyJob is not null)" CloseOnBackdrop="true"
+          OnClose="() => _historyJob = null"
+          Title="تاریخچه اجرای کار" Description="آخرین اجراها، بدون نمایش خروجی یا جزئیات سنگین SQL"
+          MaxWidth="650px" CssClass="jobs-history-modal">
+    <ChildContent>
+        @if (_historyJob is not null)
+        {
+            <div class="jobs-modal-subtitle"><strong>@_historyJob.Name</strong><span dir="ltr">@SourceLabel(_historyJob.SourceKey)</span></div>
+            <div class="jobs-history-header"><span>زمان اجرا</span><span>نوع</span><span>وضعیت</span></div>
+            <div class="jobs-history-rows" aria-live="polite">
+                @if (_runHistory.Count == 0)
+                {
+                    <p class="jobs-runs-empty">هنوز اجرایی برای این کار ثبت نشده است.</p>
+                }
+                @foreach (var run in _runHistory)
+                {
+                    <div class="jobs-history-row" @key="run.Id">
+                        <time dir="ltr">@JalaliDate.DateTime(run.StartedAtUtc.ToLocalTime(), true)</time>
+                        <span class="jobs-run-trigger">@(run.Trigger == "Manual" ? "دستی" : "زمان‌بندی‌شده")</span>
+                        <span class="jobs-run-state @(run.Status == "Succeeded" ? "is-success" : run.Status == "Running" ? "is-running" : "is-failed")">
+                            @(run.Status == "Succeeded" ? "موفق" : run.Status == "Running" ? "در حال اجرا" : "ناموفق")
+                        </span>
+                    </div>
+                }
+            </div>
+        }
+    </ChildContent>
+    <Footer>
+        @if (_historyJob is not null)
+        {
+            <button type="button" class="role-editor-save" @onclick="() => LoadJobRunsAsync(_historyJob.Id)">تازه‌سازی</button>
+        }
+        <button type="button" class="role-editor-cancel" @onclick="() => _historyJob = null">بستن</button>
+    </Footer>
+</AppModal>
+
+<AppModal IsOpen="@(_testingJob is not null)" CloseOnBackdrop="false"
+          Title="اجرای آزمایشی کار" Description="این اجرا مستقل از زمان‌بندی ثبت می‌شود."
+          MaxWidth="510px" CssClass="jobs-history-modal">
+    <ChildContent>
+        @if (_testingJob is not null)
+        {
+            <div class="jobs-modal-subtitle"><strong>@_testingJob.Name</strong><span dir="ltr">@SourceLabel(_testingJob.SourceKey)</span></div>
+            <p class="jobs-test-note">پس از اجرا می‌توانید نتیجه را از گزینهٔ «تاریخچه اجرا» در منوی ردیف ببینید.</p>
+            @if (!string.IsNullOrWhiteSpace(_jobModalError)) { <p class="role-editor-error" role="alert">@_jobModalError</p> }
+        }
+    </ChildContent>
+    <Footer>
+        <button class="role-editor-save" disabled="@(_testRunning || string.IsNullOrWhiteSpace(_testingJob?.SqlValue))" @onclick="ExecuteJobTestAsync">@(_testRunning ? "در حال اجرا..." : "اجرای آزمایشی")</button>
+        <button class="role-editor-cancel" disabled="@_testRunning" @onclick="() => _testingJob = null">بستن</button>
+    </Footer>
+</AppModal>

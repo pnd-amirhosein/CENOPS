@@ -1,0 +1,8 @@
+/* Shared, HTML-escaped source syntax highlighting; no dynamic raw-source HTML. */
+.source-text-preview,.source-file-code{background:#101f30;color:#dce8f6}
+.src-token-keyword{color:#c5a5f8;font-weight:650}
+.src-token-string{color:#e9b77b;unicode-bidi:isolate}
+.src-token-comment{color:#779e96;font-style:italic}
+.src-token-number{color:#a6dcb0}
+.src-token-type{color:#70cee2}
+.src-token-identifier{color:#e1e9f2}

@@ -1,0 +1,18 @@
+@* Reusable read-only or interactive badge. Buttons are only rendered for real actions. *@
+@if (OnClick.HasDelegate && !Disabled)
+{
+    <button type="button" class="app-badge app-badge--@Tone app-badge--interactive"
+            title="@Title" @onclick="OnClick" aria-label="@ActionLabel">@Label</button>
+}
+else
+{
+    <span class="app-badge app-badge--@Tone @(Disabled ? "app-badge--locked" : "")" title="@Title">@Label</span>
+}
+@code {
+    [Parameter] public string Label { get; set; } = "";
+    [Parameter] public string Tone { get; set; } = "cyan";
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? ActionLabel { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public EventCallback OnClick { get; set; }
+}

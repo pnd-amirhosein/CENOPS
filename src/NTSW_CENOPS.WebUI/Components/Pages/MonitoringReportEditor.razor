@@ -1,0 +1,332 @@
+@using NTSW_CENOPS.Components.Common.Dates
+@page "/reports/new"
+@page "/reports/edit/{Id:long}"
+@using NTSW_CENOPS.Application.Reports
+@inject IMonitoringReportService Reports
+@inject AuthenticationStateProvider AuthState
+@inject NavigationManager Navigation
+@inject NTSW_CENOPS.Components.Common.Notices.AppNoticeService Notices
+@attribute [AccessAuthorize(AccessKeys.ViewReports)]
+@rendermode InteractiveServer
+
+<PageTitle>@(Id > 0 ? "ویرایش گزارش" : "گزارش جدید")</PageTitle>
+
+<section class="report-workspace report-editor" dir="rtl">
+    <header class="report-page-heading">
+        <div>
+            <span class="report-eyebrow">MONITORING / REPORT BUILDER</span>
+            <h2>@(Id > 0 ? "ویرایش گزارش" : "ساخت گزارش جدید")</h2>
+            <p>یک کار را انتخاب کنید؛ سامانه آخرین داده ذخیره‌شده را بررسی می‌کند و سپس می‌توانید نمودار را تنظیم کنید.</p>
+        </div>
+        <a class="report-secondary report-back" href="/reports/manage">بازگشت به گزارش‌ها</a>
+    </header>
+
+    <div class="report-progress" aria-label="مراحل ساخت گزارش">
+        <span class="is-current"><b>۱</b> انتخاب کار</span>
+        <span class="@(_inspection?.IsEligible == true ? "is-current" : "")"><b>۲</b> اعتبارسنجی داده</span>
+        <span class="@(IsValidSelection ? "is-current" : "")"><b>۳</b> تنظیم و ذخیره</span>
+    </div>
+
+    @if (_loading)
+    {
+        <AppLoading IsLoading="true" Variant="inline" Label="در حال آماده‌سازی فرم..." />
+    }
+    else if (!_canManage)
+    {
+        <div class="report-alert report-alert-error">شما مجوز ایجاد و ویرایش گزارش را ندارید.</div>
+    }
+    else
+    {
+        @if (!string.IsNullOrWhiteSpace(_error))
+        {
+            <div class="report-alert report-alert-error" role="alert">@_error</div>
+        }
+        <div class="report-editor-grid">
+            <div class="report-editor-main">
+                <section class="report-panel">
+                    <div class="report-panel-heading"><span class="report-step">01</span><div><h3>اطلاعات گزارش</h3><p>نام و کار منبع را مشخص کنید.</p></div></div>
+                    <label class="report-field">
+                        <span>نام گزارش <em>*</em></span>
+                        <input type="text" maxlength="180" placeholder="مثلاً سلامت ساعتی SrLog" @bind="_report.Name" @bind:event="oninput" />
+                    </label>
+                    <label class="report-field">
+                        <span>کار خودکار <em>*</em></span>
+                        <select value="@_report.AutomatedJobId" @onchange="OnJobChangedAsync" disabled="@_inspecting">
+                            <option value="0">— یک کار انتخاب کنید —</option>
+                            @foreach (var job in _jobs)
+                            {
+                                <option value="@job.Id">@job.Name (@job.SourceKey) @(!job.IsEnabled ? "— غیرفعال" : "")</option>
+                            }
+                        </select>
+                    </label>
+                    @if (_jobs.Count == 0)
+                    {
+                        <div class="report-alert report-alert-warning">هیچ کار خودکاری برای انتخاب وجود ندارد. ابتدا در تنظیمات یک کار تعریف کنید.</div>
+                    }
+                </section>
+
+                <section class="report-panel">
+                    <div class="report-panel-heading"><span class="report-step">02</span><div><h3>بررسی آخرین داده</h3><p>فقط داده موجود در CENOPS بررسی می‌شود؛ SQL مجدداً اجرا نخواهد شد.</p></div></div>
+                    @if (_inspecting)
+                    {
+                        <AppLoading IsLoading="true" Variant="inline" Label="در حال بررسی آخرین داده..." />
+                    }
+                    else if (_report.AutomatedJobId == 0)
+                    {
+                        <div class="report-alert report-alert-info">برای دریافت ساختار داده، ابتدا یک کار از فهرست انتخاب کنید.</div>
+                    }
+                    else if (_inspection is null)
+                    {
+                        <div class="report-alert report-alert-warning">اطلاعات آخرین اجرا در دسترس نیست. مجدداً تلاش کنید.</div>
+                        <button class="report-secondary" @onclick="InspectAsync">بررسی دوباره</button>
+                    }
+                    else
+                    {
+                        <div class="report-alert @(_inspection.IsEligible ? "report-alert-success" : "report-alert-warning")" role="status">
+                            <strong>@(_inspection.IsEligible ? "✓ داده برای گزارش مناسب است" : _inspection.HasData ? "! ساختار داده ناسازگار است" : "! این کار هنوز داده‌ای ندارد")</strong>
+                            <p>@_inspection.Message</p>
+                            @if (_inspection.DataDate is not null)
+                            {
+                                <small>تاریخ داده: @JalaliDate.Date(_inspection.DataDate.Value) · تعداد ردیف‌های پنجره آخر: @_inspection.RowCount</small>
+                            }
+                        </div>
+                        @if (_inspection.Fields.Count > 0)
+                        {
+                            <div class="report-schema-list">
+                                <div class="report-schema-title">ستون‌های شناسایی‌شده</div>
+                                @foreach (var field in _inspection.Fields)
+                                {
+                                    <div class="report-schema-row">
+                                        <span class="report-code" dir="ltr">@field.Name</span>
+                                        <span class="report-type @((field.Type is "number" or "datetime") ? "" : "report-type-invalid")">@field.Type</span>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        <button class="report-secondary report-refresh" @onclick="InspectAsync">↻ بررسی مجدد داده</button>
+                    }
+                </section>
+
+                @if (_inspection?.IsEligible == true)
+                {
+                    <section class="report-panel">
+                        <div class="report-panel-heading"><span class="report-step">03</span><div><h3>پیکربندی نمودار</h3><p>پارامتر مقایسه و اندازه‌گیری‌های موردنظر را انتخاب کنید.</p></div></div>
+                        <label class="report-field">
+                            <span>پارامتر مقایسه (محور X) <em>*</em></span>
+                            <select @bind="_report.ComparisonField">
+                                <option value="">— انتخاب پارامتر —</option>
+                                @foreach (var field in _inspection.Fields.Where(x => x.CanCompare))
+                                {
+                                    <option value="@field.Name">@field.Name (@field.Type)</option>
+                                }
+                            </select>
+                        </label>
+                        @if (IsValidSelection)
+                        {
+                            <div class="report-measures">
+                                <span>اندازه‌گیری‌های انتخابی (Y / ترکیب سهم‌ها)</span>
+                                <div class="report-measure-options" aria-label="انتخاب فیلدهای عددی">
+                                    @foreach (var field in _inspection!.Fields.Where(f => f.IsNumeric && f.Name != _report.ComparisonField))
+                                    {
+                                        var selected = _selectedMeasures.Contains(field.Name);
+                                        <label class="report-measure-option">
+                                            <input type="checkbox" checked="@selected"
+                                                   @onchange="e => ToggleSelectedMeasure(field.Name, e.Value is true)" />
+                                            <span dir="ltr">@field.Name</span>
+                                        </label>
+                                    }
+                                </div>
+                                <small class="report-measure-hint">برای نمودارهای سهمی، فقط فیلدهای هم‌واحد و بدون هم‌پوشانی را انتخاب کنید؛ مثلاً TotalCount را با اجزای آن جمع نزنید.</small>
+                                @if (!HasEnoughMeasures)
+                                {
+                                    <small class="report-measure-error">این نمودار به دست‌کم @RequiredMeasures اندازه‌گیری مجزا نیاز دارد.</small>
+                                }
+                            </div>
+                        }
+                        <div class="report-field">
+                            <span>نوع نمودار <em>*</em></span>
+                            <div class="report-chart-choices" role="radiogroup" aria-label="انتخاب نوع نمودار">
+                                @foreach (var choice in ChartChoices)
+                                {
+                                    <label class="report-chart-option @(_report.ChartType == choice.Key ? "is-selected" : "")">
+                                        <input type="radio" name="chart" class="report-chart-native-radio"
+                                               value="@choice.Key" checked="@(_report.ChartType == choice.Key)"
+                                               @onchange="() => ChooseChart(choice.Key)" />
+                                        <span class="report-chart-icon" aria-hidden="true">@choice.Icon</span>
+                                        <strong>@choice.Label</strong><small>@choice.Description</small>
+                                    </label>
+                                }
+                            </div>
+                        </div>
+                    </section>
+                }
+                <div class="report-footer-actions">
+                    <button class="report-primary" disabled="@(!CanSave || _saving)" @onclick="SaveAsync">@(_saving ? "در حال ذخیره..." : Id > 0 ? "ذخیره تغییرات" : "ایجاد گزارش")</button>
+                    <a class="report-secondary" href="/reports/manage">انصراف</a>
+                </div>
+            </div>
+            <aside class="report-editor-aside">
+                <div class="report-panel report-summary">
+                    <div class="report-panel-heading"><span class="report-step">◈</span><div><h3>خلاصه گزارش</h3><p>پیش‌نمایش تنظیمات انتخابی</p></div></div>
+                    <dl>
+                        <dt>نام گزارش</dt><dd>@(string.IsNullOrWhiteSpace(_report.Name) ? "—" : _report.Name)</dd>
+                        <dt>کار منبع</dt><dd>@(_jobs.FirstOrDefault(x => x.Id == _report.AutomatedJobId)?.Name ?? "انتخاب نشده")</dd>
+                        <dt>اعتبارسنجی</dt><dd>@(_inspection is null ? "در انتظار داده" : _inspection.IsEligible ? "تأییدشده" : "نیاز به اصلاح")</dd>
+                        <dt>مقایسه</dt><dd dir="ltr">@(string.IsNullOrEmpty(_report.ComparisonField) ? "—" : _report.ComparisonField)</dd>
+                        <dt>نمودار</dt><dd>@ChartLabel(_report.ChartType)</dd>
+                        <dt>تعداد اندازه‌گیری‌ها</dt><dd>@SelectedMeasures.Count</dd>
+                    </dl>
+                    <p class="report-summary-note">تعریف گزارش ذخیره می‌شود؛ داده‌های واقعی همچنان در AutomatedJobData باقی می‌مانند.</p>
+                </div>
+            </aside>
+        </div>
+    }
+</section>
+
+@code {
+    [Parameter] public long Id { get; set; }
+    private MonitoringReportModel _report = new();
+    private List<ReportJobOption> _jobs = new();
+    private ReportJobInspection? _inspection;
+    private bool _loading = true;
+    private bool _inspecting;
+    private bool _saving;
+    private bool _canManage;
+    private string? _error;
+    private readonly HashSet<string> _selectedMeasures = new(StringComparer.Ordinal);
+
+    private List<ReportFieldInfo> SelectedMeasures => _inspection?.IsEligible == true
+        ? _inspection.Fields.Where(f => f.IsNumeric && f.Name != _report.ComparisonField && _selectedMeasures.Contains(f.Name)).ToList()
+        : new();
+    private int RequiredMeasures => _report.ChartType == "spider" ? 3 :
+        _report.ChartType is "pie" or "doughnut" or "treemap" or "gauge" ? 2 : 1;
+    private bool HasEnoughMeasures => SelectedMeasures.Count >= RequiredMeasures;
+    private void ToggleSelectedMeasure(string name, bool selected)
+    {
+        if (selected) _selectedMeasures.Add(name);
+        else _selectedMeasures.Remove(name);
+    }
+
+    private bool IsValidSelection => _inspection?.IsEligible == true &&
+        _inspection.Fields.Any(x => x.Name == _report.ComparisonField && x.CanCompare) &&
+        HasEnoughMeasures;
+
+    private bool CanSave => !_loading && !_inspecting && !_saving && _canManage &&
+        !string.IsNullOrWhiteSpace(_report.Name) && IsValidSelection;
+
+    private static readonly (string Key, string Icon, string Label, string Description)[] ChartChoices =
+    [
+        ("line", "⌁", "خطی", "نمایش روند"),
+        ("area", "◩", "ناحیه‌ای", "روند با سطح رنگی"),
+        ("step", "┐", "پله‌ای", "تغییرات مرحله‌ای"),
+        ("bar", "▥", "ستونی", "مقایسه مقادیر"),
+        ("stacked", "▤", "ستونی انباشته", "سهم هر اندازه‌گیری"),
+        ("scatter", "∴", "پراکندگی", "نقاط مستقل"),
+        ("smooth", "∿", "منحنی نرم", "روند هموار"),
+        ("lollipop", "⚑", "میله نقطه‌ای", "مقایسه با نقطه و پایه"),
+        ("stackedarea", "▧", "ناحیه‌ای انباشته", "تغییرات سهم گروه‌ها"),
+        ("pie", "◕", "دایره‌ای", "سهم مجموع فیلدهای انتخابی"),
+        ("doughnut", "◎", "حلقه‌ای", "درصد ترکیب اندازه‌گیری‌ها"),
+        ("treemap", "▦", "نقشه درختی", "مساحت متناسب با مجموع هر فیلد"),
+        ("spider", "⬡", "عنکبوتی", "هر رأس یک فیلد عددی"),
+        ("bubble", "◉", "حبابی", "رنگ مستقل برای هر اندازه‌گیری"),
+        ("gauge", "◴", "عقربه‌ای", "درصد سهم هر فیلد از مجموع")
+    ];
+
+    private static string ChartLabel(string type) => type switch
+    {
+        "line" => "خطی", "bar" => "ستونی", "scatter" => "پراکندگی",
+        "area" => "ناحیه‌ای", "step" => "پله‌ای", "stacked" => "ستونی انباشته",
+        "smooth" => "منحنی نرم", "lollipop" => "میله نقطه‌ای",
+        "stackedarea" => "ناحیه‌ای انباشته", "pie" => "دایره‌ای",
+        "doughnut" => "حلقه‌ای", "treemap" => "نقشه درختی", "spider" => "عنکبوتی",
+        "bubble" => "حبابی", "gauge" => "عقربه‌ای", _ => "—"
+    };
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _loading = true;
+        _error = null;
+        _inspection = null;
+        try
+        {
+            var actor = (await AuthState.GetAuthenticationStateAsync()).User;
+            _canManage = await Reports.CanManageAsync(actor);
+            if (!_canManage) return;
+            _jobs = (await Reports.ListJobsAsync(actor)).ToList();
+            if (Id > 0)
+            {
+                _report = await Reports.GetAsync(Id, actor) ?? new();
+                if (_report.Id == 0) _error = "گزارش موردنظر پیدا نشد.";
+                else await InspectAsync();
+            }
+            else _report = new MonitoringReportModel();
+        }
+        catch (Exception) { _error = "دریافت اطلاعات گزارش انجام نشد."; }
+        finally { _loading = false; }
+    }
+
+    private async Task OnJobChangedAsync(ChangeEventArgs args)
+    {
+        if (!long.TryParse(args.Value?.ToString(), out var jobId)) jobId = 0;
+        _report.AutomatedJobId = jobId;
+        _report.ComparisonField = "";
+        _selectedMeasures.Clear();
+        _inspection = null;
+        _error = null;
+        if (jobId > 0) await InspectAsync();
+    }
+
+    private async Task InspectAsync()
+    {
+        if (_report.AutomatedJobId == 0) return;
+        _inspecting = true;
+        _inspection = null;
+        _error = null;
+        try
+        {
+            var actor = (await AuthState.GetAuthenticationStateAsync()).User;
+            _inspection = await Reports.InspectJobAsync(_report.AutomatedJobId, actor);
+            // Preserve an existing selection only when still compatible with the latest schema.
+            if (_inspection.IsEligible &&
+                !_inspection.Fields.Any(x => x.Name == _report.ComparisonField && x.CanCompare))
+                _report.ComparisonField = "";
+            if (_inspection.IsEligible)
+            {
+                var available = _inspection.Fields.Where(x => x.IsNumeric)
+                    .Select(x => x.Name).ToHashSet(StringComparer.Ordinal);
+                if (_selectedMeasures.Count == 0)
+                {
+                    var preferred = _report.MeasureFields.Count > 0
+                        ? _report.MeasureFields.Where(available.Contains)
+                        : available;
+                    _selectedMeasures.UnionWith(preferred);
+                }
+                else _selectedMeasures.IntersectWith(available);
+            }
+        }
+        catch (Exception) { _error = "بررسی داده انجام نشد؛ اتصال پایگاه‌داده را بررسی کنید."; }
+        finally { _inspecting = false; }
+    }
+
+    private void ChooseChart(string chart) => _report.ChartType = chart;
+
+    private async Task SaveAsync()
+    {
+        if (!CanSave) return;
+        _saving = true;
+        _error = null;
+        try
+        {
+            var actor = (await AuthState.GetAuthenticationStateAsync()).User;
+            _report.MeasureFields = SelectedMeasures.Select(f => f.Name).ToArray();
+            var outcome = await Reports.SaveAsync(_report, actor);
+            if (!outcome.Succeeded) { _error = outcome.Message; await InspectAsync(); return; }
+            Notices.Success(outcome.Message);
+            Navigation.NavigateTo("/reports/manage");
+        }
+        catch (KeyNotFoundException) { _error = "گزارش یا کار منبع پیدا نشد."; }
+        catch (Exception) { _error = "ذخیره گزارش انجام نشد. مجدداً تلاش کنید."; }
+        finally { _saving = false; }
+    }
+}

@@ -1,0 +1,953 @@
+@using NTSW_CENOPS.Components.Common.Dates
+@using System.Security.Claims
+@using NTSW_CENOPS.Application.Chat
+@using NTSW_CENOPS.Application.Common.Security
+@using NTSW_CENOPS.Domain.Chat
+@using NTSW_CENOPS.Components.Chat
+@using NTSW_CENOPS.Components.Common
+@using NTSW_CENOPS.Components.Files
+@using NTSW_CENOPS.Application.Files
+@implements IAsyncDisposable
+@inject ChatWorkspaceState Workspace
+@inject IChatRoomService Rooms
+@inject IChatMessageService Messages
+@inject IChatSearchService Search
+@inject AuthenticationStateProvider Auth
+@inject IJSRuntime JS
+@inject ChatInboxState Inbox
+
+<div class="cenops-chat-backdrop" @onclick="Workspace.Close" aria-hidden="true"></div>
+<section class="cenops-chat-window" dir="ltr" role="dialog" aria-modal="true" aria-label="چت اسپیس">
+    <header class="chat-modal-header" dir="rtl">
+        <strong class="chat-modal-title">چت اسپیس</strong>
+        <div class="chat-modal-connection" role="status" aria-live="polite" aria-atomic="true">
+            @if (_connected)
+            {
+                <span class="chat-connection-connected" @key="_connectionEpoch"><span class="chat-connection-dot"></span> متصل شد</span>
+            }
+            else
+            {
+                <span class="chat-connection-connecting"><span class="chat-connection-pulse"></span> در حال اتصال<span class="chat-animated-dots" aria-hidden="true"></span></span>
+            }
+        </div>
+        <button type="button" class="chat-modal-close" title="بستن چت" aria-label="بستن چت" @onclick="Workspace.Close"><span class="modal-esc-key">ESC</span></button>
+    </header>
+    <div class="chat-columns">
+        <aside class="chat-rail" aria-label="راهبر گفتگو">
+            <button type="button" class="chat-rail-item is-active" title="گفتگوها" aria-label="گفتگوها" @onclick="CloseSearch"><ChatIcon Name="messages" /></button>
+            <button type="button" class="chat-rail-item chat-rail-new" title="گفتگوی تازه (Ctrl+K، سپس N)" aria-label="ایجاد گفتگو" aria-keyshortcuts="Control+K N" @onclick="OpenCreate"><ChatIcon Name="plus" /><kbd class="chat-rail-shortcut" aria-hidden="true">N</kbd></button>
+            <div class="chat-rail-spacer"></div>
+            <button type="button" class="chat-rail-item chat-rail-search @(_globalSearchOpen ? "is-active" : "")" title="جستجوی سراسری (Ctrl+K، سپس S)" aria-label="جستجوی کاربران، گفتگوها و پیام‌ها" aria-keyshortcuts="Control+K S" @onclick="OpenSearch"><ChatIcon Name="search" /><kbd class="chat-rail-shortcut" aria-hidden="true">S</kbd></button>
+            <div class="chat-rail-logo" title="مرکز عملیات"><svg class="chat-brand-logo" width="35" height="35" viewBox="0 0 388 388" fill="none"
+                 xmlns="http://www.w3.org/2000/svg">
+                <g clip-path="url(#clip0_2002_2)">
+                    <rect width="388" height="388" rx="96" fill="#19B5DE"/>
+                    <path
+                        d="M-17.75 197.75C-15.5833 197.75 -14.1667 199.083 -13.5 201.75C-12.6667 204.417 -12.25 208.583 -12.25 214.25C-12.25 220.417 -12.6667 224.917 -13.5 227.75C-14.1667 230.583 -15.5833 232 -17.75 232H-59C-61.1667 232 -62.5833 230.667 -63.25 228C-64.0833 225.167 -64.5 221 -64.5 215.5C-64.5 209.167 -64.0833 204.667 -63.25 202C-62.5833 199.167 -61.1667 197.75 -59 197.75H-17.75ZM23.5098 197.75C25.6764 197.75 27.0931 199.083 27.7598 201.75C28.5931 204.417 29.0098 208.583 29.0098 214.25C29.0098 220.417 28.5931 224.917 27.7598 227.75C27.0931 230.583 25.6764 232 23.5098 232H-17.7402C-19.9069 232 -21.3236 230.667 -21.9902 228C-22.8236 225.167 -23.2402 221 -23.2402 215.5C-23.2402 209.167 -22.8236 204.667 -21.9902 202C-21.3236 199.167 -19.9069 197.75 -17.7402 197.75H23.5098ZM64.7695 197.75C66.9362 197.75 68.3529 199.083 69.0195 201.75C69.8529 204.417 70.2695 208.583 70.2695 214.25C70.2695 220.417 69.8529 224.917 69.0195 227.75C68.3529 230.583 66.9362 232 64.7695 232H23.5195C21.3529 232 19.9362 230.667 19.2695 228C18.4362 225.167 18.0195 221 18.0195 215.5C18.0195 209.167 18.4362 204.667 19.2695 202C19.9362 199.167 21.3529 197.75 23.5195 197.75H64.7695ZM106.029 197.75C108.196 197.75 109.613 199.083 110.279 201.75C111.113 204.417 111.529 208.583 111.529 214.25C111.529 220.417 111.113 224.917 110.279 227.75C109.613 230.583 108.196 232 106.029 232H64.7793C62.6126 232 61.196 230.667 60.5293 228C59.696 225.167 59.2793 221 59.2793 215.5C59.2793 209.167 59.696 204.667 60.5293 202C61.196 199.167 62.6126 197.75 64.7793 197.75H106.029ZM118.539 197.75C127.706 197.75 132.289 193.083 132.289 183.75V157.75H163.789V183.75C163.789 188.583 165.206 192.167 168.039 194.5C171.039 196.667 174.622 197.75 178.789 197.75C184.289 197.75 188.206 196.667 190.539 194.5C192.872 192.167 194.039 188.583 194.039 183.75V157.75H225.789V183.75C225.789 188.583 226.956 192.167 229.289 194.5C231.789 196.667 234.706 197.75 238.039 197.75C246.206 197.75 250.289 193.083 250.289 183.75V157.75H282.039V186.5C282.039 201.667 278.372 213.083 271.039 220.75C263.706 228.25 253.122 232 239.289 232C233.956 232 228.622 231.083 223.289 229.25C218.122 227.25 213.456 223.083 209.289 216.75C205.122 223.083 200.372 227.25 195.039 229.25C189.706 231.083 184.289 232 178.789 232C172.622 232 166.872 231.083 161.539 229.25C156.206 227.25 151.456 223.083 147.289 216.75C143.122 223.083 138.622 227.25 133.789 229.25C129.122 231.083 124.039 232 118.539 232H106.039C103.872 232 102.456 230.667 101.789 228C100.956 225.167 100.539 221 100.539 215.5C100.539 209.167 100.956 204.667 101.789 202C102.456 199.167 103.872 197.75 106.039 197.75H118.539Z"
+                        fill="white"/>
+                </g>
+                <defs>
+                    <clipPath id="clip0_2002_2">
+                        <rect width="388" height="388" rx="96" fill="white"/>
+                    </clipPath>
+                </defs>
+            </svg></div>
+        </aside>
+        <aside class="chat-rooms-panel" dir="rtl" aria-label="فهرست گفتگوها">
+            <div class="chat-room-scroll">
+                <button type="button" class="chat-list-category chat-list-toggle" aria-expanded="@_directExpanded" @onclick="() => _directExpanded = !_directExpanded">
+                    <ChatIcon Name="chevron-down" /><span class="chat-category-label">گفتگوهای مستقیم</span><span class="chat-category-count">@_rooms.Count(r => r.Kind == ChatRoomKind.Direct)</span>
+                </button>
+                @if (_directExpanded)
+                {
+                    @foreach (var room in _rooms.Where(x => x.Kind == ChatRoomKind.Direct))
+                    {
+                        <button type="button" class="chat-room-row @(_selectedRoomId == room.Id ? "selected" : "")" @onclick="() => SelectRoom(room.Id)" @key="room.Id">
+                            <span class="chat-room-hash">#</span><span class="chat-room-title">@RoomName(room)</span>
+                            @if (room.UnreadCount > 0) { <span class="chat-unread">@room.UnreadCount</span> }
+                        </button>
+                    }
+                }
+                <button type="button" class="chat-list-category chat-list-toggle direct-category" aria-expanded="@_groupsExpanded" @onclick="() => _groupsExpanded = !_groupsExpanded">
+                    <ChatIcon Name="chevron-down" /><span class="chat-category-label">کانال‌ها و گروه‌ها</span><span class="chat-category-count">@_rooms.Count(r => r.Kind == ChatRoomKind.Group)</span>
+                </button>
+                @if (_groupsExpanded)
+                {
+                    @foreach (var room in _rooms.Where(x => x.Kind == ChatRoomKind.Group))
+                    {
+                        <button type="button" class="chat-room-row @(_selectedRoomId == room.Id ? "selected" : "")" @onclick="() => SelectRoom(room.Id)" @key="room.Id">
+                            <span class="chat-room-hash">#</span><span class="chat-room-title">@RoomName(room)</span>
+                            @if (room.UnreadCount > 0) { <span class="chat-unread">@room.UnreadCount</span> }
+                        </button>
+                    }
+                }
+                @if (_rooms.Count == 0 && !_busy) { <p class="chat-list-empty">گفتگویی ندارید. از علامت + برای شروع استفاده کنید.</p> }
+            </div>
+            <footer class="chat-my-profile">
+                <span class="chat-me-avatar">@Initial(_displayName)</span>
+                <div><strong><UserHoverName DisplayName="@_displayName" Username="@_username" /></strong><small>@@@_username</small></div>
+                <span class="chat-me-status @(_connected ? "online" : "")" title="@(_connected ? "متصل" : "در حال اتصال")"></span>
+            </footer>
+        </aside>
+        <main class="chat-conversation @(_selected?.Kind == ChatRoomKind.Direct ? "chat-direct-conversation" : "")" dir="rtl">
+            @if (_selected is null)
+            {
+                <div class="chat-empty-state" dir="rtl">
+                    <div class="chat-empty-illustration" aria-hidden="true">
+                        <div class="chat-empty-halo"></div>
+                        <span class="chat-empty-icon-main"><ChatIcon Name="messages" /></span>
+                        <span class="chat-empty-icon-secondary"><ChatIcon Name="reply" /></span>
+                        <span class="chat-empty-icon-accent"><ChatIcon Name="plus" /></span>
+                    </div>
+                    <span class="chat-empty-eyebrow">فضای ارتباطات سازمانی</span>
+                    <h2>از یک گفتگو شروع کنید</h2>
+                    <p>در کنار همکارانتان هماهنگ بمانید؛ گفتگوی مستقیم یا گروه کاری تازه‌ای بسازید و پیام‌هایتان را همین‌جا دنبال کنید.</p>
+                    <div class="chat-empty-actions">
+                        <button type="button" class="chat-primary-button" @onclick="OpenCreate"><ChatIcon Name="plus" /> شروع گفتگوی جدید</button>
+                        <button type="button" class="chat-empty-search" @onclick="OpenSearch"><ChatIcon Name="search" /> یافتن همکار یا گفتگو</button>
+                    </div>
+                    <div class="chat-empty-footnote"><span class="chat-empty-security-dot"></span> گفتگوها فقط برای اعضای همان اتاق قابل مشاهده‌اند</div>
+                </div>
+            }
+            else
+            {
+                <header class="chat-conversation-header">
+                    <button type="button" class="chat-room-heading" @onclick="() => _detailsOpen = !_detailsOpen" title="اطلاعات و اعضای گفتگو">
+                        <span class="chat-heading-icon">#</span><span>@RoomName(_selected)</span><span class="chat-heading-chevron"><ChatIcon Name="chevron-down" /></span>
+                    </button>
+                    <span class="chat-header-subtitle">@_selected.Members.Count عضو</span>
+                    <div class="chat-header-spacer"></div>
+                    <button type="button" class="chat-icon-button" aria-label="جستجو در پیام‌ها" title="جستجوی پیام‌ها" @onclick="() => _searchMessages = !_searchMessages"><ChatIcon Name="search" /></button>
+                    <button type="button" class="chat-icon-button" aria-label="اطلاعات گفتگو" title="اطلاعات گفتگو" @onclick="() => _detailsOpen = !_detailsOpen"><ChatIcon Name="info" /></button>
+                </header>
+                @if (_searchMessages)
+                {
+                    <div class="chat-message-search"><input aria-label="جستجو در پیام‌های بارگذاری‌شده" placeholder="جستجو در پیام‌های بارگذاری‌شده..." @bind="_messageFilter" @bind:event="oninput" /><button type="button" @onclick='() => { _messageFilter = ""; _searchMessages = false; }'>✕</button></div>
+                }
+                <div class="chat-message-scroll" id="cenops-chat-message-scroll">
+                    @if (_hasMore && string.IsNullOrWhiteSpace(_messageFilter))
+                    {
+                        <button type="button" class="chat-more-history" disabled="@_busy" @onclick="LoadOlder">نمایش پیام‌های قدیمی‌تر ↑</button>
+                    }
+                    @if (_messages.Count == 0 && !_busy)
+                    {
+                        <div class="chat-room-welcome"><span class="chat-welcome-hash">#</span><h3>@RoomName(_selected)</h3><p>آغاز گفتگوی شما در این اتاق؛ اولین پیام را بفرستید.</p></div>
+                    }
+                    @foreach (var message in VisibleMessages)
+                    {
+                        var isMine = message.SenderUsername.Equals(_username, StringComparison.OrdinalIgnoreCase);
+                        <article id="chat-message-@message.Id" class="chat-message @(isMine ? "is-mine" : "")" @key="message.Id"
+                                 @oncontextmenu="e => OpenContext(e, message)" @oncontextmenu:preventDefault="true">
+                            <span class="chat-message-avatar">@Initial(message.SenderDisplayName ?? message.SenderUsername)</span>
+                            <div class="chat-message-main">
+                                @if (_selected.Kind != ChatRoomKind.Direct)
+                                {
+                                    <div class="chat-message-meta">
+                                        <UserHoverName DisplayName="@DisplayName(message)" Username="@message.SenderUsername"><button type="button" class="chat-user-link" title="گفتگوی مستقیم" @onclick="() => OpenUserDm(message.SenderUsername)">@DisplayName(message)</button></UserHoverName>
+                                        <time>@JalaliDate.DateTime(message.CreatedAt.ToLocalTime())</time>
+                                        @if (message.EditedAt is not null) { <small>ویرایش‌شده</small> }
+                                    </div>
+                                }
+                                @if (!string.IsNullOrEmpty(message.ForwardedFromDisplayName))
+                                {
+                                    <div class="chat-forwarded-marker" dir="rtl">
+                                        <ChatIcon Name="forward" /> <span>ارسال‌شده از</span>
+                                        @if (!string.IsNullOrEmpty(message.ForwardedFromUsername))
+                                        {
+                                            <UserHoverName DisplayName="@(message.ForwardedFromDisplayName!)" Username="@message.ForwardedFromUsername"><button type="button" class="chat-user-link" @onclick="() => OpenUserDm(message.ForwardedFromUsername!)">@message.ForwardedFromDisplayName</button></UserHoverName>
+                                        }
+                                        else { <strong>@message.ForwardedFromDisplayName</strong> }
+                                    </div>
+                                }
+                                @if (message.ReplyToMessageId is long repliedId && message.ReplyPreview is not null)
+                                {
+                                    <div class="chat-quoted-message" dir="rtl">
+                                        <ChatIcon Name="reply" />
+                                        <div class="chat-quoted-content">
+                                            @if (!string.IsNullOrWhiteSpace(message.ReplySenderUsername))
+                                            {
+                                                <UserHoverName DisplayName="@(message.ReplySenderDisplayName!)" Username="@message.ReplySenderUsername"><button type="button" class="chat-user-link chat-reply-author" @onclick="() => OpenUserDm(message.ReplySenderUsername!)">@message.ReplySenderDisplayName</button></UserHoverName>
+                                            }
+                                            else { <strong>پیام اصلی</strong> }
+                                            <button type="button" class="chat-reply-jump" dir="auto" @onclick="() => GoToMessage(repliedId)" title="نمایش پیام اصلی">@(message.ReplyPreview is null ? "پیام در دسترس نیست" : Truncate(message.ReplyPreview, 110))</button>
+                                        </div>
+                                        <button type="button" class="chat-reply-go" title="نمایش پیام اصلی" aria-label="نمایش پیام اصلی" @onclick="() => GoToMessage(repliedId)"><ChatIcon Name="arrow-up-left" /></button>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(message.Content))
+                                {
+                                    <p class="chat-message-content" dir="auto">@message.Content</p>
+                                }
+                                @if (message.AttachmentIds is { Count: 1 } single)
+                                {
+                                    <ChatAttachmentView FileId="single[0]" MessageId="message.Id"
+                                                        OnPreviewRequest="file => OpenChatPreview(file, message.Id)" @key="single[0]" />
+                                }
+                                else if (message.AttachmentIds is { Count: > 1 } multiple)
+                                {
+                                    <div class="chat-attachment-collection">
+                                        <AppFileBlock Mode="FileBlockMode.View" Value="@FileReferenceCodec.Serialize(multiple)"
+                                                      MessageId="message.Id" InitialView="FileViewMode.Gallery"
+                                                      OnPreviewRequest="file => OpenChatPreview(file, message.Id)" @key="message.Id" />
+                                    </div>
+                                }
+                                @if (_selected.Kind == ChatRoomKind.Direct)
+                                {
+                                    <div class="chat-direct-time"><time>@message.CreatedAt.ToLocalTime().ToString("HH:mm")</time></div>
+                                }
+                            </div>
+                        </article>
+                    }
+                </div>
+                @if (_selected.Kind == ChatRoomKind.Group && _typingUsers.Count > 0)
+                {
+                    <div class="chat-typing-indicator" dir="rtl" role="status" aria-live="polite">
+                        <span class="chat-typing-dots"><i></i><i></i><i></i></span>
+                        <span>@(string.Join("، ", _typingUsers.Values.Take(3).Select(x => x.Name))) @(_typingUsers.Count == 1 ? "در حال نوشتن است" : "در حال نوشتن هستند")</span>
+                    </div>
+                }
+                <footer class="chat-composer">
+                    @if (_replyTo is not null)
+                    {
+                        <div class="chat-compose-reference" dir="rtl">
+                            <span class="chat-reference-symbol"><ChatIcon Name="reply" /></span>
+                            <div class="chat-reference-copy"><strong>پاسخ به @DisplayName(_replyTo)</strong><span dir="auto">@Truncate(_replyTo.Content, 125)</span></div>
+                            <button type="button" class="chat-reference-close" aria-label="لغو پاسخ" @onclick="() => _replyTo = null"><ChatIcon Name="x" /></button>
+                        </div>
+                    }
+                    @if (_editing is not null)
+                    {
+                        <div class="chat-compose-reference is-editing" dir="rtl">
+                            <span class="chat-reference-symbol"><ChatIcon Name="edit" /></span>
+                            <div class="chat-reference-copy"><strong>ویرایش پیام</strong><span dir="auto">@Truncate(_editing.Content, 125)</span></div>
+                            <button type="button" class="chat-reference-close" aria-label="لغو ویرایش" @onclick="CancelEdit"><ChatIcon Name="x" /></button>
+                        </div>
+                    }
+                    <div class="chat-composer-inner">
+                        <textarea id="cenops-chat-composer" data-chat-room-id="@_selectedRoomId" data-chat-typing="@(_selected?.Kind == ChatRoomKind.Group ? "true" : "false")" dir="auto" rows="1" maxlength="5000" placeholder="پیام به #@RoomName(_selected)..." aria-label="متن پیام" @bind="_draft" @bind:event="oninput"></textarea>
+                        <div class="chat-compose-actions">
+                            <button type="button" class="chat-attach-button" title="افزودن پیوست" aria-label="افزودن پیوست"
+                                    disabled="@(_sending || _editing is not null)" @onclick="() => _attachmentModalOpen = true">
+                                <ChatIcon Name="attachment" />
+                                @if (AttachedFileCount > 0) { <span class="chat-attach-count">@AttachedFileCount</span> }
+                            </button>
+                            <button type="button" class="chat-send" aria-label="ارسال پیام"
+                                    disabled="@(_sending || (string.IsNullOrWhiteSpace(_draft) && AttachedFileCount == 0))" @onclick="Send">
+                                <ChatIcon Name="send" />
+                            </button>
+                        </div>
+                    </div>
+                </footer>
+                @if (_detailsOpen)
+                {
+                    <div class="chat-details-overlay" @onclick="() => _detailsOpen = false"></div>
+                    <aside class="chat-details" aria-label="اطلاعات گفتگو">
+                        <header><strong>درباره گفتگو</strong><button type="button" class="modal-esc-key" data-chat-close @onclick="() => _detailsOpen = false">ESC</button></header>
+                        <div class="chat-details-hero"><span>#</span><h3>@RoomName(_selected)</h3><p>@(_selected.Kind == ChatRoomKind.Group ? "گروه سازمانی" : "گفتگوی مستقیم")</p></div>
+                        <h4>اعضا <span>@_selected.Members.Count</span></h4>
+                        @foreach (var member in _selected.Members)
+                        {
+                            <div class="chat-member-row"><span class="chat-member-avatar">@Initial(member.DisplayName)</span><div><UserHoverName DisplayName="@member.DisplayName" Username="@member.Username"><button type="button" class="chat-user-link" @onclick="() => OpenUserDm(member.Username)">@member.DisplayName</button></UserHoverName><button type="button" class="chat-user-link chat-username-link" @onclick="() => OpenUserDm(member.Username)">@@@member.Username</button></div>@if(member.Username.Equals(_username, StringComparison.OrdinalIgnoreCase)){<small>شما</small>}</div>
+                        }
+                        <p class="chat-details-footnote">این گفتگو فقط برای اعضای آن قابل مشاهده است.</p>
+                    </aside>
+                }
+            }
+        </main>
+    </div>
+    @if (_globalSearchOpen)
+    {
+        <div class="chat-spotlight-shade" @onclick="CloseSearch"></div>
+        <section class="chat-spotlight quick-search-panel cenops-liquid-glass" dir="rtl" role="dialog" aria-modal="true" aria-label="جستجوی سراسری گفتگو" @onkeydown="HandleSearchKeys">
+            <div class="chat-spotlight-input-row quick-search-field">
+                <ChatIcon Name="search" />
+                <input id="cenops-chat-global-search" type="search" autocomplete="off" aria-label="جستجوی گفتگوها، کاربران و پیام‌ها" placeholder="جستجو در کاربران، گفتگوها و پیام‌ها..." value="@_globalQuery" @oninput="OnGlobalSearchInput" />
+                <button type="button" class="chat-spotlight-esc quick-search-close" @onclick="CloseSearch">ESC</button>
+            </div>
+            <div class="chat-spotlight-content quick-search-results">
+                <h2 class="chat-spotlight-heading">جستجوی چت <small>کاربران، اتاق‌ها و پیام‌های مجاز شما</small></h2>
+                @if (_searching) { <p class="chat-spotlight-empty">در حال جستجو...</p> }
+                else if (_globalQuery.Trim().Length < 2) { <p class="chat-spotlight-empty">برای جستجو دست‌کم دو نویسه بنویسید.</p> }
+                else
+                {
+                    <div class="chat-search-section"><h3>گفتگوهای شما <span>@_globalResults.Rooms.Count</span></h3>
+                        @foreach (var room in _globalResults.Rooms)
+                        {
+                            <button type="button" class="chat-search-hit quick-search-result" @onclick="() => OpenSearchRoom(room.Id)">
+                                <span class="chat-search-hit-icon quick-search-result-dot">#</span><span class="quick-search-result-copy"><strong>@RoomName(room)</strong><small>گفتگوی عضو شده</small></span><ChatIcon Name="arrow-up-left" />
+                            </button>
+                        }
+                    </div>
+                    <div class="chat-search-section"><h3>کاربران <span>@_globalResults.Users.Count</span></h3>
+                        @foreach (var user in _globalResults.Users)
+                        {
+                            <button type="button" class="chat-search-hit quick-search-result" @onclick="() => OpenSearchUser(user.Username)">
+                                <span class="chat-search-hit-avatar">@Initial(user.DisplayName)</span><span class="quick-search-result-copy"><strong>@user.DisplayName</strong><small>@@@user.Username</small></span><ChatIcon Name="arrow-up-left" />
+                            </button>
+                        }
+                    </div>
+                    <div class="chat-search-section"><h3>پیام‌های گفتگوهای شما <span>@_globalResults.Messages.Count</span></h3>
+                        @foreach (var result in _globalResults.Messages)
+                        {
+                            <button type="button" class="chat-search-hit quick-search-result" @onclick="() => OpenSearchMessage(result.Message.RoomId, result.Message.Id)">
+                                <span class="chat-search-hit-icon quick-search-result-dot"><ChatIcon Name="messages" /></span><span class="quick-search-result-copy"><strong># @result.RoomTitle · @DisplayName(result.Message)</strong><small dir="auto">@Truncate(result.Message.Content, 140)</small></span><ChatIcon Name="arrow-up-left" />
+                            </button>
+                        }
+                    </div>
+                    @if (_globalResults.Rooms.Count == 0 && _globalResults.Users.Count == 0 && _globalResults.Messages.Count == 0)
+                    { <p class="chat-spotlight-empty">نتیجه‌ای پیدا نشد.</p> }
+                }
+            </div>
+            <footer class="chat-spotlight-foot">پیام‌ها فقط در گفتگوهای عضو شده شما جستجو می‌شوند.</footer>
+        </section>
+    }
+    @if (_contextMessage is not null)
+    {
+        <button type="button" class="chat-context-scrim" aria-label="بستن منوی پیام" @onclick="CloseContext"></button>
+        <div class="chat-message-menu cenops-liquid-glass" dir="rtl" style="left:@(_contextX)px;top:@(_contextY)px" role="menu" aria-label="عملیات پیام">
+            <button type="button" role="menuitem" @onclick="Reply"><ChatIcon Name="reply" /><span>پاسخ</span></button>
+            <button type="button" role="menuitem" @onclick="Forward"><ChatIcon Name="forward" /><span>ارسال به...</span></button>
+            @if (_contextMessage.SenderUsername.Equals(_username, StringComparison.OrdinalIgnoreCase))
+            {
+                <div class="chat-menu-divider"></div>
+                <button type="button" role="menuitem" @onclick="BeginEdit"><ChatIcon Name="edit" /><span>ویرایش</span></button>
+                <button type="button" role="menuitem" class="danger" @onclick="ConfirmDelete"><ChatIcon Name="trash" /><span>حذف</span></button>
+            }
+        </div>
+    }
+    @if (_creating)
+    {
+        <div class="chat-dialog-shade" dir="rtl">
+            <div class="chat-dialog" role="dialog" aria-modal="true" aria-label="گفتگوی جدید">
+                <header><span>✦</span><h3>گفتگوی جدید</h3><button type="button" class="modal-esc-key" data-chat-close @onclick="() => _creating = false">ESC</button></header>
+                <p>مخاطبان را با نام کاربری یا نام نمایشی پیدا کنید. یک مخاطب گفتگوی مستقیم می‌سازد و چند مخاطب گروه.</p>
+                <label for="chat-recipient-search">افزودن مخاطب</label>
+                <div class="chat-recipient-picker">
+                    <div class="chat-recipient-input"><ChatIcon Name="search" />
+                        <input id="chat-recipient-search" type="search" autocomplete="off" dir="auto" value="@_recipientQuery" @oninput="OnRecipientSearchInput" placeholder="نام یا نام کاربری را جستجو کنید..." aria-expanded="@(_recipientResults.Count > 0)" aria-controls="chat-recipient-results" />
+                        @if (_findingRecipients) { <span class="chat-recipient-spinner" aria-label="در حال جستجو"></span> }
+                    </div>
+                    @if (_recipientResults.Count > 0)
+                    {
+                        <div id="chat-recipient-results" class="chat-recipient-results" role="listbox" aria-label="نتایج جستجوی کاربران">
+                            @foreach (var user in _recipientResults)
+                            {
+                                <button type="button" role="option" aria-selected="false" class="chat-recipient-option" @onclick="() => AddRecipient(user)" @key="user.Username">
+                                    <span class="chat-search-hit-avatar">@Initial(user.DisplayName)</span>
+                                    <span class="chat-recipient-copy"><strong>@user.DisplayName</strong><small>@@@user.Username</small></span>
+                                    <ChatIcon Name="plus" />
+                                </button>
+                            }
+                        </div>
+                    }
+                    else if (_recipientQuery.Trim().Length > 0 && !_findingRecipients)
+                    {
+                        <div class="chat-recipient-empty">مورد دیگری پیدا نشد.</div>
+                    }
+                </div>
+                <div class="chat-selected-users" aria-live="polite">
+                    @if (_selectedRecipients.Count == 0) { <span class="chat-recipient-hint">هنوز مخاطبی انتخاب نشده است.</span> }
+                    @foreach (var user in _selectedRecipients)
+                    {
+                        <AppBadge Label="@RecipientBadgeText(user)" Title="@RecipientBadgeTitle(user)" Tone="cyan" ActionLabel="@RecipientRemoveLabel(user)" OnClick="() => RemoveRecipient(user.Username)" />
+                    }
+                </div>
+                @if (_selectedRecipients.Count >= 2)
+                {
+                    <label for="chat-group-title">عنوان گروه</label>
+                    <input id="chat-group-title" @bind="_newGroupTitle" placeholder="مثلاً تیم توسعه" maxlength="160" />
+                }
+                <div class="chat-dialog-actions"><button type="button" @onclick="() => _creating = false">انصراف</button><button type="button" class="chat-primary-button" disabled="@(_busy || _selectedRecipients.Count == 0)" @onclick="CreateRoom">ایجاد گفتگو</button></div>
+            </div>
+        </div>
+    }
+    @if (_deleteTarget is not null)
+    {
+        <div class="chat-dialog-shade" dir="rtl"><div class="chat-dialog" role="dialog" aria-modal="true" aria-label="تأیید حذف"><h3>حذف پیام</h3><p>این پیام برای اعضای گفتگو حذف خواهد شد. ادامه می‌دهید؟</p><div class="chat-dialog-actions"><button type="button" data-chat-close @onclick="() => _deleteTarget = null">انصراف</button><button type="button" class="chat-danger-button" @onclick="DeleteMessage">حذف پیام</button></div></div></div>
+    }
+    @if (_forwardTarget is not null)
+    {
+        <div class="chat-dialog-shade" dir="rtl">
+            <section class="chat-dialog chat-forward-dialog" role="dialog" aria-modal="true" aria-label="ارسال پیام به گفتگوی دیگر">
+                <header class="chat-forward-header"><span class="chat-forward-header-icon"><ChatIcon Name="forward" /></span><h3>ارسال پیام</h3><button type="button" class="modal-esc-key" data-chat-close @onclick="CloseForward">ESC</button></header>
+                <div class="chat-forward-source"><small>پیام انتخاب‌شده</small><p dir="auto">@Truncate(_forwardTarget.Content, 160)</p></div>
+                <label for="chat-forward-search">جستجوی گفتگو یا مخاطب</label>
+                <div class="chat-forward-search quick-search-field"><ChatIcon Name="search" />
+                    <input id="chat-forward-search" type="search" autocomplete="off" dir="auto" placeholder="نام گروه، نام نمایشی یا نام کاربری..." value="@_forwardQuery" @oninput="OnForwardSearchInput" />
+                    @if (_forwardFinding) { <span class="chat-recipient-spinner" aria-label="در حال جستجو"></span> }
+                </div>
+                <div class="chat-forward-results quick-search-results">
+                    @if (FilteredForwardRooms.Count > 0)
+                    {
+                        <h4>گفتگوها</h4>
+                        @foreach (var room in FilteredForwardRooms)
+                        {
+                            <button type="button" class="chat-forward-result quick-search-result" disabled="@_forwardSending" @onclick="() => ForwardTo(room.Id)" @key="room.Id">
+                                <span class="chat-forward-result-icon"><ChatIcon Name="hash" /></span>
+                                <span class="chat-forward-result-copy"><strong>@RoomName(room)</strong><small dir="auto">@(_forwardPreviews.TryGetValue(room.Id, out var preview) ? Truncate(preview, 78) : "هنوز پیامی ندارد")</small></span>
+                                <ChatIcon Name="arrow-up-left" />
+                            </button>
+                        }
+                    }
+                    @if (_forwardQuery.Trim().Length > 0 && _forwardUsers.Count > 0)
+                    {
+                        <h4>کاربران</h4>
+                        @foreach (var user in _forwardUsers)
+                        {
+                            <button type="button" class="chat-forward-result quick-search-result" disabled="@_forwardSending" @onclick="() => ForwardToUsername(user.Username)" @key="user.Username">
+                                <span class="chat-search-hit-avatar">@Initial(user.DisplayName)</span>
+                                <span class="chat-forward-result-copy"><strong>@user.DisplayName</strong><small>@@@user.Username</small></span>
+                                <ChatIcon Name="arrow-up-left" />
+                            </button>
+                        }
+                    }
+                    @if (FilteredForwardRooms.Count == 0 && _forwardUsers.Count == 0 && !_forwardFinding)
+                    { <p class="chat-forward-empty">مقصدی پیدا نشد.</p> }
+                </div>
+                <div class="chat-dialog-actions"><button type="button" @onclick="CloseForward">انصراف</button></div>
+            </section>
+        </div>
+    }
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <div class="chat-error-toast" dir="rtl" role="alert">@_error <button type="button" aria-label="بستن خطا" @onclick="() => _error = null">✕</button></div>
+    }
+</section>
+
+
+<AppModal IsOpen="_chatPreviewFile is not null" OverlayClass="chat-file-modal-overlay" Title="@_chatPreviewFile?.FileName"
+          MaxWidth="min(96vw, 1500px)" CssClass="cenops-file-preview-dialog" OnClose="CloseChatPreview">
+    <ChildContent>
+        @if (_chatPreviewFile is not null && _chatPreviewMessageId is > 0)
+        {
+            <div class="cenops-file-modal-preview">
+                <AppFilePreview File="_chatPreviewFile" MessageId="_chatPreviewMessageId" />
+            </div>
+        }
+    </ChildContent>
+    <Footer>
+        @if (_chatPreviewFile is not null && _chatPreviewMessageId is > 0)
+        {
+            <a class="knowledge-button primary" href="@($"/api/files/{_chatPreviewFile.Id:D}/download?messageId={_chatPreviewMessageId}")"
+               download="@_chatPreviewFile.FileName">دریافت فایل</a>
+        }
+        <button type="button" class="knowledge-button secondary" @onclick="CloseChatPreview">بستن</button>
+    </Footer>
+</AppModal>
+
+<AppModal IsOpen="_attachmentModalOpen" OverlayClass="chat-file-modal-overlay" Title="پیوست فایل" Description="فایل‌ها را انتخاب، سپس بارگذاری کنید."
+          MaxWidth="min(94vw, 790px)" OnClose="() => _attachmentModalOpen = false">
+    <ChildContent>
+        <AppFileBlock @bind-Value="_attachmentDraft" Mode="FileBlockMode.Edit" @key="_attachmentEditorKey" />
+    </ChildContent>
+    <Footer>
+        <button type="button" class="knowledge-button primary" @onclick="() => _attachmentModalOpen = false">تأیید پیوست‌ها (@AttachedFileCount)</button>
+        <button type="button" class="knowledge-button secondary" @onclick="() => _attachmentModalOpen = false">بستن</button>
+    </Footer>
+</AppModal>
+
+@code {
+    private ClaimsPrincipal _actor = new(new ClaimsIdentity());
+    private List<ChatRoomSummaryDto> _rooms = [];
+    private ChatRoomDto? _selected;
+    private long? _selectedRoomId;
+    private List<ChatMessageDto> _messages = [];
+    private string _username = "";
+    private string _displayName = "کاربر";
+    private string _messageFilter = "", _draft = "", _newGroupTitle = "";
+    private bool _attachmentModalOpen;
+    private AppFileInfo? _chatPreviewFile;
+    private long? _chatPreviewMessageId;
+    private void OpenChatPreview(AppFileInfo file, long messageId)
+    {
+        _chatPreviewFile = file;
+        _chatPreviewMessageId = messageId;
+    }
+    private void CloseChatPreview()
+    {
+        _chatPreviewFile = null;
+        _chatPreviewMessageId = null;
+    }
+    private string _attachmentDraft = string.Empty;
+    private Guid _attachmentEditorKey = Guid.NewGuid();
+    private int AttachedFileCount => FileReferenceCodec.Parse(_attachmentDraft).Count;
+    private string _recipientQuery = "";
+    private string _forwardQuery = "";
+    private List<ChatParticipantDto> _forwardUsers = [];
+    private readonly Dictionary<long, string> _forwardPreviews = new();
+    private CancellationTokenSource? _forwardCancellation;
+    private bool _forwardFinding, _forwardSending;
+    private List<ChatRoomSummaryDto> FilteredForwardRooms => _rooms
+        .Where(r => string.IsNullOrWhiteSpace(_forwardQuery) || RoomName(r).Contains(_forwardQuery.Trim(), StringComparison.OrdinalIgnoreCase) ||
+            r.Members.Any(m => m.Username.Contains(_forwardQuery.Trim(), StringComparison.OrdinalIgnoreCase) ||
+                m.DisplayName.Contains(_forwardQuery.Trim(), StringComparison.OrdinalIgnoreCase)))
+        .Take(25).ToList();
+    private List<ChatParticipantDto> _selectedRecipients = [];
+    private List<ChatParticipantDto> _recipientResults = [];
+    private CancellationTokenSource? _recipientCancellation;
+    private bool _findingRecipients, _directExpanded = true, _groupsExpanded = true;
+    private string? _error;
+    private bool _globalSearchOpen, _searching, _searchFocusRequested;
+    private string _globalQuery = "";
+    private ChatSearchResult _globalResults = new([], [], []);
+    private CancellationTokenSource? _searchCancellation;
+    private long? _targetMessageId;
+    private bool _creating, _detailsOpen, _searchMessages, _busy, _sending, _hasMore, _connected, _scrollRequested;
+    private ChatMessageDto? _contextMessage, _deleteTarget, _forwardTarget, _replyTo, _editing;
+    private double _contextX, _contextY;
+    private int _connectionEpoch;
+    private readonly Dictionary<string, (string Name, DateTimeOffset Time)> _typingUsers = new(StringComparer.OrdinalIgnoreCase);
+    private readonly CancellationTokenSource _typingLifetime = new();
+    private IEnumerable<ChatMessageDto> VisibleMessages => _messages.Where(m => m.DeletedAt is null).Where(m => string.IsNullOrWhiteSpace(_messageFilter) || (m.Content?.Contains(_messageFilter, StringComparison.OrdinalIgnoreCase) ?? false) || m.SenderUsername.Contains(_messageFilter, StringComparison.OrdinalIgnoreCase));
+
+    protected override async Task OnInitializedAsync()
+    {
+        var auth = await Auth.GetAuthenticationStateAsync();
+        _actor = auth.User;
+        _username = _actor.Identity?.Name ?? "";
+        _displayName = _actor.FindFirst(AppClaimTypes.DisplayName)?.Value ?? _username;
+        Inbox.Changed += OnInboxChanged;
+        Inbox.EventReceived += OnInboxEvent;
+        Inbox.TypingReceived += OnInboxTyping;
+        Workspace.Changed += OnWorkspaceChanged;
+        _connected = Inbox.Connected;
+        _connectionEpoch = Inbox.ConnectionEpoch;
+        await LoadRooms();
+        if (Workspace.TakeRequestedRoom() is long roomId) await SelectRoom(roomId);
+        if (Workspace.TakeRequestedUsername() is { } recipient) await OpenUserDm(recipient);
+    }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("cenopsChatRealtime.bindComposer");
+            if (_searchFocusRequested)
+            {
+                _searchFocusRequested = false;
+                await JS.InvokeVoidAsync("cenopsChatRealtime.focusSearch");
+            }
+            if (_targetMessageId is long target)
+            {
+                _targetMessageId = null;
+                await JS.InvokeVoidAsync("cenopsChatRealtime.showMessage", target);
+            }
+            else if (_scrollRequested)
+            {
+                _scrollRequested = false;
+                await JS.InvokeVoidAsync("cenopsChatRealtime.scrollBottom");
+            }
+        }
+        catch (JSDisconnectedException) { }
+        catch (JSException) { }
+    }
+    private async Task LoadRooms()
+    {
+        try { _rooms = (await Rooms.MyRoomsAsync(_actor)).ToList(); }
+        catch (Exception ex) { _error = Friendly(ex); }
+    }
+    private string RoomName(ChatRoomSummaryDto room) => room.Kind == ChatRoomKind.Direct
+        ? room.Members.FirstOrDefault(m => !m.Username.Equals(_username, StringComparison.OrdinalIgnoreCase))?.DisplayName ?? "گفتگوی مستقیم"
+        : room.Title ?? "گروه بی‌عنوان";
+    private string RoomName(ChatRoomDto room) => room.Kind == ChatRoomKind.Direct
+        ? room.Members.FirstOrDefault(m => !m.Username.Equals(_username, StringComparison.OrdinalIgnoreCase))?.DisplayName ?? "گفتگوی مستقیم"
+        : room.Title ?? "گروه بی‌عنوان";
+    private static string DisplayName(ChatMessageDto message) => string.IsNullOrWhiteSpace(message.SenderDisplayName) ? message.SenderUsername : message.SenderDisplayName;
+    private static string Initial(string? value) => string.IsNullOrWhiteSpace(value) ? "?" : value.Trim()[..1].ToUpperInvariant();
+    private static string Friendly(Exception ex) => ex is ChatException ? ex.Message : "عملیات انجام نشد. اتصال و دسترسی خود را بررسی کنید.";
+    private async Task SelectRoom(long id)
+    {
+        _selectedRoomId = id;
+        Workspace.SetActiveRoom(id);
+        _typingUsers.Clear();
+        _detailsOpen = false; _contextMessage = null; _searchMessages = false; _messageFilter = ""; _replyTo = null; _editing = null; _draft = "";
+        _attachmentDraft = ""; _attachmentEditorKey = Guid.NewGuid(); _attachmentModalOpen = false;
+        CloseChatPreview();
+        _busy = true; _messages = []; StateHasChanged();
+        try
+        {
+            _selected = await Rooms.GetAsync(id, _actor);
+            var history = await Messages.HistoryAsync(id, null, 50, _actor);
+            _messages = history.ToList(); _hasMore = history.Count >= 50;
+            _scrollRequested = true;
+            if (_messages.LastOrDefault() is { } last) await Messages.MarkReadAsync(id, last.Id, _actor);
+            await LoadRooms();
+            Inbox.RequestRefresh();
+        }
+        catch (Exception ex) { _selected = null; Workspace.SetActiveRoom(null); _error = Friendly(ex); }
+        finally { _busy = false; }
+    }
+    private async Task LoadOlder()
+    {
+        if (_selectedRoomId is not long id || _messages.Count == 0) return;
+        _busy = true;
+        try { var older = await Messages.HistoryAsync(id, _messages[0].Id, 50, _actor); _messages.InsertRange(0, older); _hasMore = older.Count >= 50; }
+        catch (Exception ex) { _error = Friendly(ex); }
+        finally { _busy = false; }
+    }
+    private void OpenCreate()
+    {
+        _creating = true;
+        _recipientQuery = "";
+        _selectedRecipients.Clear();
+        _recipientResults.Clear();
+        _newGroupTitle = "";
+        _recipientCancellation?.Cancel();
+    }
+    private async Task OnRecipientSearchInput(ChangeEventArgs args)
+    {
+        _recipientQuery = args.Value?.ToString() ?? "";
+        _recipientCancellation?.Cancel();
+        _recipientCancellation = new CancellationTokenSource();
+        var token = _recipientCancellation.Token;
+        var query = _recipientQuery.Trim();
+        _recipientResults = [];
+        _findingRecipients = query.Length > 0;
+        if (query.Length == 0) return;
+        try
+        {
+            await Task.Delay(180, token);
+            var matches = await Search.SearchUsersAsync(query, _actor, token);
+            if (!token.IsCancellationRequested && _creating)
+                _recipientResults = matches.Where(u => !_selectedRecipients.Any(s => s.Username.Equals(u.Username, StringComparison.OrdinalIgnoreCase))).ToList();
+        }
+        catch (OperationCanceledException) { return; }
+        catch (Exception ex) { if (!token.IsCancellationRequested) _error = Friendly(ex); }
+        finally { if (!token.IsCancellationRequested) { _findingRecipients = false; await InvokeAsync(StateHasChanged); } }
+    }
+    private void AddRecipient(ChatParticipantDto user)
+    {
+        if (_selectedRecipients.Any(u => u.Username.Equals(user.Username, StringComparison.OrdinalIgnoreCase))) return;
+        _selectedRecipients.Add(user);
+        _recipientResults.Clear();
+        _recipientQuery = "";
+        _recipientCancellation?.Cancel();
+    }
+    private static string RecipientBadgeText(ChatParticipantDto user) => $"{user.DisplayName} ×";
+    private static string RecipientBadgeTitle(ChatParticipantDto user) => $"@{user.Username} — حذف از گفتگو";
+    private static string RecipientRemoveLabel(ChatParticipantDto user) => $"حذف {user.DisplayName}";
+    private void RemoveRecipient(string username)
+    {
+        _selectedRecipients.RemoveAll(u => u.Username.Equals(username, StringComparison.OrdinalIgnoreCase));
+        if (_selectedRecipients.Count < 2) _newGroupTitle = "";
+    }
+    private async Task CreateRoom()
+    {
+        _busy = true;
+        try
+        {
+            var names = _selectedRecipients.Select(u => u.Username).ToList();
+            var room = await Rooms.CreateAsync(new CreateChatRoomRequest(names, _newGroupTitle), _actor);
+            _creating = false; _selectedRecipients.Clear(); _recipientQuery = ""; _recipientResults.Clear(); _newGroupTitle = "";
+            await LoadRooms(); await SelectRoom(room.Id);
+        }
+        catch (Exception ex) { _error = Friendly(ex); }
+        finally { _busy = false; }
+    }
+    private async Task Send()
+    {
+        if (_selectedRoomId is not long id || _sending ||
+            (string.IsNullOrWhiteSpace(_draft) && AttachedFileCount == 0)) return;
+        _sending = true;
+        try
+        {
+            if (_editing is not null) { await Messages.EditAsync(_editing.Id, _draft, _actor); }
+            else
+            {
+                await Messages.SendAsync(new SendChatMessageRequest(_draft, RoomId: id,
+                    ReplyToMessageId: _replyTo?.Id, AttachmentIds: FileReferenceCodec.Parse(_attachmentDraft)), _actor);
+            }
+            _draft = ""; _editing = null; _replyTo = null;
+            _attachmentDraft = ""; _attachmentModalOpen = false; _attachmentEditorKey = Guid.NewGuid();
+            await RefreshSelected(); _scrollRequested = true;
+        }
+        catch (Exception ex) { _error = Friendly(ex); }
+        finally { _sending = false; }
+    }
+    private static string Truncate(string? value, int max) => value is null ? "" : value.Length <= max ? value : value[..max] + "…";
+    private async Task RefreshSelected()
+    {
+        if (_selectedRoomId is not long id) return;
+        try
+        {
+            var history = await Messages.HistoryAsync(id, null, 50, _actor);
+            _messages = history.ToList(); _hasMore = history.Count >= 50;
+            if (_messages.LastOrDefault() is { } last) await Messages.MarkReadAsync(id, last.Id, _actor);
+        }
+        catch (Exception ex) { _error = Friendly(ex); }
+        Inbox.RequestRefresh();
+    }
+    private async Task OpenContext(MouseEventArgs e, ChatMessageDto m)
+    {
+        if (m.DeletedAt is not null) return;
+        try
+        {
+            var position = await JS.InvokeAsync<ChatMenuPosition>("cenopsChatRealtime.menuPosition", e.ClientX, e.ClientY);
+            _contextX = position.X;
+            _contextY = position.Y;
+        }
+        catch (JSException) { _contextX = 12; _contextY = 70; }
+        _contextMessage = m;
+    }
+    private sealed record ChatMenuPosition(double X, double Y);
+    private void CloseContext() => _contextMessage = null;
+    private async Task Reply() { _replyTo = _contextMessage; _editing = null; _contextMessage = null; await FocusComposer(); }
+    private async Task Forward()
+    {
+        _forwardTarget = _contextMessage; _contextMessage = null;
+        _forwardQuery = ""; _forwardUsers.Clear(); _forwardPreviews.Clear();
+        if (_forwardTarget is null) return;
+        await LoadForwardPreviews();
+    }
+    private async Task LoadForwardPreviews()
+    {
+        // Bounded, authorized preview fetch. Room membership is checked by HistoryAsync.
+        var rooms = _rooms.Where(r => r.LastMessageId.HasValue).Take(25).ToArray();
+        foreach (var room in rooms)
+        {
+            if (_forwardTarget is null) return;
+            try
+            {
+                var last = (await Messages.HistoryAsync(room.Id, null, 1, _actor)).LastOrDefault();
+                if (last?.Content is { } content) _forwardPreviews[room.Id] = content;
+            }
+            catch (ChatException) { /* Membership changed: hide preview. */ }
+        }
+        await InvokeAsync(StateHasChanged);
+    }
+    private async Task OnForwardSearchInput(ChangeEventArgs args)
+    {
+        _forwardQuery = args.Value?.ToString() ?? "";
+        _forwardCancellation?.Cancel();
+        _forwardCancellation = new CancellationTokenSource();
+        var token = _forwardCancellation.Token;
+        _forwardUsers = [];
+        var term = _forwardQuery.Trim();
+        _forwardFinding = term.Length > 0;
+        if (term.Length == 0) return;
+        try
+        {
+            await Task.Delay(180, token);
+            var users = await Search.SearchUsersAsync(term, _actor, token);
+            if (!token.IsCancellationRequested && _forwardTarget is not null)
+                _forwardUsers = users.ToList();
+        }
+        catch (OperationCanceledException) { return; }
+        catch (Exception ex) { if (!token.IsCancellationRequested) _error = Friendly(ex); }
+        finally { if (!token.IsCancellationRequested) { _forwardFinding = false; await InvokeAsync(StateHasChanged); } }
+    }
+    private void CloseForward()
+    {
+        _forwardTarget = null; _forwardQuery = ""; _forwardUsers.Clear();
+        _forwardCancellation?.Cancel();
+    }
+    private async Task ForwardTo(long roomId) => await DeliverForward(new ForwardChatMessageRequest(_forwardTarget!.Id, RoomId: roomId));
+    private async Task ForwardToUsername(string username) => await DeliverForward(new ForwardChatMessageRequest(_forwardTarget!.Id, Username: username));
+    private async Task DeliverForward(ForwardChatMessageRequest request)
+    {
+        if (_forwardTarget is null || _forwardSending) return;
+        _forwardSending = true;
+        try
+        {
+            var sent = await Messages.ForwardAsync(request, _actor);
+            CloseForward(); await LoadRooms(); await SelectRoom(sent.RoomId);
+        }
+        catch (Exception ex) { _error = Friendly(ex); }
+        finally { _forwardSending = false; }
+    }
+    private async Task GoToMessage(long id)
+    {
+        if (_selectedRoomId is long roomId)
+            await OpenSearchMessage(roomId, id);
+    }
+    private async Task OpenUserDm(string username)
+    {
+        if (string.IsNullOrWhiteSpace(username) || username.Equals(_username, StringComparison.OrdinalIgnoreCase)) return;
+        _detailsOpen = false;
+        await OpenSearchUser(username);
+    }
+    private async Task BeginEdit() { _editing = _contextMessage; _replyTo = null; _draft = _editing?.Content ?? ""; _contextMessage = null; await FocusComposer(); }
+    private void CancelEdit() { _editing = null; _draft = ""; }
+    private void ConfirmDelete() { _deleteTarget = _contextMessage; _contextMessage = null; }
+    private async Task DeleteMessage()
+    {
+        if (_deleteTarget is null) return;
+        try { await Messages.DeleteAsync(_deleteTarget.Id, _actor); _deleteTarget = null; await RefreshSelected(); }
+        catch (Exception ex) { _error = Friendly(ex); }
+    }
+    private async Task FocusComposer()
+    {
+        StateHasChanged();
+        try { await JS.InvokeVoidAsync("cenopsChatRealtime.focusComposer"); }
+        catch (JSException) { }
+    }
+    private void OpenSearch()
+    {
+        _globalSearchOpen = true;
+        _searchFocusRequested = true;
+    }
+    private void CloseSearch()
+    {
+        _globalSearchOpen = false;
+        _globalQuery = "";
+        _searchResultsReset();
+    }
+    private void _searchResultsReset()
+    {
+        _searchCancellation?.Cancel();
+        _searching = false;
+        _globalResults = new([], [], []);
+    }
+    private async Task OnGlobalSearchInput(ChangeEventArgs args)
+    {
+        _globalQuery = args.Value?.ToString() ?? "";
+        _searchCancellation?.Cancel();
+        _searchCancellation = new CancellationTokenSource();
+        var token = _searchCancellation.Token;
+        var query = _globalQuery;
+        _searching = query.Trim().Length >= 2;
+        _globalResults = new([], [], []);
+        if (!_searching) return;
+        try
+        {
+            await Task.Delay(250, token);
+            var result = await Search.SearchAsync(query, _actor, token);
+            if (token.IsCancellationRequested || !_globalSearchOpen) return;
+            _globalResults = result;
+        }
+        catch (OperationCanceledException) { return; }
+        catch (Exception ex) { if (!token.IsCancellationRequested) _error = Friendly(ex); }
+        finally { if (!token.IsCancellationRequested) { _searching = false; await InvokeAsync(StateHasChanged); } }
+    }
+    private void HandleSearchKeys(KeyboardEventArgs args)
+    {
+        if (args.Key == "Escape") CloseSearch();
+    }
+    private async Task OpenSearchRoom(long roomId)
+    {
+        CloseSearch();
+        await SelectRoom(roomId);
+    }
+    private async Task OpenSearchUser(string username)
+    {
+        CloseSearch();
+        _busy = true;
+        try
+        {
+            var room = await Rooms.GetOrCreateDirectAsync(username, _actor);
+            await LoadRooms();
+            await SelectRoom(room.Id);
+        }
+        catch (Exception ex) { _error = Friendly(ex); }
+        finally { _busy = false; }
+    }
+    private async Task OpenSearchMessage(long roomId, long messageId)
+    {
+        CloseSearch();
+        await SelectRoom(roomId);
+        if (_selectedRoomId != roomId) return;
+        if (_messages.All(x => x.Id != messageId))
+        {
+            try
+            {
+                var near = await Messages.HistoryAsync(roomId, messageId + 1, 50, _actor);
+                _messages = near.ToList();
+                _hasMore = near.Count >= 50;
+            }
+            catch (Exception ex) { _error = Friendly(ex); return; }
+        }
+        _scrollRequested = false;
+        _targetMessageId = messageId;
+    }
+
+    private void OnInboxChanged() => _ = InvokeAsync(async () =>
+    {
+        if (Inbox.Connected && !_connected)
+        {
+            await LoadRooms();
+            await RefreshSelected();
+        }
+        _connected = Inbox.Connected;
+        _connectionEpoch = Inbox.ConnectionEpoch;
+        StateHasChanged();
+    });
+
+    private void OnInboxEvent(string eventName, long? roomId) =>
+        _ = InvokeAsync(() => OnChatRealtimeEvent(eventName, roomId));
+
+    private async Task OnChatRealtimeEvent(string eventName, long? roomId)
+    {
+        if (eventName is "ChatRoomUpdated" or "ChatMessageCreated" or "ChatMessageUpdated" or "ChatMessageDeleted" or "ChatReadUpdated")
+        {
+            await LoadRooms();
+            if (_selectedRoomId is long current && !_rooms.Any(r => r.Id == current))
+            {
+                _selectedRoomId = null; _selected = null; _messages.Clear(); _detailsOpen = false;
+                Workspace.SetActiveRoom(null);
+            }
+            else if (eventName != "ChatReadUpdated" && roomId == _selectedRoomId)
+            {
+                await RefreshSelected(); _scrollRequested = true;
+            }
+            StateHasChanged();
+        }
+    }
+
+    private void OnInboxTyping(long roomId, string username, string name, bool typing) =>
+        _ = InvokeAsync(async () =>
+        {
+            if (_selectedRoomId != roomId || _selected?.Kind != ChatRoomKind.Group ||
+                username.Equals(_username, StringComparison.OrdinalIgnoreCase)) return;
+            if (!typing) _typingUsers.Remove(username);
+            else
+            {
+                var stamp = DateTimeOffset.UtcNow;
+                _typingUsers[username] = (name, stamp);
+                _ = ExpireTypingAsync(username, stamp);
+            }
+            StateHasChanged();
+            await Task.CompletedTask;
+        });
+
+    private async Task ExpireTypingAsync(string username, DateTimeOffset stamp)
+    {
+        try { await Task.Delay(3500, _typingLifetime.Token); }
+        catch (OperationCanceledException) { return; }
+        await InvokeAsync(() =>
+        {
+            if (_typingUsers.TryGetValue(username, out var state) && state.Time == stamp)
+            {
+                _typingUsers.Remove(username);
+                StateHasChanged();
+            }
+        });
+    }
+
+    private void OnWorkspaceChanged() => _ = InvokeAsync(async () =>
+    {
+        if (Workspace.TakeRequestedRoom() is long id && _selectedRoomId != id)
+            await SelectRoom(id);
+        if (Workspace.TakeRequestedUsername() is { } recipient)
+            await OpenUserDm(recipient);
+        StateHasChanged();
+    });
+
+    public async ValueTask DisposeAsync()
+    {
+        _typingLifetime.Cancel();
+        _typingLifetime.Dispose();
+        Inbox.Changed -= OnInboxChanged;
+        Inbox.EventReceived -= OnInboxEvent;
+        Inbox.TypingReceived -= OnInboxTyping;
+        Workspace.Changed -= OnWorkspaceChanged;
+        try { await JS.InvokeVoidAsync("cenopsChatRealtime.stopTyping"); }
+        catch (JSDisconnectedException) { }
+        catch (JSException) { }
+        _searchCancellation?.Cancel();
+        _searchCancellation?.Dispose();
+        _recipientCancellation?.Cancel();
+        _recipientCancellation?.Dispose();
+        _forwardCancellation?.Cancel();
+        _forwardCancellation?.Dispose();
+
+    }
+}

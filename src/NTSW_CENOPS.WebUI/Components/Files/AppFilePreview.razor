@@ -1,0 +1,118 @@
+@using NTSW_CENOPS.Application.Files
+@inject IAppFileGateway FileGateway
+@inject IFileResourceAccess FileAccess
+@inject AuthenticationStateProvider Auth
+
+<div class="cenops-file-preview @(Compact ? "cenops-file-preview--compact" : "")" dir="rtl" aria-label="پیش‌نمایش فایل">
+    @if (_loading)
+    {
+        <div class="cenops-file-preview-state" role="status">در حال آماده‌سازی پیش‌نمایش…</div>
+    }
+    else if (_document is { Kind: AppFilePreviewKind.Image } && File is not null)
+    {
+        <img class="cenops-file-preview-image" src="@ContentUrl(File.Id)" alt="@File.FileName" loading="lazy" />
+    }
+    else if (_document is { Kind: AppFilePreviewKind.Video } && File is not null)
+    {
+        <video class="cenops-file-preview-image" controls preload="metadata" src="@ContentUrl(File.Id)"></video>
+    }
+    else if (_document is { Kind: AppFilePreviewKind.Pdf } && File is not null)
+    {
+        <iframe class="cenops-file-preview-pdf" src="@PdfUrl(File.Id)" title="پیش‌نمایش PDF: @File.FileName" loading="lazy"></iframe>
+    }
+    else if (_document is { Kind: AppFilePreviewKind.Text } data)
+    {
+        <pre class="cenops-file-preview-text" dir="auto"><code>@data.Text</code></pre>
+    }
+    else if (_document is { Kind: AppFilePreviewKind.Spreadsheet, Sheets: not null } sheetData)
+    {
+        <div class="cenops-file-preview-book">
+            @if (sheetData.Sheets.Count > 1)
+            {
+                <div class="cenops-file-preview-sheet-tabs">
+                    @for (var index = 0; index < sheetData.Sheets.Count; index++)
+                    {
+                        var i = index;
+                        <button type="button" class="@(_sheetIndex == index ? "active" : "")" @onclick="() => _sheetIndex = i">@sheetData.Sheets[index].Name</button>
+                    }
+                </div>
+            }
+            @if (sheetData.Sheets.Count > _sheetIndex)
+            {
+                var rows = sheetData.Sheets[_sheetIndex].Rows;
+                var columns = rows.Count == 0 ? 0 : rows.Max(row => row.Count);
+                <div class="cenops-file-preview-grid-scroll">
+                    <table class="cenops-file-preview-grid">
+                        <thead><tr><th scope="col">#</th>@for (var col = 0; col < columns; col++) { <th scope="col">@ColumnName(col)</th> }</tr></thead>
+                        <tbody>
+                            @for (var rowIndex = 0; rowIndex < rows.Count; rowIndex++)
+                            {
+                                var row = rows[rowIndex];
+                                <tr><th scope="row">@(rowIndex + 1)</th>
+                                    @for (var col = 0; col < columns; col++) { <td>@(col < row.Count ? row[col] : "")</td> }
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                @if (rows.Count == 0) { <div class="cenops-file-preview-state">داده‌ای برای نمایش یافت نشد.</div> }
+            }
+        </div>
+    }
+    else
+    {
+        <div class="cenops-file-preview-state">
+            <span class="cenops-file-preview-fallback">@FileExtension</span>
+            <p>@(_document?.Message ?? "پیش‌نمایش این فایل در دسترس نیست. می‌توانید فایل اصلی را دریافت کنید.")</p>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public AppFileInfo? File { get; set; }
+    [Parameter] public bool Compact { get; set; }
+    [Parameter] public int? NoteId { get; set; }
+    [Parameter] public long? MessageId { get; set; }
+    private string AuthorizationQuery => NoteId is > 0 ? $"?noteId={NoteId.Value}" : MessageId is > 0 ? $"?messageId={MessageId.Value}" : "";
+
+    private Guid? _loadedId;
+    private (int? noteId, long? messageId) _loadedParent;
+    private AppFilePreviewData? _document;
+    private int _sheetIndex;
+    private bool _loading;
+    private string FileExtension => File is null ? "FILE" : Path.GetExtension(File.FileName).TrimStart('.').ToUpperInvariant();
+    private string ContentUrl(Guid id) => $"/api/files/{id:D}/content{AuthorizationQuery}";
+    private string PdfUrl(Guid id) => $"/api/files/{id:D}/preview{AuthorizationQuery}";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_loadedId == File?.Id && _loadedParent == (NoteId, MessageId)) return;
+        _loadedParent = (NoteId, MessageId);
+        _loadedId = File?.Id;
+        _document = null;
+        _sheetIndex = 0;
+        if (File is null) return;
+        _loading = true;
+        try
+        {
+            var user = (await Auth.GetAuthenticationStateAsync()).User;
+            if (!await FileAccess.CanReadAsync(File.Id, MessageId, NoteId, user))
+                throw new FileNotFoundException();
+            _document = await FileGateway.PreviewAsync(File.Id);
+        }
+        catch (Exception ex) when (ex is IOException or InvalidDataException or FileNotFoundException)
+        {
+            _document = new AppFilePreviewData(AppFilePreviewKind.Unavailable,
+                Message: "فایل برای پیش‌نمایش در دسترس نیست.");
+        }
+        finally { _loading = false; }
+    }
+
+    private static string ColumnName(int index)
+    {
+        var label = "";
+        for (index++; index > 0; index = (index - 1) / 26)
+            label = (char)('A' + (index - 1) % 26) + label;
+        return label;
+    }
+}

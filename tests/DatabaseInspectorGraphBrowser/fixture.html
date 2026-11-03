@@ -1,0 +1,18 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../../src/NTSW_CENOPS.WebUI/wwwroot/css/database-inspector.css"><link rel="stylesheet" href="../../src/NTSW_CENOPS.WebUI/Components/Common/GraphWorkspace.razor.css"><style>body{margin:0}#root{width:1100px;height:720px}.graph-workspace-fullscreen-notices{position:fixed;bottom:18px;left:18px}.app-notice-stack{padding:15px;background:white;border:1px solid #aac}.fake-toolbar{position:fixed;bottom:10px;right:10px;z-index:30}</style></head><body>
+<div id="root" class="dbi-graph"><div class="graph-workspace"><div class="dbi-graph-stage graph-workspace-stage"></div><div class="graph-workspace-fullscreen-notices"><div class="app-notice-stack">تست اعلان در حالت تمام‌صفحه</div></div></div></div>
+<div class="fake-toolbar"><button id="zoom">Zoom in</button><button id="more">Additional roots</button><button id="fullscreen">Fullscreen</button></div>
+<script type="module">
+import * as graph from '../../src/NTSW_CENOPS.WebUI/wwwroot/js/database-inspector-graph.js?v=2.53';
+const root=document.getElementById('root');const nodes=[
+{id:1,schema:'core',name:'Tenant',level:0,pkLoaded:false,fkLoaded:false},
+{id:2,schema:'trade',name:'PurchaseOrder',level:0,pkLoaded:false,fkLoaded:false},
+{id:3,schema:'shipping',name:'Shipment',level:1,pkLoaded:false,fkLoaded:false},
+{id:4,schema:'customs',name:'Declaration',level:2,pkLoaded:false,fkLoaded:false}];
+const edges=[{id:11,childId:3,parentId:2},{id:12,childId:4,parentId:3}];
+window.graph=graph;window.actions=[];
+const dotnet={invokeMethodAsync:(name,id)=>{window.actions.push({name,id});return Promise.resolve()}};
+graph.mount(root,nodes,edges,dotnet);
+document.getElementById('zoom').onclick=()=>graph.zoom(root,1.5);
+document.getElementById('more').onclick=()=>graph.update(root,[...nodes,{id:5,schema:'release',name:'GateEvent',level:0,pkLoaded:false,fkLoaded:false}],edges);
+document.getElementById('fullscreen').onclick=()=>graph.fullscreen(root);
+</script></body></html>

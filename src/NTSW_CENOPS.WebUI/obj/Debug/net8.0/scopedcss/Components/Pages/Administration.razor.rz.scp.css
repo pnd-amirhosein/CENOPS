@@ -1,0 +1,76 @@
+.administration-page[b-1p2k48b7k6] {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    width: 100%;
+    min-width: 0;
+}
+
+.administration-header[b-1p2k48b7k6] {
+    text-align: center;
+    padding-bottom: 0.15rem;
+}
+
+.administration-header h1[b-1p2k48b7k6] {
+    margin: 0;
+    color: #0f172a;
+    font-size: 1.15rem;
+    font-weight: 800;
+}
+
+.administration-header p[b-1p2k48b7k6] {
+    margin: 0.3rem 0 0;
+    color: #94a3b8;
+    font-size: 0.78rem;
+}
+
+.administration-tabs[b-1p2k48b7k6] {
+    width: 100%;
+    display: flex;
+    justify-content: flex-start;
+    padding: 0.2rem 0 0.65rem;
+    border-bottom: 1px solid #eef2f7;
+}
+
+.administration-table[b-1p2k48b7k6] {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    min-width: 0;
+}
+
+.role-editor-menu-action[b-1p2k48b7k6]{width:100%;display:flex;align-items:center;gap:8px;min-height:37px;padding:8px 12px;border:0;background:transparent;color:#14516b;font:inherit;font-weight:700;font-size:13px;text-align:right;cursor:pointer;white-space:nowrap;}
+.role-editor-menu-action:hover[b-1p2k48b7k6]{background:#e9f8fa;color:#047f94;}
+.role-editor-menu-action span[b-1p2k48b7k6]{color:#06a0b3;font-size:19px;}
+.role-editor-username[b-1p2k48b7k6]{margin:0 0 15px;color:#28465b;font-size:13px;font-weight:800;}
+.role-editor-username span[b-1p2k48b7k6]{color:#71889c;font-weight:500;margin-inline:8px;}
+.role-editor-grid[b-1p2k48b7k6]{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;}
+.role-editor-panel[b-1p2k48b7k6]{border:1px solid #dae9ee;background:#f8fcfd;border-radius:16px;padding:14px;min-height:245px;display:flex;flex-direction:column;gap:11px;}
+.role-editor-panel-title[b-1p2k48b7k6]{display:flex;align-items:center;justify-content:space-between;color:#163b52;font-size:14px;}
+.role-editor-panel-title span[b-1p2k48b7k6]{background:#e0f2f5;border-radius:999px;color:#047f94;padding:2px 9px;font-size:12px;}
+.role-editor-search[b-1p2k48b7k6]{width:100%;height:37px;padding:5px 12px;border-radius:11px;border:1px solid #d3e6eb;background:white;color:#173c51;outline:none;font-size:13px;}
+.role-editor-search:focus[b-1p2k48b7k6]{border-color:#06a1b4;}
+.role-editor-badges[b-1p2k48b7k6]{display:flex;align-content:flex-start;align-items:flex-start;flex-wrap:wrap;gap:8px;flex:1;}
+.role-editor-empty[b-1p2k48b7k6]{font-size:12px;color:#8298a8;line-height:1.8;}
+.role-editor-error[b-1p2k48b7k6]{color:#b43b36;font-size:13px;margin:14px 0 0;}
+.role-editor-save[b-1p2k48b7k6],.role-editor-cancel[b-1p2k48b7k6]{border:1px solid transparent;border-radius:11px;padding:9px 17px;font-size:13px;font-weight:800;cursor:pointer;}
+.role-editor-save[b-1p2k48b7k6]{background:#099bad;color:white;}.role-editor-save:hover[b-1p2k48b7k6]{background:#067d8e;}
+.role-editor-cancel[b-1p2k48b7k6]{background:#f0f6f8;color:#36566b;border-color:#dce9ed;}
+.role-editor-save:disabled[b-1p2k48b7k6],.role-editor-cancel:disabled[b-1p2k48b7k6]{opacity:.6;cursor:wait;}
+@media(max-width:650px){.role-editor-grid[b-1p2k48b7k6]{grid-template-columns:1fr;}.role-editor-panel[b-1p2k48b7k6]{min-height:155px;}}
+
+.permission-checklist[b-1p2k48b7k6] { margin-top: 12px; max-height: 350px; overflow-y: auto; display: grid; gap: 8px; padding: 5px; }
+.permission-item[b-1p2k48b7k6] { display: flex; align-items: center; gap: 12px; background: #f7fcfd; border: 1px solid #dbecef; border-radius: 13px; padding: 12px 14px; cursor: pointer; transition: border-color .18s, background .18s; }
+.permission-item:hover[b-1p2k48b7k6] { background: #ebf9fb; border-color: #a4d8e0; }
+.permission-item input[b-1p2k48b7k6] { width: 17px; height: 17px; accent-color: #079eaf; flex-shrink: 0; }
+.permission-item-copy[b-1p2k48b7k6] { display: grid; gap: 3px; font-size: 13px; color: #1b3b50; }
+.permission-item-copy small[b-1p2k48b7k6] { font-size: 11px; color: #648395; }
+
+.access-help-guide[b-1p2k48b7k6]{display:grid;gap:16px;max-height:min(65vh,610px);overflow:auto;padding:4px 2px 8px;}
+.access-help-guide section[b-1p2k48b7k6]{display:grid;gap:7px;}
+.access-help-guide h3[b-1p2k48b7k6]{margin:0;color:#14384b;font-size:14px;font-weight:800;}
+.access-help-guide p[b-1p2k48b7k6]{margin:0;color:#405d70;font-size:13px;line-height:1.95;}
+.access-help-guide code[b-1p2k48b7k6]{font:12px/1.8 ui-monospace,SFMono-Regular,Consolas,monospace;background:#e8f5f7;color:#046a80;padding:1px 5px;border-radius:5px;}
+.access-help-guide pre[b-1p2k48b7k6]{white-space:pre-wrap;overflow-wrap:anywhere;margin:1px 0 0;padding:13px 16px;border-radius:12px;background:#112c3a;color:#d6f8fa;font-size:12px;line-height:1.8;}
+.access-help-guide pre code[b-1p2k48b7k6]{background:transparent;color:inherit;padding:0;}
+.access-help-guide .access-help-note[b-1p2k48b7k6]{background:#e5f7fa;border:1px solid #bfe9ee;border-radius:11px;padding:11px 13px;color:#096c81;}

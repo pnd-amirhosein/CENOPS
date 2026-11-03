@@ -1,0 +1,12 @@
+<textarea class="@CssClass" rows="@Rows" maxlength="@MaxLength" placeholder="@Placeholder" aria-label="@Label"
+          dir="auto" @oninput="OnInput">@Value</textarea>
+@code {
+    [Parameter] public string Value { get; set; } = string.Empty;
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+    [Parameter] public string CssClass { get; set; } = string.Empty;
+    [Parameter] public string Label { get; set; } = "متن";
+    [Parameter] public string Placeholder { get; set; } = string.Empty;
+    [Parameter] public int MaxLength { get; set; } = 12000;
+    [Parameter] public int Rows { get; set; } = 5;
+    private Task OnInput(ChangeEventArgs e) => ValueChanged.InvokeAsync(e.Value?.ToString() ?? string.Empty);
+}

@@ -1,0 +1,63 @@
+@using NTSW_CENOPS.Application.Profiles
+@using NTSW_CENOPS.Components.Chat
+@using NTSW_CENOPS.Components.Common.Dates
+@using NTSW_CENOPS.Application.Access
+@using NTSW_CENOPS.Domain.Authorization
+@using System.Security.Claims
+@inject IUserHoverProfileService Profiles
+@inject AuthenticationStateProvider Auth
+@inject IAccessService Access
+@inject ChatWorkspaceState Chat
+
+<span class="user-hover-root" dir="rtl" @onmouseenter="LoadAsync" @onfocusin="LoadAsync" @onmouseleave="Hide">
+    @if (ChildContent is null)
+    {
+        <span class="user-hover-trigger" tabindex="0" aria-label="مشخصات @DisplayName">@DisplayName</span>
+    }
+    else { @ChildContent }
+    @if (_visible && _profile is { } user)
+    {
+        <span class="user-hover-popover cenops-liquid-glass" role="group" aria-label="مشخصات کاربری">
+            <strong>@user.DisplayName</strong>
+            <small dir="ltr">@@@user.Username</small>
+            <span class="user-hover-birth">تاریخ تولد: @(user.BirthDate is { } date ? JalaliDate.Date(date) : "ثبت نشده")</span>
+            @if (_canMessage && !IsSelf(user.Username))
+            {
+                <button type="button" class="user-hover-message" @onclick="() => Message(user.Username)" @onclick:stopPropagation="true">پیام مستقیم <span aria-hidden="true">↗</span></button>
+            }
+        </span>
+    }
+</span>
+
+@code {
+    [Parameter, EditorRequired] public string DisplayName { get; set; } = "";
+    [Parameter] public string? Username { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    private UserHoverProfile? _profile;
+    private bool _visible, _canMessage, _loaded;
+    private string _currentUsername = "";
+    private bool IsSelf(string username) => username.Equals(_currentUsername, StringComparison.OrdinalIgnoreCase);
+    protected override void OnParametersSet()
+    {
+        var key = $"{Username}|{DisplayName}";
+        if (_key == key) return;
+        _key = key; _loaded = false; _profile = null; _visible = false;
+    }
+    private string? _key;
+    private async Task LoadAsync()
+    {
+        _visible = true;
+        if (_loaded) return;
+        _loaded = true;
+        try
+        {
+            var actor = (await Auth.GetAuthenticationStateAsync()).User;
+            _currentUsername = actor.Identity?.Name ?? "";
+            _canMessage = await Access.HasAccessAsync(actor, AccessKeys.Chat);
+            _profile = await Profiles.FindAsync(DisplayName, Username, actor);
+        }
+        catch { _profile = null; }
+    }
+    private void Hide() => _visible = false;
+    private void Message(string username) { _visible = false; Chat.OpenDirect(username); }
+}

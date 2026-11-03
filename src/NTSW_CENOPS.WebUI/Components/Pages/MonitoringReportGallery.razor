@@ -1,0 +1,85 @@
+@page "/reports"
+@using NTSW_CENOPS.Application.Reports
+@using NTSW_CENOPS.Domain.Authorization
+@inject IMonitoringReportChartService Charts
+@inject IMonitoringReportService Reports
+@inject AuthenticationStateProvider AuthState
+@attribute [AccessAuthorize(AccessKeys.ViewReports)]
+@rendermode InteractiveServer
+
+<PageTitle>گزارش‌ها</PageTitle>
+
+<div class="report-gallery" dir="rtl">
+    <SectionContent SectionName="cenops-page-actions">
+        <PageHeaderSearch @bind-Value="_search" Label="جستجو در گزارش‌ها" Placeholder="جستجو در گزارش‌ها..." />
+        @if (_canManage)
+        {
+            <a href="/reports/manage" class="page-action-button">مدیریت گزارش‌ها</a>
+        }
+    </SectionContent>
+    @if (_loading)
+    {
+        <AppLoading IsLoading="true" Variant="inline" Label="در حال آماده‌سازی نمودارها..." />
+    }
+    else if (_error is not null)
+    {
+        <div class="report-alert report-alert-error" role="alert">@_error</div>
+        <button type="button" class="report-secondary" @onclick="LoadAsync">تلاش مجدد</button>
+    }
+    else if (_charts.Count == 0)
+    {
+        <div class="report-empty report-empty-feature">
+            <h3>هنوز گزارشی تعریف نشده است</h3>
+            <p>برای مشاهده نمودارها، ابتدا یک گزارش از نتایج ذخیره‌شده کارهای خودکار ایجاد کنید.</p>
+            @if (_canManage)
+            {
+                <a href="/reports/manage" class="report-secondary">مدیریت گزارش‌ها</a>
+            }
+        </div>
+    }
+    else if (FilteredCharts.Count == 0)
+    {
+        <div class="report-gallery-status">گزارشی با این عبارت پیدا نشد.</div>
+    }
+    else
+    {
+        <div class="report-gallery-grid">
+            @foreach (var chart in FilteredCharts)
+            {
+                <MonitoringReportChart @key="chart.ReportId" Data="chart" />
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private IReadOnlyList<MonitoringChartData> _charts = [];
+    private string _search = string.Empty;
+    private bool _canManage;
+    private IReadOnlyList<MonitoringChartData> FilteredCharts => string.IsNullOrWhiteSpace(_search)
+        ? _charts
+        : _charts.Where(x => x.Name.Contains(_search.Trim(), StringComparison.OrdinalIgnoreCase) ||
+                              x.JobName.Contains(_search.Trim(), StringComparison.OrdinalIgnoreCase) ||
+                              x.ComparisonField.Contains(_search.Trim(), StringComparison.OrdinalIgnoreCase)).ToArray();
+    private bool _loading = true;
+    private string? _error;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+        try
+        {
+            var actor = (await AuthState.GetAuthenticationStateAsync()).User;
+            _canManage = await Reports.CanManageAsync(actor);
+            _charts = await Charts.GetGalleryAsync(actor);
+        }
+        catch (Exception)
+        {
+            _error = "دریافت نمودارهای گزارش‌ها انجام نشد؛ اتصال پایگاه‌داده و دسترسی‌ها را بررسی کنید.";
+        }
+        finally { _loading = false; }
+    }
+}

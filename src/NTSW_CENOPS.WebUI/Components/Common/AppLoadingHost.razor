@@ -1,0 +1,11 @@
+@using NTSW_CENOPS.Components.Common.Loading
+@inject AppBusyService Busy
+@implements IDisposable
+
+<AppLoading IsLoading="@Busy.IsBusy" Variant="page" Label="@Busy.Label" />
+
+@code {
+    protected override void OnInitialized() => Busy.Changed += OnBusyChanged;
+    private void OnBusyChanged() => _ = InvokeAsync(StateHasChanged);
+    public void Dispose() => Busy.Changed -= OnBusyChanged;
+}

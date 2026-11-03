@@ -1,0 +1,142 @@
+@if (IsOpen)
+{
+    <div class="app-modal-backdrop @OverlayClass" data-app-modal-escape="@(CloseOnEscape ? "true" : "false")" @onclick="HandleBackdropClick">
+        @if (CloseOnEscape)
+        {
+            <button type="button" class="app-modal-escape-trigger" tabindex="-1" aria-hidden="true" @onclick="HandleEscapeClick" @onclick:stopPropagation="true"></button>
+        }
+        <section class="@SurfaceCssClass"
+                 style="@ModalStyle"
+                 role="dialog"
+                 aria-modal="true"
+                 aria-labelledby="@TitleElementId"
+                 aria-label="@AccessibleLabelWhenNoTitle"
+                 aria-describedby="@DescriptionElementId"
+                 dir="@Direction"
+                 @onclick:stopPropagation="true">
+            @if (FloatingClose)
+            {
+                <button class="app-modal-floating-close" type="button" title="بستن (Esc)" aria-label="بستن پنجره" @onclick="NotifyClosedAsync" @onclick:stopPropagation="true">
+                    <span class="modal-esc-key">ESC</span>
+                </button>
+            }
+            @if (!string.IsNullOrWhiteSpace(Title) || !string.IsNullOrWhiteSpace(Description))
+            {
+                <header class="app-modal-heading">
+                    @if (!string.IsNullOrWhiteSpace(Title))
+                    {
+                        <h2 id="@_titleId">@Title</h2>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(Description))
+                    {
+                        <p id="@_descriptionId">@Description</p>
+                    }
+                </header>
+            }
+
+            @if (ChildContent is not null)
+            {
+                <div class="app-modal-body">
+                    @ChildContent
+                </div>
+            }
+
+            @if (Footer is not null)
+            {
+                <footer class="app-modal-footer">
+                    @Footer
+                </footer>
+            }
+        </section>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public string? OverlayClass { get; set; }
+
+    [Parameter]
+    public bool IsOpen { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> IsOpenChanged { get; set; }
+
+    [Parameter]
+    public string? Title { get; set; }
+
+    [Parameter]
+    public string? Description { get; set; }
+
+    [Parameter]
+    public string? AccessibleLabel { get; set; }
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    [Parameter]
+    public RenderFragment? Footer { get; set; }
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    [Parameter]
+    public bool CloseOnBackdrop { get; set; } = true;
+
+    // Reusable policy: prevent Escape from closing sensitive dialogs without
+    // changing backdrop or explicit Close-button behavior. Defaults to enabled.
+    [Parameter]
+    public bool CloseOnEscape { get; set; } = true;
+
+    [Parameter]
+    public string MaxWidth { get; set; } = "31rem";
+
+    [Parameter]
+    public string Direction { get; set; } = "rtl";
+
+    [Parameter]
+    public string CssClass { get; set; } = string.Empty;
+
+    [Parameter] public bool FloatingClose { get; set; }
+
+    // An edge-to-edge content mode for image-led or branded dialogs.
+    // The usual AppModal padding and existing dialogs are unchanged.
+    [Parameter] public bool FlushContent { get; set; }
+
+    private readonly string _titleId = $"modal-title-{Guid.NewGuid():N}";
+    private readonly string _descriptionId = $"modal-description-{Guid.NewGuid():N}";
+
+    private string SurfaceCssClass => FlushContent
+        ? $"app-modal-surface {CssClass} app-modal-surface--flush"
+        : $"app-modal-surface {CssClass}";
+
+    private string ModalStyle => $"--app-modal-width: {MaxWidth};";
+    private string? TitleElementId => string.IsNullOrWhiteSpace(Title) ? null : _titleId;
+    private string? AccessibleLabelWhenNoTitle => string.IsNullOrWhiteSpace(Title) ? AccessibleLabel : null;
+    private string? DescriptionElementId => string.IsNullOrWhiteSpace(Description) ? null : _descriptionId;
+
+    private async Task HandleEscapeClick()
+    {
+        if (!CloseOnEscape) return;
+        await NotifyClosedAsync();
+    }
+
+    private async Task HandleBackdropClick()
+    {
+        if (!CloseOnBackdrop) return;
+        await NotifyClosedAsync();
+    }
+
+    private async Task NotifyClosedAsync()
+    {
+        if (IsOpenChanged.HasDelegate)
+        {
+            await IsOpenChanged.InvokeAsync(false);
+        }
+
+        if (OnClose.HasDelegate)
+        {
+            await OnClose.InvokeAsync();
+        }
+    }
+}

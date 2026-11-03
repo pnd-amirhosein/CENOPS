@@ -1,0 +1,61 @@
+/* Glasswork 2.17 — intrinsic-height dashboards, compact controls, retained tile styling. */
+.dynamic-dashboard{direction:rtl;display:flex;flex-direction:column;gap:7px;width:100%;min-width:0;padding:0;color:#294555}
+.dashboard-topbar{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;min-height:44px}
+.dashboard-actions{display:flex;align-items:center;gap:8px;margin-right:auto;min-width:0;flex-wrap:wrap;direction:rtl}
+.dash-button,.dashboard-picker{height:37px;min-height:37px;border:1px solid #d2e2e8;border-radius:10px;background:#ffffffdf;color:#365b6c;display:inline-flex;justify-content:center;align-items:center;gap:7px;padding:0 13px;font-size:11px;font-weight:750;white-space:nowrap;box-shadow:0 4px 14px #18384909;cursor:pointer}
+.dash-button svg{width:15px;height:15px;flex:none}.dash-button:hover:not(:disabled){background:#eaf8fa;border-color:#afd8df;color:#078ca2}
+.dash-button:disabled,.dashboard-picker:disabled{opacity:.5;cursor:not-allowed}.dash-button.dash-primary{background:#059bad;border-color:#059bad;color:white}.dash-button.dash-primary:hover:not(:disabled){background:#07889b;color:white}
+.dash-button.dash-add{color:#087e8f;border-color:#abdae1;background:#eafaFC}.dash-button.dash-add span{font-size:19px;line-height:1}
+.dash-icon-button{width:37px;padding:0;font-size:22px;font-weight:400}.dashboard-picker{min-width:185px;max-width:240px;direction:rtl;text-align:right;padding-inline:11px 32px}
+/* Both zones follow their content height; empty zones don't reserve workspace. */
+.dashboard-zones{display:flex;flex-direction:column;gap:12px;min-height:0}
+.dashboard-zone{display:flex;min-width:0;flex-direction:column;gap:7px;background:transparent;border:0;border-radius:0;padding:0;margin:0;box-shadow:none;overflow:visible}
+.dashboard-global,.dashboard-personal{border:0;background:transparent}
+.dashboard-zone-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;min-width:0;padding:0}
+.dashboard-zone-heading h2{margin:0;color:#254356;font-weight:800;font-size:15px}.dashboard-zone-label{display:inline-flex;background:#f0f7f9;border:1px solid #e3eff2;border-radius:999px;padding:6px 12px;color:#7192a1;font-size:10px;white-space:nowrap}
+.dashboard-placeholder{display:flex;flex:none;min-height:80px;align-items:center;justify-content:center;flex-direction:column;text-align:center;gap:4px;border:0;border-radius:0;background:transparent;padding:9px 12px}
+.dashboard-placeholder-symbol{color:#88b9c6;font-size:19px;line-height:1}.dashboard-personal .dashboard-placeholder-symbol{color:#9ba3d5}
+.dashboard-placeholder strong{font-size:13px;font-weight:800;color:#446777}.dashboard-placeholder p{margin:0;line-height:1.8;color:#8aa5b1;font-size:11px;max-width:540px}
+.dashboard-name-input{height:35px;padding:6px 10px;border:1px solid #9fd4dd;border-radius:8px;background:white;color:#204759;font-size:13px;font-weight:700;max-width:260px;width:100%}
+.dash-loading{padding:32px;color:#7597a8;text-align:center}
+/* Before interactive boot, cards remain readable rather than overlapping at (0,0). */
+.dashboard-tile-grid:not(.dashboard-canvas-ready){display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px}
+.dashboard-tile-grid:not(.dashboard-canvas-ready) ::deep .dashboard-tile{position:relative;inset:auto;width:auto;height:auto;min-height:210px}
+/* Pixel canvas: independent RTL x/y/w/h, only the real bottom-most tile sets height. */
+.dashboard-tile-grid{position:relative;direction:rtl;display:block;min-width:0;width:100%;padding:0;touch-action:pan-y}
+.dashboard-canvas-indicator{position:absolute;box-sizing:border-box;border:2px dashed #1ea8be;border-radius:13px;background:#18a8c013;pointer-events:none;z-index:30;transition:none}
+.dashboard-canvas-indicator[hidden]{display:none}
+.dashboard-canvas-moving,.dashboard-canvas-sizing{user-select:none;touch-action:none}
+.dashboard-canvas-moving{cursor:grabbing}
+.dashboard-canvas-sizing{cursor:grabbing}
+/* Working room is present only in edit mode and never stored in the layout. */
+.dynamic-dashboard.is-editing::after{content:"";display:block;flex:none;height:40vh;min-height:180px;pointer-events:none}
+body.dashboard-resizing{user-select:none;cursor:grabbing}
+.dashboard-confirm-backdrop{position:fixed;inset:0;z-index:13500;background:#132e40ad;backdrop-filter:blur(5px);display:grid;place-items:center;padding:15px}
+.dashboard-confirm{width:min(440px,95vw);box-sizing:border-box;padding:26px;border-radius:18px;background:#fff;color:#284555;box-shadow:0 20px 65px #112b3a60;text-align:center}
+.dashboard-confirm-icon{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:#fff0f3;color:#cc5474;font-size:24px;margin:auto}
+.dashboard-confirm h3{font-size:17px;margin:13px 0 7px}.dashboard-confirm p{font-size:12px;color:#7892a1;line-height:1.9;overflow-wrap:anywhere}.dashboard-confirm-actions{display:flex;justify-content:center;gap:8px;margin-top:20px}.dash-button.dash-danger{background:#c64d6a;color:#fff;border-color:#c64d6a}
+@media(max-width:620px){
+  /* Compact screens use a readable list without overwriting the saved desktop canvas. */
+  .dashboard-tile-grid{display:flex;flex-direction:column;gap:9px;height:auto!important}
+  .dashboard-actions{margin:0;gap:6px}.dashboard-picker{min-width:135px;max-width:195px}.dashboard-zone-heading{flex-wrap:wrap}
+  .dashboard-tile-grid ::deep .dashboard-tile{position:relative!important;inset:auto!important;width:100%!important;min-height:140px;height:auto!important;transform:none!important}
+  .dashboard-tile-grid ::deep .dashboard-tile.report{min-height:300px}
+  .dashboard-tile-grid ::deep .dash-size-handle,.dashboard-tile-grid ::deep .dash-drag{display:none}
+  .dashboard-tile-grid ::deep .dashboard-tile.sql .dash-snippet,
+  .dashboard-tile-grid ::deep .dashboard-tile.curl .dash-snippet{flex:0 0 auto;min-height:90px;max-height:220px}
+}
+/* Star is immediately to the right of the RTL dashboard selector. */
+.dash-default-star{width:37px;min-width:37px;padding:0;color:#384455;background:#fff;border-color:#d5dee5}
+.dash-default-star svg{width:19px;height:19px;fill:transparent;stroke:#455362}
+.dash-default-star:hover:not(:disabled){background:#f2f6f8;color:#2c3948;border-color:#a8b7c0}
+.dash-default-star.is-default{background:#fff0bd;border-color:#e5bd57;color:#b47c0c}
+.dash-default-star.is-default svg{fill:#f4b730;stroke:#b27c10}
+.dash-default-star:disabled{opacity:1;cursor:default}
+
+.dashboard-actions .dash-delete-dashboard{color:#b64d58;border-color:#ead6d9;background:#fff8f9}
+.dashboard-actions .dash-delete-dashboard:hover{background:#fce8eb;color:#992a40}
+.dashboard-actions .dash-delete-dashboard svg{width:17px;height:17px}
+/* 2.25: content insertion belongs to each named dashboard, not the global action bar. */
+.dashboard-zone-identity{display:flex;align-items:center;gap:10px;min-width:0;flex-wrap:wrap}
+.dashboard-zone-heading>.dash-add{height:33px;min-height:33px;margin-inline-start:auto;font-size:11px;flex:none}

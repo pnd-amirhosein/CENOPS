@@ -1,0 +1,99 @@
+@inject IJSRuntime JS
+<div class="note-code-surface" dir="ltr">
+    <div class="note-code-toolbar">
+        <span class="note-code-symbol" aria-hidden="true">&lt;/&gt;</span>
+        <span>SNIPPET</span>
+        @if (!string.IsNullOrWhiteSpace(_formatStatus)) { <small class="note-code-status" role="status">@_formatStatus</small> }
+        <button type="button" class="note-code-format" title="پاک‌سازی و مرتب‌سازی کد و JSONهای escape شده" @onclick="FormatAsync">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M8 5H5v14h3M16 5h3v14h-3M10 9l2 3-2 3M13 16h3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            مرتب‌سازی
+        </button>
+        <select class="note-code-language" aria-label="زبان قطعه کد" value="@NoteCodeFormatter.Normalize(Language)" @onchange="OnLanguageChange">
+            @foreach (var language in NoteCodeFormatter.Languages)
+            {
+                <option value="@language.Id">@language.Label</option>
+            }
+        </select>
+    </div>
+    <div class="note-code-editarea">
+        <pre class="note-code-highlight" aria-hidden="true"><code>@((MarkupString)NoteCodeFormatter.Highlight(Value, Language))</code><span> </span></pre>
+        <textarea dir="ltr" spellcheck="false" autocapitalize="off" autocomplete="off" rows="@Rows" maxlength="50000" aria-label="قطعه کد"
+                  placeholder="// Code snippet..." @ref="_editor" @oninput="OnInput" onscroll="window.cenopsNoteCode?.syncScroll(this)"></textarea>
+    </div>
+</div>
+@code {
+    [Parameter] public string Value { get; set; } = string.Empty;
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+    [Parameter] public string Language { get; set; } = "plain";
+    [Parameter] public EventCallback<string> LanguageChanged { get; set; }
+    [Parameter] public int Rows { get; set; } = 8;
+
+    private ElementReference _editor;
+    private string? _lastModelValue;
+    private string? _lastUserValue;
+    private bool _syncNeeded = true;
+    private bool _forceSync;
+
+    protected override void OnParametersSet()
+    {
+        // Parent echoes of user input must NOT write the native textarea value.
+        // Blazor-managed value="..." causes a caret jump on every highlight render.
+        if (!string.Equals(_lastModelValue, Value, StringComparison.Ordinal))
+        {
+            _syncNeeded = !string.Equals(_lastUserValue, Value, StringComparison.Ordinal);
+            _lastModelValue = Value;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender || _syncNeeded)
+        {
+            _syncNeeded = false;
+            try { await JS.InvokeVoidAsync("cenopsNoteCode.syncValue", _editor, Value, firstRender || _forceSync); }
+            catch (JSDisconnectedException) { /* Navigation in progress. */ }
+            finally { _forceSync = false; }
+        }
+    }
+
+    private bool _languageManuallySelected;
+    private string? _formatStatus;
+    private async Task OnInput(ChangeEventArgs e)
+    {
+        var content = e.Value?.ToString() ?? string.Empty;
+        _lastUserValue = content;
+        _lastModelValue = content;
+        await ValueChanged.InvokeAsync(content);
+        _formatStatus = null;
+        if (string.IsNullOrWhiteSpace(content)) _languageManuallySelected = false;
+        var detected = NoteCodeFormatter.Detect(content);
+        // Unknown / incomplete snippets don't reset the user's manually selected language.
+        if (!_languageManuallySelected && detected != "plain" && detected != NoteCodeFormatter.Normalize(Language))
+            await LanguageChanged.InvokeAsync(detected);
+    }
+
+    private async Task FormatAsync()
+    {
+        var selected = _languageManuallySelected ? NoteCodeFormatter.Normalize(Language) : NoteCodeFormatter.Detect(Value);
+        if (selected == "plain") selected = NoteCodeFormatter.Normalize(Language);
+        var formatted = NoteCodeFormatter.Clean(Value, selected);
+        if (!string.Equals(formatted, Value, StringComparison.Ordinal))
+        {
+            _lastUserValue = formatted;
+            _lastModelValue = formatted;
+            _syncNeeded = true;
+            _forceSync = true;
+            await ValueChanged.InvokeAsync(formatted);
+            _formatStatus = "مرتب شد";
+        }
+        else _formatStatus = "تغییری لازم نبود";
+        if (!_languageManuallySelected && selected != "plain" && selected != NoteCodeFormatter.Normalize(Language))
+            await LanguageChanged.InvokeAsync(selected);
+    }
+
+    private Task OnLanguageChange(ChangeEventArgs e)
+    {
+        _languageManuallySelected = true;
+        return LanguageChanged.InvokeAsync(NoteCodeFormatter.Normalize(e.Value?.ToString()));
+    }
+}

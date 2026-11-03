@@ -1,0 +1,465 @@
+is_global = true
+build_property.TargetFramework = net8.0
+build_property.TargetFramework = net8.0
+build_property.TargetPlatformMinVersion = 
+build_property.TargetPlatformMinVersion = 
+build_property.UsingMicrosoftNETSdkWeb = true
+build_property.UsingMicrosoftNETSdkWeb = true
+build_property.ProjectTypeGuids = 
+build_property.ProjectTypeGuids = 
+build_property.InvariantGlobalization = 
+build_property.InvariantGlobalization = 
+build_property.PlatformNeutralAssembly = 
+build_property.PlatformNeutralAssembly = 
+build_property.EnforceExtendedAnalyzerRules = 
+build_property.EnforceExtendedAnalyzerRules = 
+build_property._SupportedPlatformList = Linux,macOS,Windows
+build_property._SupportedPlatformList = Linux,macOS,Windows
+build_property.RootNamespace = NTSW_CENOPS
+build_property.RootNamespace = NTSW_CENOPS
+build_property.ProjectDir = C:\Repos\NTSW_CENOPS_Glasswork_2_67_BuildFix\NTSW_CENOPS_Glasswork_2_67\src\NTSW_CENOPS.WebUI\
+build_property.EnableComHosting = 
+build_property.EnableGeneratedComInterfaceComImportInterop = 
+build_property.RazorLangVersion = 8.0
+build_property.SupportLocalizedComponentNames = 
+build_property.GenerateRazorMetadataSourceChecksumAttributes = 
+build_property.MSBuildProjectDirectory = C:\Repos\NTSW_CENOPS_Glasswork_2_67_BuildFix\NTSW_CENOPS_Glasswork_2_67\src\NTSW_CENOPS.WebUI
+build_property._RazorSourceGeneratorDebug = 
+build_property.EffectiveAnalysisLevelStyle = 8.0
+build_property.EnableCodeStyleSeverity = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Announcements/AnnouncementCardForm.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBbm5vdW5jZW1lbnRzXEFubm91bmNlbWVudENhcmRGb3JtLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Announcements/AnnouncementLibrary.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBbm5vdW5jZW1lbnRzXEFubm91bmNlbWVudExpYnJhcnkucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/App.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBcHAucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Auth/AccessGate.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBdXRoXEFjY2Vzc0dhdGUucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Auth/RedirectToLogin.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBdXRoXFJlZGlyZWN0VG9Mb2dpbi5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Auth/RoleGate.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBdXRoXFJvbGVHYXRlLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Chat/ChatAttachmentView.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xDaGF0XENoYXRBdHRhY2htZW50Vmlldy5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Chat/ChatIcon.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xDaGF0XENoYXRJY29uLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Chat/ChatInboxHost.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xDaGF0XENoYXRJbmJveEhvc3QucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Chat/ChatWorkspace.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xDaGF0XENoYXRXb3Jrc3BhY2UucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Chat/ChatWorkspaceHost.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xDaGF0XENoYXRXb3Jrc3BhY2VIb3N0LnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Common/AppLoading.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xDb21tb25cQXBwTG9hZGluZy5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Common/AppLoadingHost.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xDb21tb25cQXBwTG9hZGluZ0hvc3QucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Common/AppNoticeHost.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xDb21tb25cQXBwTm90aWNlSG9zdC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Common/AppNoticeMessage.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xDb21tb25cQXBwTm90aWNlTWVzc2FnZS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Common/CenopsMark.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xDb21tb25cQ2Vub3BzTWFyay5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Common/CheckBox.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xDb21tb25cQ2hlY2tCb3gucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Common/DatabaseGraphView.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xDb21tb25cRGF0YWJhc2VHcmFwaFZpZXcucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Common/PageHeaderSearch.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xDb21tb25cUGFnZUhlYWRlclNlYXJjaC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/DataTable/DataTableToolbar-old.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xEYXRhVGFibGVcRGF0YVRhYmxlVG9vbGJhci1vbGQucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Files/AppFileBlock.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xGaWxlc1xBcHBGaWxlQmxvY2sucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Files/AppFilePreview.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xGaWxlc1xBcHBGaWxlUHJldmlldy5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Knowledge/KnowledgeEditor.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xLbm93bGVkZ2VcS25vd2xlZGdlRWRpdG9yLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Knowledge/KnowledgeLibrary.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xLbm93bGVkZ2VcS25vd2xlZGdlTGlicmFyeS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Knowledge/KnowledgeVisibilitySwitch.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xLbm93bGVkZ2VcS25vd2xlZGdlVmlzaWJpbGl0eVN3aXRjaC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Layout/EmptyLayout.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcRW1wdHlMYXlvdXQucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Layout/QuickNavigate.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcUXVpY2tOYXZpZ2F0ZS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Notes/NoteContent.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xOb3Rlc1xOb3RlQ29udGVudC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Notes/NoteEditor.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xOb3Rlc1xOb3RlRWRpdG9yLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Notes/NoteInsertMenu.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xOb3Rlc1xOb3RlSW5zZXJ0TWVudS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Notes/NoteLibrary.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xOb3Rlc1xOb3RlTGlicmFyeS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Notes/NoteSnippetBox.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xOb3Rlc1xOb3RlU25pcHBldEJveC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Notes/NoteTableEditor.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xOb3Rlc1xOb3RlVGFibGVFZGl0b3IucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Notes/NoteTableView.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xOb3Rlc1xOb3RlVGFibGVWaWV3LnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Notes/NoteTextArea.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xOb3Rlc1xOb3RlVGV4dEFyZWEucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Notes/NoteTextBox.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xOb3Rlc1xOb3RlVGV4dEJveC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Pages/AccessDenied.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xBY2Nlc3NEZW5pZWQucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Pages/AnnouncementLibraryPage.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xBbm5vdW5jZW1lbnRMaWJyYXJ5UGFnZS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Pages/CodeCleanupPage.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xDb2RlQ2xlYW51cFBhZ2UucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Pages/Counter.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xDb3VudGVyLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Pages/CurlEditor.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xDdXJsRWRpdG9yLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Pages/CurlLibrary.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xDdXJsTGlicmFyeS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Pages/DashboardContentBrowser.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xEYXNoYm9hcmRDb250ZW50QnJvd3Nlci5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Pages/DashboardEventCard.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xEYXNoYm9hcmRFdmVudENhcmQucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Pages/DashboardEventDetails.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xEYXNoYm9hcmRFdmVudERldGFpbHMucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Pages/DashboardSmartCard.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xEYXNoYm9hcmRTbWFydENhcmQucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Pages/DashboardSmartConfigModal.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xEYXNoYm9hcmRTbWFydENvbmZpZ01vZGFsLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Pages/DashboardSmartSlide.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xEYXNoYm9hcmRTbWFydFNsaWRlLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Pages/DatabaseInspectorPage.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xEYXRhYmFzZUluc3BlY3RvclBhZ2UucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Pages/Error.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xFcnJvci5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Pages/MonitoringReportChart.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xNb25pdG9yaW5nUmVwb3J0Q2hhcnQucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Pages/MonitoringReportEditor.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xNb25pdG9yaW5nUmVwb3J0RWRpdG9yLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Pages/MonitoringReportGallery.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xNb25pdG9yaW5nUmVwb3J0R2FsbGVyeS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Pages/MonitoringReportRadial.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xNb25pdG9yaW5nUmVwb3J0UmFkaWFsLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Pages/MonitoringReports.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xNb25pdG9yaW5nUmVwb3J0cy5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Pages/NoteEditorPage.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xOb3RlRWRpdG9yUGFnZS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Pages/NoteLibraryPage.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xOb3RlTGlicmFyeVBhZ2UucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Pages/QueryEditor.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xRdWVyeUVkaXRvci5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Pages/QueryLibrary.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xRdWVyeUxpYnJhcnkucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Pages/TodoEditorPage.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xUb2RvRWRpdG9yUGFnZS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Pages/TodoLibraryPage.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xUb2RvTGlicmFyeVBhZ2UucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Pages/Weather.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xXZWF0aGVyLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Routes.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xSb3V0ZXMucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/SideBar/Sidebar.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xTaWRlQmFyXFNpZGViYXIucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/SideBar/SidebarGroup.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xTaWRlQmFyXFNpZGViYXJHcm91cC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/SideBar/SidebarLink.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xTaWRlQmFyXFNpZGViYXJMaW5rLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Stories/ReleaseStoryViewer.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xTdG9yaWVzXFJlbGVhc2VTdG9yeVZpZXdlci5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Stories/StoryMarkdown.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xTdG9yaWVzXFN0b3J5TWFya2Rvd24ucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Tasks/TodoEditor.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xUYXNrc1xUb2RvRWRpdG9yLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Tasks/TodoLibrary.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xUYXNrc1xUb2RvTGlicmFyeS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/_Imports.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xfSW1wb3J0cy5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Auth/AuthBrandPanel.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBdXRoXEF1dGhCcmFuZFBhbmVsLnJhem9y
+build_metadata.AdditionalFiles.CssScope = b-te2jq41jen
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Common/AnimatedTitle.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xDb21tb25cQW5pbWF0ZWRUaXRsZS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = b-j9xbc4lct1
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Common/AppBadge.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xDb21tb25cQXBwQmFkZ2UucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = b-yei9w7zjuu
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Common/AppModal.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xDb21tb25cQXBwTW9kYWwucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = b-bh4ldqy31o
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Common/CenopsAboutDialog.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xDb21tb25cQ2Vub3BzQWJvdXREaWFsb2cucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = b-elgmp86uv1
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Common/Dates/AppJalaliDatePicker.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xDb21tb25cRGF0ZXNcQXBwSmFsYWxpRGF0ZVBpY2tlci5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = b-jc91czysa0
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Common/GraphWorkspace.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xDb21tb25cR3JhcGhXb3Jrc3BhY2UucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = b-d9ue3f8r49
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Common/Menus/AppNestedMenu.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xDb21tb25cTWVudXNcQXBwTmVzdGVkTWVudS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = b-zzd6ljrbib
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Common/PasswordInput.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xDb21tb25cUGFzc3dvcmRJbnB1dC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = b-kzdgkmz9j9
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Common/Selection/AppCheckboxList.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xDb21tb25cU2VsZWN0aW9uXEFwcENoZWNrYm94TGlzdC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = b-gyzaih1y22
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Common/Selection/AppDropdown.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xDb21tb25cU2VsZWN0aW9uXEFwcERyb3Bkb3duLnJhem9y
+build_metadata.AdditionalFiles.CssScope = b-v1j3xotj2e
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Common/SourceCodePreview.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xDb21tb25cU291cmNlQ29kZVByZXZpZXcucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = b-nz3ig2xj5o
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Common/SourceFileViewer.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xDb21tb25cU291cmNlRmlsZVZpZXdlci5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = b-7np4b09p0r
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Common/SourceGraphView.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xDb21tb25cU291cmNlR3JhcGhWaWV3LnJhem9y
+build_metadata.AdditionalFiles.CssScope = b-fipdn7homy
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Common/SourceUsagePreviewDialog.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xDb21tb25cU291cmNlVXNhZ2VQcmV2aWV3RGlhbG9nLnJhem9y
+build_metadata.AdditionalFiles.CssScope = b-01kaxpcrfh
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Common/Tabs/AppTabs.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xDb21tb25cVGFic1xBcHBUYWJzLnJhem9y
+build_metadata.AdditionalFiles.CssScope = b-wswa9l1g0v
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Common/UnderConstruction.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xDb21tb25cVW5kZXJDb25zdHJ1Y3Rpb24ucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = b-n2uifxg201
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Common/UserHoverName.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xDb21tb25cVXNlckhvdmVyTmFtZS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = b-i3g2x5ucpc
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/DataTable/DataTable.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xEYXRhVGFibGVcRGF0YVRhYmxlLnJhem9y
+build_metadata.AdditionalFiles.CssScope = b-qgefrzithb
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/DataTable/DataTableFilter.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xEYXRhVGFibGVcRGF0YVRhYmxlRmlsdGVyLnJhem9y
+build_metadata.AdditionalFiles.CssScope = b-7axwzyku2u
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/DataTable/DataTableToolbar.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xEYXRhVGFibGVcRGF0YVRhYmxlVG9vbGJhci5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = b-8qap9we5to
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Layout/MainLayout.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcTWFpbkxheW91dC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = b-8rxk5w36ef
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Layout/NavMenu.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcTmF2TWVudS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = b-wt26fupibj
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Layout/Skyline.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcU2t5bGluZS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = b-cw2dsfenjq
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Pages/Administration.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xBZG1pbmlzdHJhdGlvbi5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = b-1p2k48b7k6
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Pages/ChangePassword.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xDaGFuZ2VQYXNzd29yZC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = b-ndypvq4xrh
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Pages/DashboardContentPicker.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xEYXNoYm9hcmRDb250ZW50UGlja2VyLnJhem9y
+build_metadata.AdditionalFiles.CssScope = b-sfnt39dxg6
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Pages/DashboardContentPreview.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xEYXNoYm9hcmRDb250ZW50UHJldmlldy5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = b-xv8nzhbzy3
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Pages/DashboardTile.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xEYXNoYm9hcmRUaWxlLnJhem9y
+build_metadata.AdditionalFiles.CssScope = b-svjjrr3djp
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Pages/Home.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xIb21lLnJhem9y
+build_metadata.AdditionalFiles.CssScope = b-cyen5ogq1d
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Pages/Login.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xMb2dpbi5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = b-t3vh2rr5i0
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Pages/Signup.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xTaWdudXAucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = b-qrgw7ed9n0
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Pages/SourceExplorerPage.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xTb3VyY2VFeHBsb3JlclBhZ2UucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = b-kk1fivfwj8
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Pages/SourceIndexesPage.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xTb3VyY2VJbmRleGVzUGFnZS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = b-0ez3jr5nw2
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Pages/TeamCalendarPage.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xUZWFtQ2FsZW5kYXJQYWdlLnJhem9y
+build_metadata.AdditionalFiles.CssScope = b-m70h0d83bu
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Pages/TeamEventEditorPage.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xUZWFtRXZlbnRFZGl0b3JQYWdlLnJhem9y
+build_metadata.AdditionalFiles.CssScope = b-sz1joqxlzo
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Pages/TeamEventListPage.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xUZWFtRXZlbnRMaXN0UGFnZS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = b-zsykxq3b5o
+
+[C:/Repos/NTSW_CENOPS_Glasswork_2_67_BuildFix/NTSW_CENOPS_Glasswork_2_67/src/NTSW_CENOPS.WebUI/Components/Profile/UserAccountMenu.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQcm9maWxlXFVzZXJBY2NvdW50TWVudS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = b-y14tdtwhd2

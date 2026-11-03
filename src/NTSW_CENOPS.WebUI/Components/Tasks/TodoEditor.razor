@@ -1,0 +1,216 @@
+@using System.Security.Claims
+@using NTSW_CENOPS.Application.Tasks
+@using NTSW_CENOPS.Application.Knowledge
+@using NTSW_CENOPS.Components.Knowledge
+@using NTSW_CENOPS.Components.Common
+@using NTSW_CENOPS.Components.Common.Loading
+@using NTSW_CENOPS.Components.Common.Notices
+@implements IAsyncDisposable
+@inject ITodoService Todos
+@inject AuthenticationStateProvider AuthState
+@inject NavigationManager Navigation
+@inject AppBusyService Busy
+@inject AppNoticeService Notices
+@inject IJSRuntime JS
+
+<div class="note-editor todo-editor" dir="rtl" @ref="_editorRoot">
+    @if (_loaded)
+    {
+        <header class="note-editor-meta">
+            <div class="note-editor-title-field">
+                <label for="todo-title">عنوان فهرست کارها <em>*</em></label>
+                <input id="todo-title" class="note-editor-title" maxlength="250" placeholder="عنوان فهرست را بنویسید..." @bind="_model.Title" @bind:event="oninput" />
+            </div>
+            <KnowledgeVisibilitySwitch @bind-Value="_model.Visibility" />
+            <div class="knowledge-field knowledge-author-field note-author">
+                <label for="todo-author">نویسنده</label>
+                <select id="todo-author" @bind="_model.UserId" disabled="@(!_canChooseAuthor)">
+                    @foreach (var author in _authors)
+                    {
+                        <option value="@author.Id">@author.DisplayName (@author.Username)</option>
+                    }
+                </select>
+                <button type="button" class="knowledge-current-user" @onclick="() => _model.UserId = _currentUserId">انتخاب کاربر فعلی</button>
+            </div>
+        </header>
+        <div class="note-editor-canvas todo-canvas" @ref="_canvas">
+            @foreach (var slot in Enumerable.Range(0, _model.Items.Count + 1))
+            {
+                <div class="note-insert-row" @key="slot">
+                    <span class="note-insert-line" aria-hidden="true"></span>
+                    <div class="note-insert-control">
+                        <button type="button" class="note-add-button" title="افزودن کار" aria-label="افزودن کار" @onclick="() => Insert(slot)">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
+                        </button>
+                    </div>
+                    <span class="note-insert-line" aria-hidden="true"></span>
+                </div>
+                @if (slot == 0 && _model.Items.Count == 0)
+                {
+                    <div class="note-start-hint"><span class="note-start-icon">✓</span><strong>اولین کار را اضافه کنید</strong><p>با علامت + یک سطر شامل چک‌باکس و متن ایجاد می‌شود.</p></div>
+                }
+                @if (slot < _model.Items.Count)
+                {
+                    var item = _model.Items[slot];
+                    <div class="note-block-row" data-note-block="@item.Key" @key="item.Key">
+                        <div class="note-block-outside-controls" aria-label="کنترل‌های کار">
+                            <button class="note-drag-handle" type="button" draggable="true" data-note-drag="@item.Key" title="برای جابه‌جایی بکشید" aria-label="جابجایی کار">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 5h.01M15 5h.01M9 12h.01M15 12h.01M9 19h.01M15 19h.01" stroke-width="3.2" stroke-linecap="round"/></svg>
+                            </button>
+                            <button type="button" class="note-remove-block" title="حذف کار" aria-label="حذف این کار" @onclick="() => Remove(item.Key)">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M10 4h4M7 7l.7 13h8.6L17 7M10 11v5M14 11v5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            </button>
+                        </div>
+                        <section class="note-edit-block todo-edit-block">
+                            <div class="todo-entry" dir="@(TextDirection(item.Text))">
+                                <input type="checkbox" class="todo-check" aria-label="وضعیت انجام کار" @bind="item.IsCompleted" />
+                                <input type="text" class="todo-input @(item.IsCompleted ? "is-complete" : "")" maxlength="12000" aria-label="عنوان کار" placeholder="متن کار را وارد کنید..." @bind="item.Text" @bind:event="oninput" />
+                            </div>
+                        </section>
+                    </div>
+                }
+            }
+        </div>
+        @if (!string.IsNullOrWhiteSpace(_error)) { <p class="knowledge-form-error" role="alert">@_error</p> }
+        <div class="note-editor-actions">
+            <button class="knowledge-button primary" disabled="@_saving" type="button" @onclick="AskSave">ذخیره فهرست</button>
+            <button class="knowledge-button secondary" disabled="@_saving" type="button" @onclick="() => _confirmCancel = true">انصراف</button>
+            <span class="note-block-counter">@_model.Items.Count کار</span>
+        </div>
+    }
+</div>
+<AppModal IsOpen="_confirmSave" Title="تأیید ذخیره فهرست" Description="آیا فهرست کارها ذخیره شود؟" MaxWidth="420px" OnClose="() => _confirmSave = false">
+    <Footer><button type="button" class="knowledge-button primary" disabled="@_saving" @onclick="SaveAsync">تأیید و ذخیره</button><button type="button" class="knowledge-button secondary" @onclick="() => _confirmSave = false">بازگشت</button></Footer>
+</AppModal>
+<AppModal IsOpen="_confirmCancel" Title="خروج بدون ذخیره" Description="تغییرات ذخیره‌نشده از دست می‌روند." MaxWidth="420px" OnClose="() => _confirmCancel = false">
+    <Footer><button type="button" class="knowledge-button danger" @onclick="GoBack">خروج بدون ذخیره</button><button type="button" class="knowledge-button secondary" @onclick="() => _confirmCancel = false">ادامه</button></Footer>
+</AppModal>
+@code {
+    [Parameter] public int ItemId { get; set; }
+    private TodoModel _model = new();
+    private IReadOnlyList<KnowledgeAuthorModel> _authors = [];
+    private int _currentUserId;
+    private bool _loaded, _canChooseAuthor, _saving, _confirmSave, _confirmCancel, _dragAttached;
+    private string _error = string.Empty;
+    private ElementReference _canvas, _editorRoot;
+    private DotNetObjectReference<TodoEditor>? _bridge;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _loaded = false;
+        try
+        {
+            using var lease = Busy.Begin("در حال آماده‌سازی فهرست...");
+            var actor = (await AuthState.GetAuthenticationStateAsync()).User;
+            _currentUserId = int.TryParse(actor.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var id) ? id : 0;
+            _authors = await Todos.AuthorsAsync(actor);
+            _canChooseAuthor = await Todos.CanChooseAuthorAsync(actor);
+            if (ItemId > 0)
+            {
+                var old = await Todos.FindAsync(ItemId, actor);
+                if (old is null || !await Todos.CanManageAsync(old, actor))
+                {
+                    Notices.Error("این فهرست پیدا نشد یا اجازه ویرایش آن را ندارید."); GoBack(); return;
+                }
+                _model = old;
+            }
+            else _model = new TodoModel { UserId = _currentUserId };
+            _loaded = true;
+        }
+        catch { Notices.Error("بارگذاری فهرست ممکن نشد."); GoBack(); }
+    }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_loaded || _dragAttached) return;
+        _bridge ??= DotNetObjectReference.Create(this);
+        try
+        {
+            await JS.InvokeVoidAsync("cenopsNoteDrag.attach", _canvas, _bridge);
+            await JS.InvokeVoidAsync("cenopsWikiShortcuts.attach", _editorRoot, _bridge, "todo");
+            _dragAttached = true;
+        }
+        catch (JSDisconnectedException) { }
+    }
+    private static string TextDirection(string? text)
+    {
+        // First strong-script character determines the checkbox alignment (RTL on right, LTR on left).
+        foreach (var c in text ?? string.Empty)
+        {
+            if (c is >= '\u0590' and <= '\u08FF') return "rtl";
+            if (c is >= 'A' and <= 'Z' or >= 'a' and <= 'z') return "ltr";
+        }
+        return "rtl";
+    }
+    private void Insert(int at)
+    {
+        if (_model.Items.Count >= 120) { _error = "حداکثر ۱۲۰ کار مجاز است."; return; }
+        _model.Items.Insert(at, new TodoItemModel()); _error = string.Empty;
+    }
+    private void Remove(Guid key) => _model.Items.RemoveAll(x => x.Key == key);
+
+    [JSInvokable]
+    public async Task<string?> InsertViaShortcutAsync(string currentKey, bool before)
+    {
+        if (!Guid.TryParse(currentKey, out var key)) return null;
+        var index = _model.Items.FindIndex(x => x.Key == key);
+        if (index < 0) return null;
+        if (_model.Items.Count >= 120)
+        {
+            _error = "حداکثر ۱۲۰ کار مجاز است.";
+            await InvokeAsync(StateHasChanged);
+            return null;
+        }
+        var item = new TodoItemModel();
+        _model.Items.Insert(index + (before ? 0 : 1), item);
+        _error = string.Empty;
+        await InvokeAsync(StateHasChanged);
+        return item.Key.ToString();
+    }
+
+    [JSInvokable]
+    public Task RequestShortcutSaveAsync()
+    {
+        if (!_saving && !_confirmSave && !_confirmCancel) AskSave();
+        return InvokeAsync(StateHasChanged);
+    }
+    [JSInvokable]
+    public Task MoveBlockAsync(string sourceKey, string targetKey, bool insertAfter)
+    {
+        if (!Guid.TryParse(sourceKey, out var source) || !Guid.TryParse(targetKey, out var target) || source == target)
+            return Task.CompletedTask;
+        var from = _model.Items.FindIndex(x => x.Key == source);
+        var to = _model.Items.FindIndex(x => x.Key == target);
+        if (from < 0 || to < 0) return Task.CompletedTask;
+        var item = _model.Items[from];
+        _model.Items.RemoveAt(from);
+        var at = to + (insertAfter ? 1 : 0);
+        if (from < at) at--;
+        _model.Items.Insert(Math.Clamp(at, 0, _model.Items.Count), item);
+        return InvokeAsync(StateHasChanged);
+    }
+    private void AskSave() { _error = string.Empty; if (string.IsNullOrWhiteSpace(_model.Title)) { _error = "عنوان الزامی است."; return; } _confirmSave = true; }
+    private async Task SaveAsync()
+    {
+        if (_saving) return;
+        _saving = true;
+        try
+        {
+            var result = await Todos.SaveAsync(_model, (await AuthState.GetAuthenticationStateAsync()).User);
+            if (!result.Succeeded) { _error = result.Message; Notices.Error(result.Message); _confirmSave = false; return; }
+            Notices.Success("فهرست کارها ذخیره شد."); GoBack();
+        }
+        catch { _error = "ذخیره فهرست ممکن نشد."; Notices.Error(_error); }
+        finally { _saving = false; _confirmSave = false; }
+    }
+    private void GoBack() => Navigation.NavigateTo("/wiki/todos");
+    public async ValueTask DisposeAsync()
+    {
+        try { if (_dragAttached)
+            {
+                await JS.InvokeVoidAsync("cenopsWikiShortcuts.detach", _editorRoot);
+                await JS.InvokeVoidAsync("cenopsNoteDrag.detach", _canvas);
+            } }
+        catch (JSDisconnectedException) { } catch (InvalidOperationException) { }
+        _bridge?.Dispose();
+    }
+}

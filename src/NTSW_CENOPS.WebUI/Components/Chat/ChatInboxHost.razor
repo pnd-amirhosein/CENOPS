@@ -1,0 +1,100 @@
+@using System.Security.Claims
+@using NTSW_CENOPS.Application.Chat
+@using NTSW_CENOPS.Components.Common.Notices
+@using NTSW_CENOPS.Components.Chat
+@implements IAsyncDisposable
+@inject AuthenticationStateProvider Auth
+@inject IChatRoomService Rooms
+@inject ChatInboxState Inbox
+@inject ChatWorkspaceState Workspace
+@inject AppNoticeService Notices
+@inject IJSRuntime JS
+
+@* Always mounted in MainLayout; only one SignalR chat listener per browser circuit. *@
+@code {
+    private ClaimsPrincipal _actor = new(new ClaimsIdentity());
+    private string _username = "";
+    private bool _started, _disposed;
+    private readonly SemaphoreSlim _refreshGate = new(1, 1);
+    private DotNetObjectReference<ChatInboxHost>? _bridge;
+    private readonly HashSet<long> _seenMessages = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _actor = (await Auth.GetAuthenticationStateAsync()).User;
+        _username = _actor.Identity?.Name ?? "";
+        Inbox.RefreshRequested += RequestRefresh;
+        if (_actor.Identity?.IsAuthenticated == true) await RefreshRooms();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_started || _actor.Identity?.IsAuthenticated != true) return;
+        _started = true;
+        _bridge = DotNetObjectReference.Create(this);
+        try { await JS.InvokeVoidAsync("cenopsChatRealtime.connect", _bridge); }
+        catch (JSDisconnectedException) { }
+        catch (JSException) { Inbox.SetConnection(false); }
+    }
+
+    private void RequestRefresh() => _ = InvokeAsync(RefreshRooms);
+
+    private async Task RefreshRooms()
+    {
+        if (_disposed || _actor.Identity?.IsAuthenticated != true) return;
+        await _refreshGate.WaitAsync();
+        try
+        {
+            var rooms = await Rooms.MyRoomsAsync(_actor);
+            Inbox.SetUnread(rooms);
+        }
+        catch (ChatException) { Inbox.SetUnread([]); }
+        catch (Exception) { /* Temporary database failure; next event/reconnect will resync. */ }
+        finally { _refreshGate.Release(); }
+    }
+
+    [JSInvokable]
+    public async Task OnChatConnectionChanged(bool connected)
+    {
+        Inbox.SetConnection(connected);
+        if (connected) await RefreshRooms();
+    }
+
+    [JSInvokable]
+    public async Task OnChatRealtimeEvent(string eventName, long? roomId)
+    {
+        Inbox.Publish(eventName, roomId);
+        await RefreshRooms();
+    }
+
+    [JSInvokable]
+    public async Task OnChatMessageCreated(long messageId, long roomId, string senderUsername, string senderDisplayName, string? content)
+    {
+        Inbox.Publish("ChatMessageCreated", roomId);
+        await RefreshRooms();
+        if (senderUsername.Equals(_username, StringComparison.OrdinalIgnoreCase)) return;
+        if (Workspace.HasOpened && Workspace.ActiveRoomId == roomId) return;
+        if (!_seenMessages.Add(messageId)) return;
+        if (_seenMessages.Count > 400) _seenMessages.Clear();
+        var title = string.IsNullOrWhiteSpace(senderDisplayName) ? senderUsername : senderDisplayName;
+        Notices.Chat(title, content ?? "پیام جدید", roomId);
+    }
+
+    [JSInvokable]
+    public Task OnChatTyping(long roomId, string username, string displayName, bool isTyping)
+    {
+        Inbox.PublishTyping(roomId, username, displayName, isTyping);
+        return Task.CompletedTask;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _disposed = true;
+        Inbox.RefreshRequested -= RequestRefresh;
+        try { await JS.InvokeVoidAsync("cenopsChatRealtime.disconnect"); }
+        catch (JSDisconnectedException) { }
+        catch (JSException) { }
+        _bridge?.Dispose();
+        // Semaphore may be in use by an in-flight callback; let GC reclaim it with the scope.
+    }
+}

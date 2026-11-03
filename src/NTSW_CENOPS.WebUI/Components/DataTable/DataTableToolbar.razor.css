@@ -1,0 +1,12 @@
+
+.datatable-confirm-primary,.datatable-confirm-cancel{border-radius:11px;padding:.62rem 1.1rem;font-size:13px;font-weight:750;border:1px solid transparent;cursor:pointer;}
+.datatable-confirm-primary{background:#099bad;color:#fff;}
+.datatable-confirm-primary:hover{background:#077d90;}
+.datatable-confirm-danger{background:#d74747;}
+.datatable-confirm-danger:hover{background:#b62d39;}
+.datatable-confirm-cancel{background:#f4f8fa;border-color:#dae7ec;color:#395365;}
+.datatable-confirm-cancel:hover{background:#e8f4f6;}
+:where(.datatable-confirm-primary,.datatable-confirm-cancel):disabled{opacity:.55;cursor:wait;}
+
+.datatable-toolbar-trailing{margin-inline-start:auto;display:flex;align-items:center;gap:8px;min-width:0;}
+.datatable-toolbar-custom{display:flex;align-items:center;gap:7px;min-width:0;}

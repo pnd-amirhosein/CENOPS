@@ -1,0 +1,152 @@
+.dbi-graph{position:relative;isolation:isolate;height:min(67vh,760px);min-height:490px;overflow:hidden;border:1px solid var(--border-color,#dce9ed);border-radius:18px;background:radial-gradient(circle at 20% 15%,#00a6b009,transparent 40%),var(--surface-primary,#fff);color:var(--text-primary,#243c48)}
+.dbi-graph:fullscreen{width:100vw;height:100vh;border:0;border-radius:0}
+.dbi-graph-stage{position:absolute;inset:0;overflow:hidden;cursor:grab;touch-action:none;background-image:radial-gradient(#95b1bb46 .9px,transparent .9px);background-size:21px 21px}
+.dbi-graph-stage:active{cursor:grabbing}
+.dbi-pan{position:absolute;inset:0;will-change:transform;pointer-events:none}
+.dbi-canvas{position:absolute;top:0;left:0;pointer-events:auto;zoom:1}
+.dbi-edges,.dbi-nodes{position:absolute;left:0;top:0;overflow:visible}
+.dbi-edges{pointer-events:none;width:1px;height:1px}
+.dbi-relation-path{fill:none;stroke:#28b3be;stroke-width:2.6;stroke-linecap:round;opacity:.78}
+.dbi-node{position:absolute;width:268px;height:120px;display:flex;flex-direction:column;justify-content:space-between;box-sizing:border-box;background:var(--surface-primary,#fff);color:var(--text-primary,#233c49);border:1px solid var(--border-color,#d4e6e9);border-radius:15px;box-shadow:0 11px 27px #193a4d12;overflow:hidden;cursor:grab;user-select:none}
+.dbi-node:hover{border-color:#22b8c2;box-shadow:0 14px 32px #0e9aa624}
+.dbi-node-heading{padding:11px 13px 5px;display:grid;gap:3px;min-width:0;direction:ltr;text-align:left}
+.dbi-node-schema{color:#089aa7;font-size:10px;font-weight:700;line-height:1.3;letter-spacing:.4px}
+.dbi-node-name{font-size:14px;font-weight:800;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dbi-node-hint{font-size:9px;color:var(--text-secondary,#9ca9b1);letter-spacing:1px}
+.dbi-node-actions{direction:ltr;display:flex;gap:5px;padding:6px 8px;background:var(--surface-secondary,#f6f9fa);border-top:1px solid var(--border-color,#e6eff0)}
+.dbi-node-action{font-size:11px;font-weight:800;line-height:1.4;border:1px solid var(--border-color,#d6e9ed);border-radius:8px;padding:5px 8px;flex:1;cursor:pointer;background:var(--surface-primary,#fff);color:var(--text-primary,#36606a)}
+.dbi-node-action.pk{color:#008d78}.dbi-node-action.fk{color:#167ea1}
+.dbi-node-action.loaded{background:#e7f7f4}
+.dbi-node-action:hover{border-color:#11a6b3;background:#dff6f6}
+.dbi-graph-controls{position:absolute;z-index:8;bottom:42px;left:16px;display:flex;gap:3px;background:var(--surface-primary,#fff);box-shadow:0 5px 25px #0002;padding:6px;border:1px solid var(--border-color,#dde7eb);border-radius:12px}
+.dbi-graph-controls button,.dbi-icon-button{font-size:18px;font-weight:800;line-height:1;color:var(--text-primary,#355563);border:0;background:transparent;border-radius:8px;min-width:35px;height:34px;cursor:pointer}
+.dbi-graph-controls button:hover,.dbi-icon-button:hover{background:var(--surface-secondary,#ebf5f6)}
+.dbi-graph-legend{position:absolute;z-index:7;bottom:9px;left:16px;font-size:10px;line-height:1.2;color:var(--text-secondary,#8494a1);background:var(--surface-primary,#fff);padding:4px 8px;border-radius:5px}
+.dbi-graph-legend span{margin:0 8px;color:#0ea6b0}
+.dbi-design{position:absolute;z-index:9;top:14px;right:14px;width:min(440px,calc(100% - 28px));max-height:calc(100% - 28px);display:flex;flex-direction:column;overflow:hidden;background:var(--surface-primary,#fff);border:1px solid var(--border-color,#d7e4e8);border-radius:15px;box-shadow:0 21px 60px #0c2d4240}
+.dbi-design-head{padding:15px;display:flex;gap:10px;align-items:flex-start;justify-content:space-between;border-bottom:1px solid var(--border-color,#e2ebef)}
+.dbi-design-head>div{min-width:0;display:grid;gap:5px}
+.dbi-design-head strong{font-size:16px;max-width:360px;overflow-wrap:anywhere;text-align:left}
+.dbi-design-head small{color:var(--text-secondary,#718795);font-size:11px}
+.dbi-eyebrow{font-size:10px;font-weight:800;line-height:1.5;color:#0298a7;letter-spacing:.8px}
+.dbi-design-tabs{display:flex;gap:5px;padding:9px 13px;border-bottom:1px solid var(--border-color,#e4edef)}
+.dbi-design-tabs button{border:0;background:transparent;color:var(--text-secondary,#708694);font-size:11px;font-weight:700;border-radius:7px;padding:7px 10px;cursor:pointer}
+.dbi-design-tabs button.active{color:#038993;background:#e0f6f7}
+.dbi-design-body{overflow:auto;padding:10px 12px 17px;min-height:100px}
+.dbi-design-table{border-collapse:collapse;width:100%;text-align:left;font:11px/1.45 Consolas,monospace;color:var(--text-primary,#34515f)}
+.dbi-design-table th{position:sticky;top:0;background:var(--surface-secondary,#f0f5f6);font-size:11px;font-weight:700;padding:9px 7px;white-space:nowrap}
+.dbi-design-table td{border-bottom:1px solid var(--border-color,#e8eff2);padding:8px 7px;vertical-align:middle}
+.dbi-column-name{font-weight:700;overflow-wrap:anywhere}.dbi-null-check{text-align:center;font-size:15px}
+.dbi-tag{background:#edf4f5;color:#546c78;padding:2px 4px;border-radius:4px;margin-left:3px;font-size:9px;white-space:nowrap}
+.dbi-pk{background:#e2f8ef;color:#087e63}.dbi-fk{background:#e3f1fb;color:#146b9e}
+.dbi-design-properties{padding:17px 3px 0;display:grid;gap:8px;font-size:11px}
+.dbi-design-properties>div{display:grid;gap:3px;padding:8px;border:1px solid var(--border-color,#e4e9ec);border-radius:8px;overflow-wrap:anywhere}
+.dbi-design-properties small,.dbi-design-properties span{color:var(--text-secondary,#758995)}
+.dbi-constraint{border:1px solid var(--border-color,#dce8ec);padding:12px;margin-bottom:8px;border-radius:10px;display:grid;gap:8px;overflow-wrap:anywhere;font-size:11px}
+.dbi-constraint strong{font:700 12px/1.4 Consolas,monospace}.dbi-constraint small{font:11px/1.5 Consolas,monospace;color:var(--text-secondary,#778894)}
+.dbi-mapping{padding:7px;border-radius:6px;background:var(--surface-secondary,#f4f8f9);font:11px/1.5 Consolas,monospace;text-align:left}.dbi-mapping span{color:#00a3ac}
+.dbi-design-empty{padding:25px;font-size:12px;text-align:center;color:var(--text-secondary,#82929a)}
+.dbi-fk-menu{position:absolute;z-index:12;width:290px;max-width:calc(100% - 18px);padding:13px;display:grid;gap:9px;box-sizing:border-box;}
+.dbi-fk-menu h3{font-size:12px;margin:0}.dbi-fk-menu small{font-size:10px;color:var(--text-secondary,#778a96)}
+.dbi-fk-menu .dbi-fk-options{display:grid;gap:7px;max-height:195px;min-height:0;overflow:auto;overscroll-behavior:contain}
+.dbi-fk-menu label{display:flex;gap:8px;align-items:flex-start;font-size:11px;cursor:pointer}
+.dbi-fk-menu input{flex:none;accent-color:#00a3af}
+.dbi-fk-menu .dbi-fk-actions{display:flex;gap:7px;justify-content:flex-end}
+.dbi-fk-menu button{font-size:11px;font-weight:700;border:1px solid var(--border-color,#dae4e9);padding:7px 10px;border-radius:7px;background:var(--surface-secondary,#f4f8fa);color:inherit;cursor:pointer}
+.dbi-fk-menu button.primary{background:#079ba8;color:white;border:0}.dbi-fk-menu button:disabled{opacity:.55;cursor:not-allowed}
+@media(max-width:700px){.dbi-graph{min-height:490px}.dbi-design{top:8px;right:8px;max-height:70%;width:min(420px,calc(100% - 16px))}.dbi-graph-legend{font-size:9px;max-width:calc(100% - 24px)}}
+/* The page shell shares the existing CENOPS typography, tokens and page header. */
+.dbi-page{display:flex;flex-direction:column;gap:15px;min-width:0;padding-bottom:20px;color:var(--text-primary,#233e4a)}
+.dbi-header{display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap}
+.dbi-kicker{font-size:10px;font-weight:800;letter-spacing:1px;color:#00a2af}
+.dbi-header h2{font-size:22px;font-weight:800;margin:4px 0}
+.dbi-header p{margin:0;color:var(--text-secondary,#728592);font-size:12px}
+.dbi-readonly{background:var(--surface-secondary,#eff8f7);border:1px solid var(--border-color,#d8eaea);border-radius:8px;padding:8px 11px;font:800 10px Consolas,monospace;color:#008f87}
+.dbi-picker{background:var(--surface-primary,#fff);border:1px solid var(--border-color,#dce6eb);border-radius:15px;padding:15px;display:flex;align-items:end;gap:14px;flex-wrap:wrap}
+.dbi-picker .dbi-field{min-width:230px;flex:1 1 265px;display:grid;gap:7px;font-size:11px;font-weight:800}
+.dbi-picker select{appearance:auto;width:100%;height:39px;border:1px solid var(--border-color,#d9e4ea);border-radius:9px;padding:7px 11px;background:var(--surface-primary,#fff);color:var(--text-primary,#34515d);font-size:12px;outline:none}
+.dbi-picker select:focus{border-color:#0ca7b0;box-shadow:0 0 0 3px #0ca7b018}
+.dbi-picker select:disabled{opacity:.5}
+.dbi-picker-count{font-size:11px;font-weight:700;color:var(--text-secondary,#8c9daa);padding-bottom:9px;white-space:nowrap}
+.dbi-message{padding:10px 14px;border-radius:10px;font-size:12px}.dbi-message.error{background:#fff0f1;color:#a02842}.dbi-message.info{background:#e5f9f8;color:#047a81}
+.dbi-empty{display:grid;place-content:center;gap:12px;min-height:330px;text-align:center;background:var(--surface-primary,#fff);border:1px dashed var(--border-color,#cedde2);border-radius:15px;padding:35px}
+.dbi-empty strong{font-size:15px}.dbi-empty p{max-width:540px;margin:0;color:var(--text-secondary,#79919b);font-size:12px;line-height:2}
+.dbi-footer{display:flex;align-items:center;justify-content:space-between;gap:13px;color:var(--text-secondary,#8396a0);font-size:11px;flex-wrap:wrap}
+.dbi-loading{position:fixed;z-index:2000;left:26px;bottom:26px;border-radius:12px;background:#07434d;color:white;padding:13px 17px;font-size:12px;box-shadow:0 12px 40px #11313b33}
+@media(max-width:700px){.dbi-picker{padding:11px;gap:9px}.dbi-picker .dbi-field{flex-basis:100%;min-width:0}.dbi-header h2{font-size:19px}}
+
+/* 2.48: both diagram types use GraphWorkspace for stage, controls and legend. */
+.dbi-graph{background:#f6fcfd;border-color:#badfe6;border-radius:14px;min-height:0;height:100%;flex:1 1 auto}
+.dbi-graph-stage.graph-workspace-stage{background-color:#f6fcfd;background-image:radial-gradient(#96bfca60 1px,transparent 1px);background-size:22px 22px}
+.dbi-node.selected{border:2px solid #087f95;box-shadow:0 7px 28px #009bac38}
+.dbi-node.dimmed{opacity:.2}.dbi-relation-path.dimmed{opacity:.12}
+.dbi-fk-menu{max-height:calc(100% - 20px);grid-template-rows:auto auto auto minmax(0,1fr) auto;}
+/* The workspace-scrolling is disabled only on this route; a long design table still scrolls inside its own inspector. */
+.app-shell .shell-workspace:has(.dbi-page){overflow:hidden!important;overscroll-behavior:none;padding-bottom:12px!important}
+.app-shell .shell-workspace:has(.dbi-page) .workspace-surface{flex:1 1 auto;min-height:0;overflow:hidden;display:flex;flex-direction:column}
+.dbi-page{height:100%;min-height:0;flex:1 1 auto;overflow:hidden;padding-bottom:0;gap:9px}
+.dbi-page > .dbi-graph{min-height:0;flex:1 1 auto;height:auto}
+.dbi-header{flex:0 0 auto}.dbi-picker{flex:0 0 auto;padding:9px 12px;gap:10px}
+.dbi-picker .dbi-field{gap:4px}.dbi-picker select{height:34px}
+.dbi-empty{min-height:0;flex:1 1 auto}
+.dbi-footer{flex:0 0 auto;min-height:17px}
+@media(max-height:740px){.dbi-header h2{font-size:17px}.dbi-header p{font-size:11px}.dbi-readonly{padding:5px 8px}}
+@media(max-width:700px){.dbi-page .dbi-picker{padding:8px}.dbi-page .dbi-picker .dbi-field{flex:1 1 140px;min-width:0}.dbi-page .dbi-header p{display:none}.dbi-page .dbi-footer span:last-child{display:none}}
+
+/* 2.49: compact, no-page-scroll table selectors. Context menus can float above the graph. */
+.dbi-picker{position:relative;z-index:19;overflow:visible}
+.dbi-picker .dbi-field{min-width:190px;flex:1 1 230px;display:grid;gap:4px;font-size:11px;font-weight:800;min-height:0}
+.dbi-picker .dbi-tables-field{flex:2 1 340px}
+.dbi-picker .app-dropdown{min-width:0}
+.dbi-picker-count{padding-bottom:8px}
+@media(max-width:700px){.dbi-picker .dbi-field{flex:1 1 145px;min-width:0}.dbi-picker .dbi-tables-field{flex:2 1 200px}}
+
+/* 2.50: per-FK color variants, with high-contrast highlighted routes. */
+.dbi-relation-path{transition:opacity .16s ease;opacity:.85}
+.dbi-relation-path.highlighted{opacity:1;stroke-width:3.3}
+.dbi-node.dimmed{opacity:.16}
+.dbi-node.selected{border:2px solid #087f95;box-shadow:0 0 0 3px #08a5b022,0 12px 28px #0f829433}
+
+/* The single-select and multi-select triggers must occupy an identical row height. */
+.dbi-picker .app-dropdown-trigger{height:38px;min-height:38px;max-height:38px;box-sizing:border-box;}
+
+/* 2.53: desktop marquee and hover-only topology removal. Use the same 1px/rounded
+   keycap language as GraphWorkspace's Shift affordance; actions do not affect layout. */
+.dbi-marquee{position:absolute;z-index:6;pointer-events:none;display:none;box-sizing:border-box;border:1.5px solid #089db7;background:#0facc22b;border-radius:5px;box-shadow:inset 0 0 0 1px #ffffff80}
+.dbi-marquee.active{display:block}
+.dbi-node{overflow:visible}
+.dbi-node-heading{padding-right:43px}
+.dbi-node-remove{position:absolute;z-index:3;top:8px;right:8px;width:27px;height:27px;display:grid;place-items:center;border:1px solid #dbabb3;border-radius:8px;background:#fff;color:#ba4055;box-shadow:0 3px 10px #163e4b12;cursor:pointer;opacity:0;visibility:hidden;transform:translateY(-3px);transition:opacity .14s ease,transform .14s ease,visibility .14s ease}
+.dbi-node:hover .dbi-node-remove,.dbi-node:focus-within .dbi-node-remove{opacity:1;visibility:visible;transform:translateY(0)}
+.dbi-node-remove:hover{background:#fff0f2;border-color:#db596c;color:#a52141}
+.dbi-node-remove:focus-visible{outline:2px solid #0b96ac;outline-offset:2px;opacity:1;visibility:visible}
+.dbi-node-remove > svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.8;stroke-linecap:round;stroke-linejoin:round}
+.dbi-remove-direction{position:absolute;top:-13px;right:-13px;width:22px;height:22px;box-sizing:border-box;display:grid;place-items:center;border:1px solid #9dc4d0;border-radius:7px;background:#fff;color:#0b8197;box-shadow:0 2px 9px #133b4b24;opacity:0;visibility:hidden;transform:translateY(3px);pointer-events:none;transition:opacity .14s ease,transform .14s ease,visibility .14s ease}
+.dbi-remove-direction svg{width:15px;height:15px;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;fill:none}
+.graph-ctrl-held:not(.graph-shift-held) .dbi-node-remove .dbi-remove-children,.graph-shift-held .dbi-node-remove .dbi-remove-parents{opacity:1;visibility:visible;transform:translateY(0)}
+.dbi-graph-stage:has(.dbi-marquee.active){cursor:crosshair}
+
+/* 2.54: crisp layout zoom and clipped node internals without clipping outside badges. */
+.dbi-pan{inset:auto;left:0;top:0;will-change:auto;transform:none!important}
+.dbi-node{overflow:visible}
+.dbi-node-surface{position:absolute;inset:1px;display:flex;flex-direction:column;justify-content:space-between;
+  overflow:hidden;border-radius:inherit;background:var(--surface-primary,#fff);pointer-events:auto}
+.dbi-node-surface .dbi-node-actions{pointer-events:auto}
+.dbi-node.marquee-preview:not(.selected){border-color:#079eb7;box-shadow:0 0 0 3px #069fcb45,0 12px 24px #08678124}
+.dbi-node.marquee-preview.selected{box-shadow:0 0 0 4px #0dadd65c,0 12px 26px #08678130}
+.dbi-node-remove{display:flex;align-items:center;justify-content:center;padding:0;line-height:0}
+.dbi-node-remove > svg{display:block;flex:0 0 16px;margin:0;position:relative;top:0;left:0}
+.dbi-remove-parents{left:-13px;right:auto}
+
+.dbi-node.selected .dbi-node-surface{inset:2px;border-radius:12px}
+
+/* SQL export preview uses the shared AppModal and remains inside graph fullscreen. */
+.dbi-query-modal .dbi-query-preview{display:flex;flex-direction:column;gap:14px;min-width:0}
+.dbi-query-preview pre{margin:0;max-height:min(56vh,570px);overflow:auto;direction:ltr;text-align:left;
+  background:#102630;color:#d4f4f3;border:1px solid #31515a;border-radius:10px;padding:18px;
+  font:13px/1.75 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre;tab-size:4}
+.dbi-query-preview-actions{display:flex;flex-wrap:wrap;justify-content:flex-start;gap:9px}
+.dbi-query-preview-actions button{border:1px solid #bdd5d8;border-radius:8px;background:white;color:#256273;
+  padding:9px 14px;font-family:inherit;font-size:12px;font-weight:600;line-height:1.4;cursor:pointer}
+.dbi-query-preview-actions button.primary{background:#087d90;border-color:#087d90;color:#fff}
+.dbi-query-preview-actions button:hover{filter:brightness(.96)}

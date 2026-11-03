@@ -1,0 +1,61 @@
+@* Public release information. No role or access checks are required. *@
+<AppModal IsOpen="IsOpen"
+          AccessibleLabel="درباره گمرک / سیناپس"
+          MaxWidth="56rem"
+          CssClass="cenops-about-surface"
+          FlushContent="true"
+          FloatingClose="true"
+          OnClose="OnClose">
+    <ChildContent>
+        <div class="cenops-about" dir="rtl">
+            <div class="cenops-about-main">
+                <div class="cenops-about-brand" role="img" aria-label="نشان گمرک / سیناپس">
+                    <CenopsMark CssClass="cenops-about-mark" />
+                </div>
+
+                <div class="cenops-about-details">
+                    <header class="cenops-about-identity">
+                        <h2>@CenopsRelease.PersianName</h2>
+                        <p class="cenops-about-name" lang="en" dir="ltr">@CenopsRelease.Product</p>
+                        <p class="cenops-about-description">فضای مرکزی ابزارها و همکاری تیم توسعه</p>
+                    </header>
+
+                    <dl class="cenops-about-release" aria-label="اطلاعات انتشار">
+                        <div>
+                            <dt>نسخه</dt>
+                            <dd dir="ltr">@CenopsRelease.Version</dd>
+                        </div>
+                        <div>
+                            <dt>نام انتشار</dt>
+                            <dd dir="ltr">@CenopsRelease.Codename</dd>
+                        </div>
+                    </dl>
+
+                    <div class="cenops-about-credits">
+                        <p>محصول تیم <strong lang="en" dir="ltr">Digital Ecommerce</strong></p>
+                        <p>ابزار مرکزی تیم توسعه، ساخته‌شده توسط <strong>تیم گمرک</strong></p>
+                    </div>
+
+                    <div class="cenops-about-legal" aria-label="حقوق و مالکیت معنوی">
+                        <p>نام‌های <bdi lang="en" dir="ltr">NTSW C.E.N.O.P.S.</bdi> و <bdi lang="en" dir="ltr">NTSW Central Operations</bdi>، عناوین «سیناپس» و «عملیات‌های مرکزی سامانه جامع تجارت» و نشان گرافیکی سامانه، اجزای هویت این محصول هستند.</p>
+                        <p>حقوق مربوط به نرم‌افزار، طراحی، مستندات و نشان آن محفوظ است. استفاده، تکثیر یا بازنشر این دارایی‌ها تابع مجوز صاحبان حقوق است.</p>
+                    </div>
+                </div>
+            </div>
+
+            <footer class="cenops-about-footer">
+                <p class="cenops-about-copyright" dir="ltr">© @CenopsRelease.CopyrightYear NTSW @CenopsRelease.Product — All rights reserved.</p>
+                <div class="cenops-about-powered" dir="ltr" aria-label="Powered by ILECY">
+                    <span>powered by</span>
+                    <img src="img/ilecy-mark.png" alt="" aria-hidden="true" width="36" height="20" />
+                    <strong>ILECY</strong>
+                </div>
+            </footer>
+        </div>
+    </ChildContent>
+</AppModal>
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+}

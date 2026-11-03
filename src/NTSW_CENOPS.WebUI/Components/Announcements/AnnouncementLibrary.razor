@@ -1,0 +1,163 @@
+@using System.Security.Claims
+@using NTSW_CENOPS.Application.Announcements
+@using NTSW_CENOPS.Application.Knowledge
+@using NTSW_CENOPS.Components.Knowledge
+@using NTSW_CENOPS.Components.Common
+@using NTSW_CENOPS.Components.Common.Loading
+@using NTSW_CENOPS.Components.Common.Notices
+@inject IAnnouncementService Announcements
+@inject AuthenticationStateProvider AuthState
+@inject AppBusyService Busy
+@inject AppNoticeService Notices
+
+<div class="knowledge-library announcement-library" dir="rtl">
+    <SectionContent SectionName="cenops-page-actions">
+        <PageHeaderSearch @bind-Value="_search" Label="جستجوی اطلاعیه‌ها" Placeholder="جستجو در متن یا نویسنده..." />
+    </SectionContent>
+    <div class="knowledge-grid">
+        <div class="announcement-create-anchor">
+            <button class="knowledge-create-card" type="button" @onclick="CreateNew" aria-expanded="@_creating">
+                <span class="knowledge-create-symbol" aria-hidden="true">+</span><strong>اطلاعیه جدید</strong><small>نوشتن مستقیم روی کارت</small>
+            </button>
+            @if (_creating && _draft is not null)
+            {
+                <article class="knowledge-card announcement-card announcement-edit-card announcement-floating-card" aria-label="ایجاد اطلاعیه">
+                    <div class="knowledge-card-top"><span class="knowledge-type-mark">NEW / ANNOUNCEMENT</span></div>
+                    @EditFormContent()
+                </article>
+            }
+        </div>
+        @foreach (var item in Filtered)
+        {
+            <article class="knowledge-card announcement-card" @key="item.Id">
+                <div class="knowledge-card-top">
+                    <span class="knowledge-type-mark">ANNOUNCEMENT</span>
+                    @if (item.Visibility == KnowledgeVisibility.Private) { <span class="knowledge-private-pill">خصوصی 🔒</span> }
+                    @if (_editable.Contains(item.Id))
+                    {
+                        <div class="knowledge-card-actions">
+                            <button class="knowledge-more" type="button" title="عملیات" @onclick="() => _menu = _menu == item.Id ? null : item.Id"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="5" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="12" cy="19" r="1" fill="currentColor"/></svg></button>
+                            @if (_menu == item.Id)
+                            {
+                                <button class="knowledge-menu-scrim" aria-label="بستن" @onclick="() => _menu = null"></button>
+                                <div class="knowledge-card-menu cenops-liquid-glass" role="menu">
+                                    <button type="button" role="menuitem" @onclick="() => Edit(item)">ویرایش</button>
+                                    <button type="button" role="menuitem" class="danger" @onclick="() => AskDelete(item)">حذف</button>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+                @if (_editingId == item.Id && _draft is not null)
+                {
+                    @EditFormContent()
+                }
+                else
+                {
+                    <div class="announcement-body">
+                        <p dir="auto">@item.Content</p>
+                        <span class="knowledge-card-author"><span class="knowledge-avatar">@Initial(item.AuthorDisplayName)</span><UserHoverName DisplayName="@item.AuthorDisplayName" /></span>
+                    </div>
+                }
+            </article>
+        }
+    </div>
+    @if (_items.Count == 0 && !_creating) { <p class="knowledge-empty">اطلاعیه‌ای ثبت نشده است.</p> }
+    else if (!Filtered.Any() && !_creating) { <p class="knowledge-empty">نتیجه‌ای پیدا نشد.</p> }
+</div>
+<AppModal IsOpen="_deleteCandidate is not null" Title="حذف اطلاعیه" Description="آیا این اطلاعیه حذف شود؟" MaxWidth="420px" OnClose="() => _deleteCandidate = null">
+    <ChildContent><p>پس از حذف، این کارت از فهرست کنار گذاشته می‌شود.</p></ChildContent>
+    <Footer><button type="button" class="knowledge-button danger" disabled="@_saving" @onclick="DeleteAsync">حذف</button><button type="button" class="knowledge-button secondary" @onclick="() => _deleteCandidate = null">انصراف</button></Footer>
+</AppModal>
+@code {
+    private List<AnnouncementModel> _items = [];
+    private IReadOnlyList<KnowledgeAuthorModel> _authors = [];
+    private HashSet<int> _editable = [];
+    private string _search = string.Empty;
+    private int? _menu, _editingId;
+    private AnnouncementModel? _draft, _deleteCandidate;
+    private bool _creating, _canChooseAuthor, _saving;
+    private int _currentUserId;
+    private string _error = string.Empty;
+    private IEnumerable<AnnouncementModel> Filtered => _items.Where(x => string.IsNullOrWhiteSpace(_search) ||
+        x.Content.Contains(_search.Trim(), StringComparison.OrdinalIgnoreCase) ||
+        x.AuthorDisplayName.Contains(_search.Trim(), StringComparison.OrdinalIgnoreCase));
+    [Parameter] public bool StartNew { get; set; }
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+    protected override void OnParametersSet()
+    {
+        if (StartNew && !_creating && _editingId is null) CreateNew();
+    }
+    private async Task LoadAsync()
+    {
+        try
+        {
+            using var lease = Busy.Begin("در حال دریافت اطلاعیه‌ها...");
+            var actor = (await AuthState.GetAuthenticationStateAsync()).User;
+            _currentUserId = int.TryParse(actor.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var uid) ? uid : 0;
+            _items = (await Announcements.ListAsync(actor)).ToList();
+            _authors = await Announcements.AuthorsAsync(actor);
+            _canChooseAuthor = await Announcements.CanChooseAuthorAsync(actor);
+            _editable = _items.Where(x => _canChooseAuthor || x.UserId == _currentUserId).Select(x => x.Id).ToHashSet();
+        }
+        catch { Notices.Error("بارگذاری اطلاعیه‌ها انجام نشد."); }
+    }
+    private static string Initial(string text) => string.IsNullOrWhiteSpace(text) ? "؟" : text.Trim()[0].ToString();
+    private void CreateNew() { _menu = null; _draft = new AnnouncementModel { UserId = _currentUserId }; _creating = true; _editingId = null; _error = ""; }
+    private void Edit(AnnouncementModel item)
+    {
+        if (!_editable.Contains(item.Id)) return;
+        _menu = null; _creating = false; _editingId = item.Id;
+        _draft = new AnnouncementModel { Id = item.Id, Content = item.Content, UserId = item.UserId, Visibility = item.Visibility };
+        _error = "";
+    }
+    private void CancelEdit() { _editingId = null; _creating = false; _draft = null; _error = ""; }
+    private void AskDelete(AnnouncementModel item) { _menu = null; _deleteCandidate = item; }
+    private RenderFragment EditFormContent() => builder =>
+    {
+        // The single inline editing surface is reused by create and edit cards.
+        // Markup rendered with Razor below via an inner component for type safety.
+        builder.OpenComponent<AnnouncementCardForm>(0);
+        builder.AddAttribute(1, "Model", _draft!);
+        builder.AddAttribute(2, "Authors", _authors);
+        builder.AddAttribute(3, "CanChooseAuthor", _canChooseAuthor);
+        builder.AddAttribute(4, "Error", _error);
+        builder.AddAttribute(5, "Saving", _saving);
+        builder.AddAttribute(6, "OnCancel", EventCallback.Factory.Create(this, CancelEdit));
+        builder.AddAttribute(7, "OnSave", EventCallback.Factory.Create(this, SaveAsync));
+        builder.CloseComponent();
+    };
+    private async Task SaveAsync()
+    {
+        if (_draft is null || _saving) return;
+        _saving = true;
+        try
+        {
+            var result = await Announcements.SaveAsync(_draft, (await AuthState.GetAuthenticationStateAsync()).User);
+            if (!result.Succeeded) { _error = result.Message; Notices.Error(_error); return; }
+            CancelEdit(); await LoadAsync(); Notices.Success("اطلاعیه ذخیره شد.");
+        }
+        catch { Notices.Error("ثبت اطلاعیه ممکن نشد."); }
+        finally { _saving = false; }
+    }
+    private async Task DeleteAsync()
+    {
+        if (_deleteCandidate is null || _saving) return;
+        _saving = true;
+        try
+        {
+            var result = await Announcements.DeleteAsync(_deleteCandidate.Id, (await AuthState.GetAuthenticationStateAsync()).User);
+            if (!result.Succeeded) { Notices.Error(result.Message); return; }
+            var deletedId = _deleteCandidate.Id;
+            _items.RemoveAll(x => x.Id == deletedId);
+            _editable.Remove(deletedId);
+            _menu = null;
+            if (_editingId == deletedId) CancelEdit();
+            _deleteCandidate = null;
+            await LoadAsync();
+            Notices.Success("اطلاعیه حذف شد.");
+        }
+        catch { Notices.Error("حذف اطلاعیه ممکن نشد."); }
+        finally { _saving = false; }
+    }
+}

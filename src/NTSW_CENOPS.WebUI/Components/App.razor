@@ -1,0 +1,91 @@
+@using NTSW_CENOPS.Components.Common
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <base href="/"/>
+    <link rel="stylesheet" href="bootstrap/bootstrap.min.css"/>
+    <link rel="stylesheet" href="css/input.css"/>
+    <link rel="stylesheet" href="css/app.css"/>
+    <link rel="stylesheet" href="NTSW_CENOPS.WebUI.styles.css?v=2.67"/>
+    <link rel="stylesheet" href="css/operations-shell.css?v=2.58"/>
+    <link rel="stylesheet" href="css/operations-refinements.css?v=2.51"/>
+    <link rel="stylesheet" href="css/glasswork-final.css"/>
+    <link rel="stylesheet" href="css/cenops-feedback.css?v=2.6.0"/>
+    <link rel="stylesheet" href="css/knowledge-library.css?v=2.14"/>
+    <link rel="stylesheet" href="css/note-workspace.css?v=2.32"/>
+    <link rel="stylesheet" href="css/glasswork-controls.css?v=2.14"/>
+    <link rel="stylesheet" href="css/chat-workspace.css?v=2.8.4"/>
+    <link rel="stylesheet" href="css/automated-jobs.css?v=2.9.0"/>
+    <link rel="stylesheet" href="css/monitoring-reports.css?v=2.13"/>
+    <link rel="stylesheet" href="css/dashboard-content-library.css?v=2.24"/>
+    <link rel="stylesheet" href="css/dashboard-card-components.css?v=2.32"/>
+    <link rel="stylesheet" href="css/dashboard-smart-events.css?v=2.28"/>
+    <link rel="stylesheet" href="css/snippet-tools.css?v=2.26"/>
+    <link rel="stylesheet" href="css/source-syntax.css?v=2.39"/>
+    <link rel="stylesheet" href="css/database-inspector.css?v=2.58"/>
+    <link rel="stylesheet" href="css/page-header-actions.css?v=2.40"/>
+    <link rel="stylesheet" href="css/cenops-liquid-glass.css"/>
+    <link rel="stylesheet" href="css/cenops-file-block.css?v=2.66"/>
+    <link rel="stylesheet" href="css/release-stories.css?v=2.67"/>
+    <link rel="icon" type="image/png" href="favicon.png"/>
+    <HeadOutlet @rendermode="PageRenderMode"/>
+</head>
+
+<body>
+<Routes @rendermode="PageRenderMode"/>
+
+@* Blazor Server updates this element's classes when the SignalR circuit changes.
+   Kept outside the interactive app shell so it also works during disconnection. *@
+<div id="components-reconnect-modal" class="cenops-reconnect" dir="rtl" role="status" aria-live="polite" aria-atomic="true">
+    <span class="cenops-reconnect-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4.5 9a12 12 0 0 1 15 0M7.5 12.5a7 7 0 0 1 9 0M10.5 16a2.6 2.6 0 0 1 3 0"/>
+            <circle cx="12" cy="20" r="1" fill="currentColor" stroke="none"/>
+        </svg>
+    </span>
+    <div class="cenops-reconnect-copy">
+        <strong>ارتباط با سرور قطع شده است</strong>
+        <p class="cenops-reconnect-connecting">در حال اتصال مجدد؛ لطفاً کمی صبر کنید…</p>
+        <p class="cenops-reconnect-failed">اتصال برقرار نشد. اتصال اینترنت را بررسی کنید و دوباره تلاش کنید.</p>
+        <p class="cenops-reconnect-rejected">نشست فعلی پایان یافته است. برای ادامه، صفحه را دوباره بارگذاری کنید.</p>
+    </div>
+    <span class="cenops-reconnect-spinner" aria-hidden="true"></span>
+    <button type="button" class="cenops-reconnect-retry" onclick="cenopsUI.retryConnection()">تلاش مجدد</button>
+    <button type="button" class="cenops-reconnect-reload" onclick="location.reload()">بارگذاری صفحه</button>
+</div>
+
+<script src="js/site.js?v=2.28"></script>
+<script src="js/searchable-select.js?v=2.13.1"></script>
+<script src="js/chat-realtime.js?v=2.6.0"></script>
+<script src="js/note-code.js?v=2.28"></script>
+<script src="js/note-drag.js?v=2.30"></script>
+<script src="js/file-drop.js?v=2.66"></script>
+<script src="js/snippet-draft.js?v=2.26"></script>
+<script src="js/wiki-editor-shortcuts.js?v=2.20"></script>
+<script src="js/dashboard-grid.js?v=2.20"></script>
+<script src="_framework/blazor.web.js"></script>
+</body>
+
+</html>
+
+@code {
+    [CascadingParameter] private HttpContext? HttpContext { get; set; }
+
+    // One interactive circuit for layout + page + scoped busy/notice services.
+    // Anonymous/password HTTP-form pages remain static so auth endpoints work unchanged.
+    private Microsoft.AspNetCore.Components.IComponentRenderMode? PageRenderMode
+    {
+        get
+        {
+            var path = HttpContext?.Request.Path.Value ?? string.Empty;
+            var isAuthPage = path.Equals("/", StringComparison.OrdinalIgnoreCase)
+                || path.Equals("/login", StringComparison.OrdinalIgnoreCase)
+                || path.Equals("/signup", StringComparison.OrdinalIgnoreCase)
+                || path.Equals("/change-password", StringComparison.OrdinalIgnoreCase);
+            return isAuthPage ? null : InteractiveServer;
+        }
+    }
+}

@@ -1,0 +1,16 @@
+@using NTSW_CENOPS.Application.Knowledge
+<div class="knowledge-visibility-field" dir="rtl">
+    <span>حریم خصوصی</span>
+    <button type="button" class="knowledge-visibility-control @(IsPrivate ? "is-private" : "")"
+            role="switch" aria-checked="@IsPrivate" aria-label="خصوصی بودن سند"
+            title="@(!IsPrivate ? "تغییر به خصوصی" : "تغییر به عمومی")" @onclick="ToggleAsync">
+        <span class="knowledge-switch-track" aria-hidden="true"><span class="knowledge-switch-thumb"></span></span>
+        <span>@(IsPrivate ? "خصوصی" : "عمومی")</span>
+    </button>
+</div>
+@code {
+    [Parameter] public KnowledgeVisibility Value { get; set; } = KnowledgeVisibility.Public;
+    [Parameter] public EventCallback<KnowledgeVisibility> ValueChanged { get; set; }
+    private bool IsPrivate => Value == KnowledgeVisibility.Private;
+    private Task ToggleAsync() => ValueChanged.InvokeAsync(IsPrivate ? KnowledgeVisibility.Public : KnowledgeVisibility.Private);
+}

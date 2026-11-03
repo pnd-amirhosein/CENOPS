@@ -1,0 +1,669 @@
+@page "/tools/source-explorer"
+@attribute [AccessAuthorize(AccessKeys.SourceIntelligence)]
+@rendermode InteractiveServer
+@using NTSW_CENOPS.Application.SourceIntelligence
+@using NTSW_CENOPS.Components.Common
+@inject ISourceIntelligenceService Sources
+@inject AuthenticationStateProvider Authentication
+
+<PageTitle>تحلیل سورس</PageTitle>
+<div class="source-explorer" dir="rtl">
+    <SectionContent SectionName="cenops-page-actions">
+        <a class="page-action-button" href="/tools/source-indexes">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+            مدیریت منابع و ایندکس
+        </a>
+    </SectionContent>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <div class="source-alert" role="alert">@_error</div>
+    }
+    @if (!string.IsNullOrWhiteSpace(_notice))
+    {
+        <div class="source-notice" role="status">@_notice</div>
+    }
+
+    <section class="source-panel source-search-panel" aria-label="جستجوی نماد">
+        <button type="button" class="source-search-toggle" aria-expanded="@_searchExpanded"
+                aria-controls="source-search-body" @onclick="() => _searchExpanded = !_searchExpanded">
+            <span class="source-search-toggle-label">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.7" cy="10.7" r="6.4"/><path d="m16 16 4 4"/></svg>
+                <strong>جستجوی تعریف</strong>
+                <small>Exact declaration search</small>
+                @if (!_searchExpanded && !string.IsNullOrWhiteSpace(_searchedName))
+                {
+                    <code dir="ltr">@_searchedName</code>
+                }
+            </span>
+            <span class="source-toggle-state">
+                @(_searchExpanded ? "بستن جستجو" : "نمایش جستجو")
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg>
+            </span>
+        </button>
+        @if (_searchExpanded)
+        {
+            <div id="source-search-body" class="source-search-body">
+                <p class="source-search-help">نام دقیق و حساس به حروف را وارد کنید؛ جستجو فقط تعریف‌ها را برمی‌گرداند.</p>
+                <div class="source-search-tools">
+                    <select aria-label="فیلتر منبع" @bind="_repositoryFilter" disabled="@_busy">
+                        <option value="">تمام منابع</option>
+                        @foreach (var repo in _repos.Where(x => x.IndexedUtc.HasValue))
+                        {
+                            <option value="@repo.Id">@repo.Name</option>
+                        }
+                    </select>
+                    <input aria-label="نام دقیق نماد" dir="ltr" placeholder="BillOfLading" maxlength="256"
+                           @bind="_query" @bind:event="oninput" @onkeydown="SearchKeyboard" disabled="@_busy" />
+                    <button class="source-btn source-primary" type="button"
+                            disabled="@(_busy || string.IsNullOrWhiteSpace(_query))" @onclick="SearchAsync">
+                        جستجوی دقیق
+                    </button>
+                </div>
+                @if (_search is not null)
+                {
+                    <div class="source-declaration-overview">
+                        <div class="source-exact-query">
+                            <span>تعریف‌های دارای نام</span>
+                            <code dir="ltr">@_searchedName</code>
+                            <span class="source-exact-total">@_search.Total مورد</span>
+                        </div>
+                        <div class="source-category-filters" aria-label="دسته‌بندی تعریف‌ها">
+                            <button type="button" class="source-category-chip @(_category is null ? "active" : "")"
+                                    disabled="@_busy" @onclick="() => SelectCategoryAsync(null)">
+                                همه <span>@_search.Total</span>
+                            </button>
+                            @foreach (var category in SourceDeclarationCategories.Order)
+                            {
+                                var count = _search.Categories.FirstOrDefault(x => x.Category == category)?.Count ?? 0;
+                                @if (count > 0)
+                                {
+                                    <button type="button" class="source-category-chip @(_category == category ? "active" : "")"
+                                            disabled="@_busy" @onclick="() => SelectCategoryAsync(category)">
+                                        @SourceDeclarationCategories.Label(category) <span>@count</span>
+                                    </button>
+                                }
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </section>
+
+    <section class="source-workspace-section source-panel" aria-label="تعریف‌ها و اطلاعات نماد">
+        <button type="button" class="source-workspace-toggle" aria-expanded="@_workspaceExpanded"
+                @onclick="() => _workspaceExpanded = !_workspaceExpanded">
+            <span><strong>تعریف‌ها و اطلاعات نماد</strong><small> @(_search?.FilteredTotal ?? 0) تعریف · @(_selectedDeclaration?.Name ?? "هیچ نمادی انتخاب نشده")</small></span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        @if (_workspaceExpanded)
+        {
+    <div class="source-workspace">
+        <section class="source-panel source-results-panel" aria-label="نتیجه جستجوی تعریف‌ها">
+            <div class="source-column-head">
+                <h3>تعریف‌ها <span>@(_search?.FilteredTotal ?? 0)</span></h3>
+                <small>نتایج دقیق</small>
+            </div>
+            <div class="source-definition-filter">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></svg>
+                <input type="search" aria-label="فیلتر تعریف‌ها" placeholder="Project, File, Type…"
+                       @bind="_definitionFilter" @bind:event="oninput" />
+            </div>
+            <div class="source-results">
+                @if (_search is null)
+                {
+                    <div class="source-empty">نام دقیق یک نماد را وارد کنید؛ مثلاً <code dir="ltr">BillOfLading</code>.</div>
+                }
+                else if (FilteredDefinitions.Count == 0)
+                {
+                    <div class="source-empty">تعریفی با این نام پیدا نشد؛ نام‌ها در C# به بزرگی و کوچکی حروف حساس‌اند.</div>
+                }
+                else
+                {
+                    @foreach (var group in FilteredDefinitions.GroupBy(x => SourceDeclarationCategories.ForKind(x.Symbol.Kind))
+                        .OrderBy(x => CategoryOrder(x.Key)))
+                    {
+                        <section class="source-declaration-group">
+                            <div class="source-declaration-group-title">
+                                @SourceDeclarationCategories.Label(group.Key)
+                                <span>@group.Count()</span>
+                            </div>
+                            @foreach (var hit in group)
+                            {
+                                <button type="button" class="source-result @(hit.Symbol.Id == _selectedDeclaration?.Id && hit.Symbol.RepositoryId == _selectedDeclaration?.RepositoryId ? "active" : "")"
+                                        @key="(hit.Symbol.RepositoryId, hit.Symbol.Id)"
+                                        @onclick="() => ShowDeclarationAsync(hit.Symbol.RepositoryId, hit.Symbol.Id)">
+                                    <span class="source-kind source-result-badge">@KindLabel(hit.Symbol.Kind)</span>
+                                    <span class="source-result-main">
+                                        <strong dir="ltr" title="@hit.Symbol.Name">@hit.Symbol.Name <em>:@hit.Symbol.Line</em></strong>
+                                        <small dir="ltr" title="@hit.Symbol.File">@System.IO.Path.GetFileName(hit.Symbol.File)</small>
+                                    </span>
+                                    <span class="source-result-project" dir="ltr" title="@hit.Symbol.Project">@hit.Symbol.Project</span>
+                                </button>
+                            }
+                        </section>
+                    }
+                }
+            </div>
+            @if (_search is not null && _search.FilteredTotal > _search.PageSize)
+            {
+                <div class="source-search-pagination">
+                    <button type="button" class="source-btn source-btn-soft" disabled="@(_busy || _search.Page <= 1)"
+                            @onclick="() => MovePageAsync(-1)">قبلی</button>
+                    <span>صفحه @_search.Page از @TotalPages</span>
+                    <button type="button" class="source-btn source-btn-soft" disabled="@(_busy || _search.Page >= TotalPages)"
+                            @onclick="() => MovePageAsync(1)">بعدی</button>
+                </div>
+            }
+        </section>
+
+        <section class="source-panel source-details-panel" aria-label="اطلاعات نماد انتخاب‌شده">
+            <div class="source-column-head">
+                <h3>اطلاعات نماد</h3>
+                <small>Declaration</small>
+            </div>
+            <div class="source-inspector">
+                @if (_selectedDeclaration is null)
+                {
+                    <div class="source-empty source-inspector-empty">
+                        <span class="source-large-symbol">{ }</span>
+                        یک تعریف را از فهرست انتخاب کنید تا کد و محل آن را ببینید.
+                    </div>
+                }
+                else
+                {
+                    <header class="source-inspector-head">
+                        <span class="source-kind">@KindLabel(_selectedDeclaration.Kind)</span>
+                        <h3 dir="ltr">@_selectedDeclaration.Name</h3>
+                        <p dir="ltr">@_selectedDeclaration.Signature</p>
+                    </header>
+                    <div class="source-definition-metadata">
+                        <div><span>پروژه</span><strong dir="ltr">@_selectedDeclaration.Project</strong></div>
+                        <div><span>نوع نماد</span><strong>@KindLabel(_selectedDeclaration.Kind)</strong></div>
+                        @if (!string.IsNullOrWhiteSpace(_selectedDeclaration.ContainingSymbol))
+                        {
+                            <div><span>تعریف در</span><strong dir="ltr">@_selectedDeclaration.ContainingSymbol</strong></div>
+                        }
+                        <div><span>فایل و موقعیت</span><strong dir="ltr">@_selectedDeclaration.File : @_selectedDeclaration.Line : @_selectedDeclaration.Column</strong></div>
+                        @if (!string.IsNullOrEmpty(_selectedDeclaration.Namespace))
+                        {
+                            <div><span>Namespace</span><strong dir="ltr">@_selectedDeclaration.Namespace</strong></div>
+                        }
+                    </div>
+                    <div class="source-definition-title">کد محل تعریف <span>Declaration</span></div>
+                    <SourceCodePreview Code="@_selectedDeclaration.Snippet" />
+                }
+            </div>
+        </section>
+    </div>
+
+        }
+    </section>
+
+    <section class="source-panel source-references-panel" aria-label="درخت محل‌های استفاده">
+        <div class="source-reference-head">
+            <div>
+                <h3>محل‌های استفاده و پیاده‌سازی <span>@(_references?.Total ?? 0) references</span></h3>
+                <p>Reference locations: @(_references?.Total ?? 0) · Files: @(_references?.Items.Select(u => (u.Project, u.File)).Distinct().Count() ?? 0) · Graph vertices: @(_graphNodes.Count(n => n.Kind != "Definition"))</p>
+            </div>
+            <div class="source-reference-controls">
+                <label class="source-usage-filter">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6"/><path d="m15 15 5 5"/></svg>
+                    <input type="search" placeholder="فیلتر فایل، متد، نوع ارتباط…" aria-label="فیلتر محل‌های استفاده"
+                           @bind="_usageFilter" @bind:event="oninput" @bind:after="ApplyUsageFilter" />
+                    <span>@FilteredUsages.Count</span>
+                </label>
+            <div class="source-reference-tabs" role="tablist" aria-label="نمایش ارجاعات">
+                <button type="button" role="tab" aria-selected="@(!_graphTab)" class="@(!_graphTab ? "active" : "")" @onclick="() => _graphTab = false">درخت فایل‌ها</button>
+                <button type="button" role="tab" aria-selected="@_graphTab" class="@(_graphTab ? "active" : "")" @onclick="() => _graphTab = true">Graph <span>↗</span></button>
+            </div>
+            </div>
+        </div>
+        @if (_selectedDeclaration is null)
+        {
+            <div class="source-empty">ابتدا یک تعریف را انتخاب کنید تا درخت استفاده‌های آن نمایش داده شود.</div>
+        }
+        else if (_references is null)
+        {
+            <div class="source-empty">در حال دریافت ارجاعات…</div>
+        }
+        else if (FilteredUsages.Count == 0)
+        {
+            <div class="source-empty">محل استفاده‌ای در ایندکس فعلی یافت نشد.</div>
+        }
+        else if (_graphTab && !_references.HasVerifiedSymbolIdentity)
+        {
+            <div class="source-empty" role="status">Graph expansion requires a v8 semantic index. Reindex this source in مدیریت منابع; Tree references remain available.</div>
+        }
+        else if (_graphTab)
+        {
+            <SourceGraphView Nodes="@_graphNodes" Edges="@_graphEdges"
+                             NodeNotices="@_graphNotices" OnCollapseNode="OnGraphNodeCollapsed"
+                             OnOpenDetails="OpenGraphNodeDetails" OnExpandNode="ExpandGraphNodeAsync">
+                <ModalContent>
+                    <SourceUsagePreviewDialog Usage="@_activeUsage" File="@_fullFile" Busy="@_busy"
+                              OnClose="CloseUsagePreview" OnExpand="ExpandUsageAsync"
+                              OnCollapse="() => _fullFile = null" />
+                </ModalContent>
+            </SourceGraphView>
+            @if (FilteredUsages.Count > GraphNodeLimit)
+            {
+                <p class="source-reference-warning">برای حفظ عملکرد روان، نمودار فقط @GraphNodeLimit ارجاع اول را نشان می‌دهد. همه ارجاعات در تب درخت فایل‌ها در دسترس‌اند.</p>
+            }
+        }
+        else
+        {
+            <div class="source-reference-tree" aria-label="ارجاعات بر اساس پروژه و فایل">
+                @foreach (var project in FilteredUsages.GroupBy(u => u.Project)
+                    .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase))
+                {
+                    <details class="source-tree-project" @key="project.Key" open>
+                        <summary>
+                            <span class="source-tree-control" aria-hidden="true">
+                                <svg class="source-tree-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+                                <svg class="source-tree-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></svg>
+                            </span>
+                            <svg class="source-tree-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h18v13H3zM3 7V4h7l2 3"/></svg>
+                            <strong dir="ltr">@project.Key</strong>
+                            <span class="source-tree-count">@project.Select(x => x.File).Distinct(StringComparer.OrdinalIgnoreCase).Count() فایل · @project.Count() مورد</span>
+                        </summary>
+                        <div class="source-tree-branch">
+                            @foreach (var file in project.GroupBy(u => u.File).OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase))
+                            {
+                                <details class="source-tree-file" @key="(project.Key, file.Key)">
+                                    <summary>
+                                        <span class="source-tree-control" aria-hidden="true">
+                                            <svg class="source-tree-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+                                            <svg class="source-tree-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></svg>
+                                        </span>
+                                        <svg class="source-tree-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l4 4v14H7zM14 3v5h5"/></svg>
+                                        <span class="source-reference-path" dir="ltr">@file.Key</span>
+                                        <span class="source-tree-count">@file.Count()</span>
+                                    </summary>
+                                    <div class="source-tree-branch source-tree-leaves">
+                                        @foreach (var usage in file.OrderBy(u => u.Line).ThenBy(u => u.Column))
+                                        {
+                                            <button type="button" class="source-usage-item @(_activeUsage == usage ? "active" : "")"
+                                                    @key="(usage.File, usage.Line, usage.Column)"
+                                                    @onclick="() => OpenUsagePreview(usage)">
+                                                <span class="source-tree-leaf-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></span>
+                                                <span class="source-usage-line" dir="ltr">L@usage.Line:@usage.Column</span>
+                                                <span class="source-usage-text">
+                                                    <strong dir="ltr">@usage.Container</strong>
+                                                    <small dir="auto">@usage.SourceLine</small>
+                                                </span>
+                                                @if (usage.Kind is "Implements" or "Overrides" or "Inherits")
+                                                {
+                                                    <span class="source-usage-type">پیاده‌سازی</span>
+                                                }
+                                                @if (usage.Kind.StartsWith("MediatR.", StringComparison.Ordinal))
+                                                {
+                                                    <span class="source-usage-type source-usage-mediatr" title="Framework dispatch inferred from the request and handler types">MediatR · inferred</span>
+                                                }
+                                            </button>
+                                        }
+                                    </div>
+                                </details>
+                            }
+                        </div>
+                    </details>
+                }
+            </div>
+        }
+        @if (_references?.UnresolvedOwners > 0)
+        {
+            <p class="source-reference-warning">@_references.UnresolvedOwners reference(s) have unverified ownership. Their exact locations remain in Tree; graph expansion is disabled for those occurrences. Reindex source to improve accuracy.</p>
+        }
+        @if (_references?.MayBeIncomplete == true)
+        {
+            <p class="source-reference-warning">The source index is older than v8, has duplicate IDs, or was truncated. Reindex before comparing graph paths with Rider.</p>
+        }
+        @if (_references?.AmbiguousIndexBindings > 0)
+        {
+            <p class="source-reference-warning">Index diagnostic: @_references.AmbiguousIndexBindings ambiguous semantic bindings were skipped across the registered source. This count is index-wide, not references missing from the selected symbol.</p>
+        }
+    </section>
+
+    @if (!_graphTab || _selectedDeclaration is null || FilteredUsages.Count == 0)
+    {
+        <SourceUsagePreviewDialog Usage="@_activeUsage" File="@_fullFile" Busy="@_busy"
+                              OnClose="CloseUsagePreview" OnExpand="ExpandUsageAsync"
+                              OnCollapse="() => _fullFile = null" />
+    }
+    @if (_busy)
+    {
+        <div class="source-working" role="status" aria-live="polite"><span class="source-spinner"></span>@_workingMessage</div>
+    }
+</div>
+
+@code {
+    private List<SourceRepository> _repos = [];
+    private SourceDeclarationSearchPage? _search;
+    private SourceSymbol? _selectedDeclaration;
+    private SourceReferenceResult? _references;
+    private SourceUsage? _activeUsage;
+    private SourceFileResult? _fullFile;
+    private bool _searchExpanded = true;
+    private bool _workspaceExpanded = true;
+    private string _usageFilter = "";
+    private bool _graphTab;
+    private string _definitionFilter = "";
+    private const int GraphNodeLimit = 280;
+    private const int GraphExpansionLimit = 100;
+    private const int GraphTotalNodeLimit = 1500;
+    private const int GraphMaxDepth = 32;
+    private readonly Dictionary<string, SourceReferenceResult> _graphExpansions = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, SourceGraphNode> _graphNodeLookup = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, string> _graphNotices = new(StringComparer.Ordinal);
+    private IReadOnlyList<SourceUsage> FilteredUsages => _references?.Items
+        .Where(u => string.IsNullOrWhiteSpace(_usageFilter) ||
+            new[] { u.Project, u.File, u.Container, u.Kind, u.Namespace, u.SourceLine }
+                .Any(part => part.Contains(_usageFilter.Trim(), StringComparison.OrdinalIgnoreCase)))
+        .ToArray() ?? Array.Empty<SourceUsage>();
+    private void ApplyUsageFilter()
+    {
+        // Filtering changes the generated node paths; never replay an expansion
+        // using an ID that might now identify a different occurrence.
+        _graphExpansions.Clear();
+        _graphNotices.Clear();
+        BuildGraph();
+    }
+    private IReadOnlyList<SourceGraphNode> _graphNodes = Array.Empty<SourceGraphNode>();
+    private IReadOnlyList<SourceGraphEdge> _graphEdges = Array.Empty<SourceGraphEdge>();
+    private readonly Dictionary<string, SourceUsage> _graphUsages = new(StringComparer.Ordinal);
+    private IReadOnlyList<SourceSearchResult> FilteredDefinitions => _search?.Items
+        .Where(hit => string.IsNullOrWhiteSpace(_definitionFilter) ||
+            new[] { hit.Symbol.Project, hit.Symbol.File, hit.Symbol.Kind, hit.Symbol.Namespace,
+                    hit.Symbol.ContainingSymbol ?? "", hit.RepositoryName }
+                .Any(part => part.Contains(_definitionFilter.Trim(), StringComparison.OrdinalIgnoreCase)))
+        .ToArray() ?? Array.Empty<SourceSearchResult>();
+    private string? _category;
+    private string _searchedName = "";
+    private int TotalPages => _search is null ? 1 :
+        Math.Max(1, (_search.FilteredTotal + _search.PageSize - 1) / _search.PageSize);
+    private string _repositoryFilter = "";
+    private string _query = "";
+    private string? _error;
+    private string? _notice;
+    private bool _busy;
+    private string _workingMessage = "در حال آماده‌سازی…";
+
+    protected override async Task OnInitializedAsync() => await ReloadAsync();
+
+    private async Task RunAsync(Func<System.Security.Claims.ClaimsPrincipal, Task> action, string working)
+    {
+        _busy = true; _workingMessage = working; _error = null; _notice = null;
+        try
+        {
+            var auth = await Authentication.GetAuthenticationStateAsync();
+            await action(auth.User);
+        }
+        catch (Exception e) when (e is InvalidOperationException or ArgumentException or IOException or UnauthorizedAccessException)
+        { _error = e.Message; }
+        finally { _busy = false; }
+    }
+
+    private Task ReloadAsync() => RunAsync(async actor =>
+    { _repos = (await Sources.ListAsync(actor)).ToList(); }, "در حال دریافت منابع سورس…");
+
+    private static int CategoryOrder(string category)
+    {
+        for (var i = 0; i < SourceDeclarationCategories.Order.Count; i++)
+            if (SourceDeclarationCategories.Order[i] == category) return i;
+        return SourceDeclarationCategories.Order.Count;
+    }
+
+    private static string KindLabel(string kind) => kind switch
+    {
+        "Class" => "کلاس", "Record" => "رکورد", "RecordStruct" => "رکورد ساختاری", "Struct" => "ساختار", "Interface" => "اینترفیس",
+        "Enum" => "Enum", "Delegate" => "Delegate", "Method" => "متد", "Constructor" => "سازنده",
+        "Property" => "پراپرتی", "Field" => "فیلد", "Event" => "رویداد", "EnumMember" => "عضو Enum",
+        "Variable" => "متغیر محلی", "Parameter" => "پارامتر", "TypeParameter" => "پارامتر نوع",
+        "Namespace" => "Namespace", _ => kind
+    };
+
+    private async Task SearchKeyboard(KeyboardEventArgs e)
+    { if (e.Key == "Enter") await SearchAsync(); }
+
+    private Task SearchAsync() => RunAsync(async actor =>
+    {
+        _searchedName = _query.Trim();
+        _category = null;
+        _definitionFilter = "";
+        ClearDeclaration();
+        await ResolveAsync(actor, 1);
+    }, "در حال پیدا کردن تعریف‌ها…");
+
+    private Task SelectCategoryAsync(string? category) => RunAsync(async actor =>
+    {
+        _category = category;
+        ClearDeclaration();
+        await ResolveAsync(actor, 1);
+    }, "در حال دسته‌بندی تعریف‌ها…");
+
+    private Task MovePageAsync(int offset) => RunAsync(async actor =>
+    {
+        ClearDeclaration();
+        await ResolveAsync(actor, (_search?.Page ?? 1) + offset);
+    }, "در حال دریافت تعریف‌ها…");
+
+    private void CloseUsagePreview()
+    {
+        _activeUsage = null;
+        _fullFile = null;
+    }
+
+    private void OpenUsagePreview(SourceUsage usage)
+    {
+        _activeUsage = usage;
+        _fullFile = null;
+    }
+
+    private Task ExpandUsageAsync() => RunAsync(async actor =>
+    {
+        if (_activeUsage is null || _selectedDeclaration is null) return;
+        _fullFile = await Sources.GetSourceFileAsync(actor, _selectedDeclaration.RepositoryId,
+            _activeUsage.SymbolId, _activeUsage.File);
+    }, "در حال دریافت فایل سورس…");
+
+    private void ClearDeclaration()
+    {
+        _selectedDeclaration = null;
+        _references = null;
+        _usageFilter = "";
+        _activeUsage = null;
+        _fullFile = null;
+        _graphNodes = Array.Empty<SourceGraphNode>();
+        _graphEdges = Array.Empty<SourceGraphEdge>();
+        _graphUsages.Clear();
+        _graphExpansions.Clear();
+        _graphNodeLookup.Clear();
+        _graphNotices.Clear();
+        _graphTab = false;
+    }
+
+    private void OpenGraphNodeDetails(SourceGraphNode node)
+    {
+        if (_graphUsages.TryGetValue(node.Id, out var usage)) OpenUsagePreview(usage);
+    }
+
+    private static string BriefContext(string code)
+    {
+        var lines = code.Split('\n');
+        var target = Array.FindIndex(lines, line => line.TrimStart().StartsWith("> ", StringComparison.Ordinal));
+        if (target < 0) target = 0;
+        return string.Join("\n", lines.Skip(Math.Max(0, target - 1)).Take(3));
+    }
+
+    /// <summary>
+    /// A graph vertex represents a declared symbol that *contains* a reference.
+    /// Example: "Invoice invoice = new()" inside UpdateInvoice() projects to
+    /// UpdateInvoice(), not to the local variable, its class, or its file.
+    ///
+    /// Source files, namespaces, and containing classes are node metadata, not
+    /// artificial edges. Each plus click requests references for exactly that
+    /// vertex's Roslyn symbol ID. A single vertex aggregates repeated occurrences
+    /// in the same declaration; only its first location is used for the preview.
+    /// </summary>
+    private void BuildGraph()
+    {
+        _graphUsages.Clear();
+        _graphNodeLookup.Clear();
+        if (_selectedDeclaration is null || _references is null || !_references.HasVerifiedSymbolIdentity)
+        {
+            _graphNodes = Array.Empty<SourceGraphNode>();
+            _graphEdges = Array.Empty<SourceGraphEdge>();
+            return;
+        }
+
+        var nodes = new List<SourceGraphNode>();
+        var edges = new List<SourceGraphEdge>();
+        void Add(SourceGraphNode node)
+        {
+            nodes.Add(node);
+            _graphNodeLookup.Add(node.Id, node);
+        }
+        Add(new SourceGraphNode("definition", _selectedDeclaration.Name,
+            _selectedDeclaration.ContainingSymbol ?? _selectedDeclaration.Namespace,
+            "Definition", 0, _selectedDeclaration.Project, _selectedDeclaration.File,
+            _selectedDeclaration.Line, _selectedDeclaration.Namespace,
+            BriefContext(_selectedDeclaration.Snippet), null, 0, _selectedDeclaration.Signature));
+
+        // Keep each branch independent, even if two distinct paths reach the same
+        // declaration. Never fabricate links from a method to its containing class.
+        void AddBranch(string parentId, IEnumerable<SourceUsage> references, int level,
+            HashSet<string> ancestors)
+        {
+            if (nodes.Count >= GraphTotalNodeLimit || level > GraphMaxDepth) return;
+            var groupNumber = 0;
+            foreach (var group in references.GroupBy(usage =>
+                usage.OwnershipVerified ? usage.ContainingDeclaration?.Id ??
+                    $"unresolved:{usage.Project}:{usage.File}:{usage.Line}:{usage.Column}" :
+                    $"unresolved:{usage.Project}:{usage.File}:{usage.Line}:{usage.Column}",
+                StringComparer.Ordinal))
+            {
+                if (nodes.Count >= GraphTotalNodeLimit) break;
+                var first = group.First();
+                var owner = first.OwnershipVerified ? first.ContainingDeclaration : null;
+                var ownerId = owner?.Id;
+                var cyclic = ownerId is not null && ancestors.Contains(ownerId);
+                var nodeId = $"{parentId}:ref:{groupNumber++}";
+                var title = owner is null
+                    ? $"Unresolved owner · {System.IO.Path.GetFileName(first.File)}:{first.Line}"
+                    : GraphSymbolTitle(owner);
+                var subtitle = owner is null
+                    ? "Ownership unverified · reindex source"
+                    : owner.ContainingSymbol ?? owner.Namespace;
+                if (cyclic) subtitle += " · Cycle";
+                var kinds = string.Join(" / ", group.Select(g => g.Kind).Distinct(StringComparer.Ordinal));
+                var count = group.Count();
+                Add(new SourceGraphNode(nodeId, title, subtitle,
+                    owner?.Kind ?? "Unresolved", level,
+                    first.Project, first.File, first.Line, first.Namespace,
+                    BriefContext(first.Snippet), cyclic ? null : ownerId,
+                    count, owner?.Signature ?? kinds, cyclic, kinds));
+                _graphUsages[nodeId] = first;
+                edges.Add(new SourceGraphEdge(parentId, nodeId, kinds));
+
+                // Expansion data is stored by graph vertex ID. A distinct path can
+                // expand the same method without inheriting another branch's state.
+                if (!cyclic && _graphExpansions.TryGetValue(nodeId, out var expanded) &&
+                    nodes.Count < GraphTotalNodeLimit)
+                {
+                    var nextAncestors = new HashSet<string>(ancestors, StringComparer.Ordinal);
+                    if (ownerId is not null) nextAncestors.Add(ownerId);
+                    AddBranch(nodeId, expanded.Items.Take(GraphExpansionLimit), level + 1,
+                        nextAncestors);
+                }
+            }
+        }
+
+        AddBranch("definition", FilteredUsages.Take(GraphNodeLimit), 1,
+            new HashSet<string>(StringComparer.Ordinal) { _selectedDeclaration.Id });
+        _graphNodes = nodes;
+        _graphEdges = edges;
+    }
+
+    private void OnGraphNodeCollapsed(string id)
+    {
+        _graphNotices.Remove(id);
+    }
+
+    private static string GraphSymbolTitleForNotice(SourceGraphNode node) =>
+        node.Title.Length > 70 ? node.Title[..70] + "…" : node.Title;
+
+    private static string GraphSymbolTitle(SourceSymbol symbol)
+    {
+        if (symbol.Kind is not ("Method" or "Constructor" or "LocalFunction"))
+            return symbol.Name;
+        // Display the concrete overload when Roslyn's signature contains one.
+        var signature = symbol.Signature;
+        var index = signature.IndexOf(symbol.Name + "(", StringComparison.Ordinal);
+        if (index < 0) return symbol.Name + "()";
+        var opening = index + symbol.Name.Length;
+        var closing = signature.IndexOf(')', opening);
+        return closing > opening ? symbol.Name + signature[opening..(closing + 1)] : symbol.Name + "()";
+    }
+
+    private async Task ExpandGraphNodeAsync(SourceGraphNode request)
+    {
+        if (_selectedDeclaration is null || _references?.HasVerifiedSymbolIdentity != true ||
+            request.ExpandSymbolId is null ||
+            !_graphNodeLookup.TryGetValue(request.Id, out var current) ||
+            current.ExpandSymbolId != request.ExpandSymbolId || _graphExpansions.ContainsKey(request.Id)) return;
+        // Traverse *this path*, not the entire graph. Repeated identities are cycles,
+        // but a symbol may legitimately occur in multiple independent branches.
+        var ancestorIds = new HashSet<string>(StringComparer.Ordinal);
+        var cursor = request.Id;
+        var parents = _graphEdges.ToDictionary(edge => edge.To, edge => edge.From);
+        while (parents.TryGetValue(cursor, out var parent))
+        {
+            cursor = parent;
+            var node = _graphNodeLookup.GetValueOrDefault(cursor);
+            if (!string.IsNullOrWhiteSpace(node?.ExpandSymbolId)) ancestorIds.Add(node.ExpandSymbolId);
+        }
+        ancestorIds.Add(_selectedDeclaration.Id);
+        if (ancestorIds.Contains(request.ExpandSymbolId))
+        {
+            _graphNotices[request.Id] = "Cycle detected for this vertex; expansion stopped.";
+            _graphExpansions[request.Id] = new SourceReferenceResult([], false, 0);
+            return;
+        }
+        if (_graphNodes.Count >= GraphTotalNodeLimit)
+        {
+            _graphNotices[request.Id] = "Graph node limit reached.";
+            return;
+        }
+        await RunAsync(async actor =>
+        {
+            var refs = await Sources.GetReferencesAsync(actor, _selectedDeclaration.RepositoryId,
+                request.ExpandSymbolId);
+            _graphExpansions[request.Id] = refs;
+            var notice = refs.Total == 0 ? "No direct references for this vertex." :
+                refs.Total > GraphExpansionLimit
+                    ? $"{GraphSymbolTitleForNotice(request)}: {refs.Total} direct references; first {GraphExpansionLimit} locations displayed."
+                    : refs.MayBeIncomplete ? "This vertex's index may be incomplete; reindex the source." : null;
+            if (notice is not null) _graphNotices[request.Id] = notice;
+            else _graphNotices.Remove(request.Id);
+            BuildGraph();
+        }, "در حال پیدا کردن ارجاعات نماد انتخاب‌شده…");
+    }
+
+    private async Task ResolveAsync(System.Security.Claims.ClaimsPrincipal actor, int page)
+    {
+        var id = Guid.TryParse(_repositoryFilter, out var parsed) ? parsed : (Guid?)null;
+        _search = await Sources.ResolveDeclarationsAsync(actor, id, _searchedName, _category, page);
+    }
+
+    private Task ShowDeclarationAsync(Guid repoId, string symbolId) => RunAsync(async actor =>
+    {
+        ClearDeclaration();
+        _selectedDeclaration = await Sources.GetDeclarationAsync(actor, repoId, symbolId);
+        if (_selectedDeclaration is not null)
+        {
+            _references = await Sources.GetReferencesAsync(actor, repoId, symbolId);
+            BuildGraph();
+        }
+    }, "در حال دریافت تعریف و محل‌های استفاده…");
+}

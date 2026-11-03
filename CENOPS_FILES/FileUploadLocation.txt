@@ -1,0 +1,3 @@
+By default, the storage location is:
+- Windows: %LOCALAPPDATA%\NTSW_CENOPS\file-storage
+- Linux: the application's local application-data directory, typically under ~/.local/share/NTSW_CENOPS/file-storage

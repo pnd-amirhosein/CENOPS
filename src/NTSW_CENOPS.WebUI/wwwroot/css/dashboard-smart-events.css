@@ -1,0 +1,151 @@
+/* Glasswork 2.24: shared event/smart card presentation and configuration. */
+.dashboard-tile:is(.event,.events-day,.events-week,.events-month,.smart){--accent:#298aaf;--tint:#eef8fd;gap:7px}
+.dashboard-tile.smart{--accent:#8063c3;--tint:#f5f0fc;padding:10px 12px}
+.dash-event-content,.dash-smart-content{display:flex;flex-direction:column;flex:1;min-height:0;min-width:0;gap:9px}
+.dash-event-header,.dash-smart-head{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
+.dash-event-header strong,.dash-smart-head strong{font-size:13px;font-weight:900;color:#244f67}
+.dash-event-header span,.dash-smart-head span{font-size:10px;color:#77a0b0;white-space:nowrap}
+.dash-event-choice{flex:none;width:100%;max-width:100%;border:1px solid #cbe2e9;background:#f8fcfe;color:#265468;border-radius:8px;padding:7px;font-size:11px}
+.dash-event-list{display:flex;flex-direction:column;gap:6px;overflow-y:auto;overscroll-behavior:contain;flex:1;min-height:0;scrollbar-width:thin}
+.dash-event-row{display:flex;justify-content:space-between;align-items:center;min-width:0;gap:8px;background:#f3f9fc;border:1px solid #e4eff4;border-radius:9px;padding:9px}
+.dash-event-row.birthday{background:#fff9e8;border-color:#f7ebc9}
+.dash-event-row-main{min-width:0;display:flex;flex-direction:column;gap:2px}.dash-event-row-main strong{font-size:11px;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dash-event-row-main small{font-size:9px;color:#8d9eac}
+.dash-event-row time{font-size:10px;line-height:1.6;color:#648b9c;white-space:nowrap;flex:none}.dash-event-state,.dash-smart-empty{color:#91a8b5;font-size:11px;text-align:center;margin:auto;line-height:1.9}
+.dash-smart-viewport{flex:1;position:relative;min-height:0;min-width:0;overflow:hidden;border-radius:9px}.dash-smart-track{display:flex;width:100%;height:100%;min-width:0;min-height:0;transition:transform .55s cubic-bezier(.22,.75,.22,1);will-change:transform}.dash-smart-track.horizontal{flex-direction:row;direction:ltr}.dash-smart-track.vertical{flex-direction:column}
+.dash-smart-slide.dashboard-tile{flex:0 0 100%;position:relative!important;inset:auto!important;width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;padding:12px;box-shadow:none;overflow:hidden;direction:rtl}
+.dash-smart-slide .dash-chart{flex:1}.dash-smart-slide .dash-chart .monitor-chart-card{width:100%;height:100%}
+.dash-smart-navigation{display:flex;justify-content:center;align-items:center;gap:7px;flex:none;height:24px}.dash-smart-navigation button{border:0;background:transparent;color:#728eac;cursor:pointer;font-size:17px}.dash-smart-navigation .dash-smart-dot{width:7px;height:7px;padding:0;border-radius:50%;background:#ced6e5}.dash-smart-navigation .dash-smart-dot.active{background:#8761ca}
+.dash-smart-configure{align-self:flex-start;border:1px solid #d9ccf2;border-radius:7px;background:#f9f6fe;color:#7252ac;font-size:10px;padding:5px 8px;cursor:pointer}.dash-smart-configure:hover{background:#efe7fc}
+.dash-smart-config-backdrop,.dash-smart-browser-backdrop{position:fixed;inset:0;z-index:14000;display:grid;place-items:center;background:#10283eac;backdrop-filter:blur(4px);padding:14px;direction:rtl}
+.dash-smart-config-modal{width:min(750px,96vw);max-height:93dvh;min-height:320px;display:flex;flex-direction:column;overflow:hidden;border-radius:18px;background:#fbfdfe;color:#254658;box-shadow:0 25px 70px #10283e60}
+.dash-smart-config-modal>header{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid #e1ecf0}.dash-smart-config-modal header h2{font-size:18px;margin:4px 0}.dash-smart-config-modal header small{font-size:10px;color:#91a9b9}.dash-smart-close{display:grid;place-items:center;width:34px;height:34px;background:#eff5f8;border:0;border-radius:9px;color:#6c8795;font-size:24px;cursor:pointer}
+.dash-smart-config-main{padding:18px 24px;display:flex;flex-direction:column;gap:15px;overflow:auto;min-height:0}.dash-smart-config-main>p{font-size:12px;line-height:1.9;margin:0;color:#728e9c}.dash-smart-config-main>.dash-button{align-self:flex-start}
+.dash-smart-sort-list{display:flex;flex-direction:column;gap:7px;max-height:36dvh;min-height:95px;overflow:auto}.dash-smart-sort-row{display:flex;gap:8px;align-items:center;min-width:0;padding:10px;background:white;border:1px solid #e5edf2;border-radius:10px;cursor:grab}.dash-smart-sort-row strong{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}.dash-smart-sort-row button{flex:none;width:25px;height:25px;display:grid;place-items:center;border:0;border-radius:6px;background:#eef5f9;color:#597c90;cursor:pointer}.dash-smart-type{font-size:10px;color:#86a1b0}.dash-smart-grip{font-size:20px;color:#789ba7}.dash-smart-config-empty{color:#90a7b1;text-align:center;font-size:12px;padding:25px}
+.dash-smart-config-options{display:flex;align-items:flex-end;gap:25px;flex-wrap:wrap}.dash-smart-config-options>div,.dash-smart-config-options>label{display:flex;flex-direction:column;gap:8px;font-size:11px}.dash-smart-config-options strong{font-size:11px}.dash-smart-config-options input[type=number]{height:36px;width:112px;border:1px solid #d5e5eb;background:white;border-radius:8px;padding:0 10px;font-size:12px}
+.dash-smart-switch{display:flex;gap:8px;align-items:center;cursor:pointer;position:relative}.dash-smart-switch input{position:absolute;opacity:0}.dash-smart-switch-track{width:38px;height:23px;border-radius:20px;background:#d0dce3;position:relative;transition:background .2s}.dash-smart-switch-track:before{content:"";position:absolute;width:17px;height:17px;top:3px;right:3px;border-radius:50%;background:white;box-shadow:0 1px 3px #0003;transition:transform .2s}.dash-smart-switch input:checked+.dash-smart-switch-track{background:#21a5b7}.dash-smart-switch input:checked+.dash-smart-switch-track:before{transform:translateX(-15px)}
+.dash-smart-config-error{color:#b44460;font-size:11px}.dash-smart-config-modal>footer{border-top:1px solid #e7eff2;display:flex;justify-content:flex-end;gap:10px;padding:14px 24px}
+.dash-smart-browser-backdrop{z-index:14100}.dash-smart-browser-modal{height:min(850px,93dvh);width:min(1400px,97vw)}
+.dash-smart-browser-modal>.dcp-search,.dash-smart-browser-modal>.dcp-body{width:100%}
+@media(max-width:640px){.dash-smart-config-modal>header,.dash-smart-config-main,.dash-smart-config-modal>footer{padding:13px}.dash-event-row{padding:6px}.dash-event-row time{font-size:9px}}
+@media(prefers-reduced-motion:reduce){.dash-smart-track{transition:none}}
+
+/* Glasswork 2.25 — event cards: clear hierarchy, restrained color, interactive details. */
+.dashboard-tile:is(.event,.events-day,.events-week,.events-month){--accent:#078da7;--tint:#eaf8fa}
+.dash-event-content{gap:11px}
+.dash-event-header{padding:2px 1px 5px;border-bottom:1px solid #e2eef2}
+.dash-event-header strong{font-size:clamp(15px,1.25vw,21px);line-height:1.35;font-weight:900;color:#1c5062}
+.dash-event-calendar-link{color:#058ca5;font-size:11px;font-weight:800;white-space:nowrap;text-decoration:none;background:#effbfc;border-radius:8px;padding:6px 10px;border:1px solid #d5eff2}
+.dash-event-calendar-link:hover{background:#d9f4f8;color:#006e89}
+.dash-event-list{gap:7px;padding:1px 2px 7px;scrollbar-color:#accfd7 transparent}
+.dash-event-row{gap:9px;min-height:44px;background:transparent;border:0;border-bottom:1px solid #eaf0f3;border-radius:0;padding:8px 4px;flex:none}
+.dash-event-row:hover{background:#f0faff;border-radius:9px}
+.dash-event-row.birthday{background:#fff6df;border:1px solid #f4d99d;border-right:3px solid #dfaa3d;border-radius:10px;padding:8px 9px;color:#815d1e}
+.dash-event-row.birthday:hover{background:#ffedc6}
+.dash-event-row-main{gap:3px;flex:1}.dash-event-row-main strong{font-size:clamp(11px,1.04vw,14px);color:#254f60;font-weight:850}
+.dash-event-row.birthday .dash-event-row-main strong{color:#855d16}
+.dash-event-row-main small{font-size:11px;font-weight:600;color:#7592a1}
+.dash-event-row time{font-size:11px;color:#3e7b92;font-weight:750}
+.dash-event-more{display:grid;place-items:center;flex:none;width:29px;height:29px;border:1px solid #dbe9ee;background:#f8fcfd;color:#367c93;border-radius:9px;cursor:pointer;font-size:21px;line-height:1}
+.dash-event-more:hover{background:#d6f0f7;border-color:#8fcddd}
+.dash-event-feature{display:flex;flex-direction:column;gap:12px;min-height:0;flex:1;overflow:auto;padding:4px 2px 10px}
+.dash-event-feature-kind{align-self:flex-start;border-radius:7px;background:#e4f5fa;color:#087e9b;padding:5px 10px;font-size:11px;font-weight:800}
+.dash-event-feature h3{font-size:clamp(19px,1.75vw,27px);line-height:1.5;color:#193f51;font-weight:900;margin:0;overflow-wrap:anywhere}
+.dash-event-feature-author{font-size:12px;color:#60899a;font-weight:700}
+.dash-event-feature-schedule{display:flex;flex-direction:column;gap:6px;color:#436c7c;font-size:clamp(11px,1vw,13px);line-height:1.7}
+.dash-event-feature-schedule span{display:block}
+.dash-event-details-link{align-self:flex-start;margin-top:auto;background:#e9f7fb;color:#0985a1;border:1px solid #c6e9f0;border-radius:9px;padding:8px 12px;font-size:12px;font-weight:800;cursor:pointer}
+.dash-event-details-link:hover{background:#d2f0f6}
+.dash-event-detail{display:grid;gap:12px;font-size:13px;color:#31596b}
+.dash-event-detail p{margin:0;display:flex;align-items:flex-start;gap:14px;line-height:1.8;flex-wrap:wrap}
+.dash-event-detail p strong{min-width:85px;font-weight:850;color:#1c5067}
+.dash-event-detail-description{padding:13px;border:1px solid #d6eaf0;border-radius:10px;background:#f2fafc;white-space:pre-wrap;overflow-wrap:anywhere}
+.dash-event-birthday-banner{padding:15px;border-radius:12px;background:#fff1cb;color:#91651c;font-weight:850}
+.dash-event-detail a{color:#087f9d;font-weight:850;text-decoration:none}
+
+/* Smart card: the rotating CONTENT is the card — no nested frame/head strip. */
+.dashboard-tile.smart{--accent:#815ac0;--tint:#f5f0fc;padding:12px;gap:0}
+.dash-smart-content{position:relative;gap:0;overflow:hidden}
+.dash-smart-viewport{border-radius:0;overflow:hidden}
+.dash-smart-slide.dashboard-tile{background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;padding:5px 6px 10px;gap:10px}
+.dash-smart-navigation{position:absolute;bottom:0;left:0;right:0;z-index:4;box-sizing:border-box;height:54px;padding:18px 9px 5px;gap:7px;background:linear-gradient(to top,rgba(23,38,58,.83),rgba(23,38,58,.02));border-radius:0 0 10px 10px;opacity:0;pointer-events:none;transform:translateY(8px);transition:opacity .18s,transform .18s}
+.dash-smart-content:hover .dash-smart-navigation,.dash-smart-content:focus-within .dash-smart-navigation{opacity:1;pointer-events:auto;transform:translateY(0)}
+.dash-smart-navigation button{color:white;font-size:22px;width:25px;height:27px;display:grid;place-items:center;border-radius:7px}
+.dash-smart-navigation button:hover{background:#fff3}
+.dash-smart-navigation .dash-smart-dot{background:#ffffff70;width:7px;height:7px;flex:none;border:0;min-width:7px;min-height:7px;border-radius:50%;padding:0}
+.dash-smart-navigation .dash-smart-dot.active{background:white;width:16px;min-width:16px;border-radius:6px}
+.dash-smart-navigation .dash-smart-dot:focus-visible{outline:2px solid white;outline-offset:2px}
+@media(hover:none){.dash-smart-navigation{opacity:1;pointer-events:auto;transform:none}}
+
+/* Config modal: consistent settings grid, note/todo-like sortable rows. */
+.dash-smart-config-modal{width:min(820px,96vw);background:#fff}
+.dash-smart-config-modal>header{gap:15px}
+.dash-smart-config-main{gap:16px}
+.dash-smart-sort-list{padding:3px 2px;gap:8px}
+.dash-smart-sort-row{background:#fff;border:1px solid #dae9ee;border-radius:11px;min-height:48px;padding:8px 11px;box-shadow:0 2px 9px #24475708;transition:border-color .15s,background .15s,box-shadow .15s}
+.dash-smart-sort-row:hover{border-color:#a3d4e0;background:#f6fcfe;box-shadow:0 4px 13px #24475712}
+.dash-smart-sort-row.is-dragging{opacity:.44;border-style:dashed}
+.dash-smart-grip{flex:none;width:24px;height:30px;display:grid;place-items:center;cursor:grab;color:#7597a8}
+.dash-smart-grip svg{height:20px;width:20px}
+.dash-smart-sort-row strong{font-size:13px;color:#31576a}
+.dash-smart-type{padding:5px 8px;border-radius:7px;background:#eef7fa;color:#5c8193;font-size:11px;white-space:nowrap}
+.dash-smart-sort-row .dash-smart-row-delete{color:#c35e65;background:transparent;opacity:0;transition:opacity .15s,background .15s;width:31px;height:31px}
+.dash-smart-sort-row:hover .dash-smart-row-delete,.dash-smart-sort-row:focus-within .dash-smart-row-delete{opacity:1}
+.dash-smart-row-delete svg{height:17px;width:17px}
+.dash-smart-row-delete:hover{background:#fff0f2}
+.dash-smart-config-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch;gap:15px;margin-top:4px}
+.dash-smart-config-options .dash-smart-setting{box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;gap:12px;background:#f6fafc;border:1px solid #e1ecf1;border-radius:12px;padding:14px;min-height:99px;min-width:0;color:#355d70}
+.dash-smart-config-options .dash-smart-setting strong{font-size:12px;font-weight:850;color:#33596a;min-height:18px}
+.dash-smart-config-options input[type=number]{width:100%;max-width:150px;font-variant-numeric:tabular-nums}
+.dash-smart-close,.dcp-close.modal-esc-key{font:800 10px/1.1 Consolas,monospace;letter-spacing:.01em;color:#477282;padding:0 9px;display:grid;place-items:center;width:43px;min-width:43px;height:31px;min-height:31px;border:1px solid #cedde4;border-radius:8px;box-shadow:0 2px 5px #163e500b;background:#f9fcfd;cursor:pointer}
+.dash-smart-close:hover,.dcp-close.modal-esc-key:hover{background:#eaf8fa;color:#087c98;border-color:#9bd2df}
+.dash-smart-escape-trigger{display:none!important}
+@media(max-width:650px){.dash-smart-config-options{grid-template-columns:1fr}.dash-smart-row-delete{opacity:1!important}.dash-event-row{flex-wrap:wrap}.dash-event-row time{font-size:10px}}
+@media(prefers-reduced-motion:reduce){.dash-smart-navigation,.dash-smart-sort-row{transition:none}}
+.dash-smart-sort-row.is-drop-target{background:#e5f8fa;border-color:#39b8cd;box-shadow:inset 0 0 0 1px #39b8cd}
+/* Outer accent follows the currently visible item, so the smart card feels native. */
+.dashboard-tile.smart:has(.dash-smart-content.note){--accent:#d58b3e}
+.dashboard-tile.smart:has(.dash-smart-content.announcement){--accent:#cd527d}
+.dashboard-tile.smart:has(.dash-smart-content.todo){--accent:#24a27a}
+.dashboard-tile.smart:has(.dash-smart-content.sql){--accent:#825dbd}
+.dashboard-tile.smart:has(.dash-smart-content.curl){--accent:#129ab4}
+.dashboard-tile.smart:has(.dash-smart-content.report){--accent:#2289aa}
+.dashboard-tile.smart:has(.dash-smart-content.events-day),.dashboard-tile.smart:has(.dash-smart-content.events-week),.dashboard-tile.smart:has(.dash-smart-content.events-month){--accent:#078da7}
+
+/* Glasswork 2.26 — restrained, aligned smart-card navigation. */
+.dash-smart-navigation{height:64px;gap:10px;padding:20px 12px 9px;background:linear-gradient(0deg,rgba(10,28,43,.90),rgba(10,28,43,.5) 55%,transparent);direction:rtl}
+.dash-smart-navigation .dash-smart-nav-arrow{width:29px;height:29px;min-width:29px;display:grid;place-items:center;padding:0;border:1px solid #ffffff30;background:#ffffff18;color:#fff;border-radius:9px;transition:background .16s,transform .16s}
+.dash-smart-navigation .dash-smart-nav-arrow svg{width:17px;height:17px}
+.dash-smart-navigation .dash-smart-nav-arrow:hover{background:#ffffff35;transform:translateY(-1px)}
+.dash-smart-dots{display:flex;align-items:center;justify-content:center;gap:6px;min-width:0;flex:1}
+.dash-smart-navigation .dash-smart-dot{width:6px;height:6px;min-width:6px;min-height:6px;flex:none;background:#ffffff80;border-radius:50%;transition:width .2s,background .2s}
+.dash-smart-navigation .dash-smart-dot.active{width:22px;min-width:22px;border-radius:8px;background:#fff}
+.dash-smart-position{font:700 10px/1.4 inherit;color:#dce9f1;font-variant-numeric:tabular-nums;direction:ltr;white-space:nowrap}
+/* Note-style delegated drag: insert position above/below, not native Blazor dragstart. */
+.dash-smart-sort-row.note-dragging{opacity:.4;border-style:dashed}
+.dash-smart-sort-row.note-drop-before{box-shadow:inset 0 3px #11aac4}
+.dash-smart-sort-row.note-drop-after{box-shadow:inset 0 -3px #11aac4}
+.dash-smart-sort-row .dash-smart-grip{touch-action:none;user-select:none;cursor:grab}
+.dash-smart-sort-row .dash-smart-grip:active{cursor:grabbing}
+.dash-smart-sort-row .dash-smart-row-delete{border:0;box-shadow:none}
+/* Event details: let wider cards breathe without forcing small cards into columns. */
+.dash-event-feature{container-type:inline-size;gap:13px}
+.dash-event-feature-schedule{display:grid;grid-template-columns:minmax(0,1fr);gap:9px;font-size:12px}
+.dash-event-fact{min-width:0;display:flex;align-items:flex-start;gap:10px;padding:10px 11px;background:#f2f9fb;border:1px solid #e2f0f4;border-radius:10px}
+.dash-event-fact-icon{flex:0 0 24px;display:grid;place-items:center;width:24px;height:24px;border-radius:7px;color:#168ca3;background:#e0f3f8;font-size:18px;line-height:1}
+.dash-event-fact div{min-width:0;display:grid;gap:3px}
+.dash-event-fact small{color:#698da0;font-weight:700;font-size:10px}
+.dash-event-fact strong{font-size:12px;font-weight:850;color:#234f63;overflow-wrap:anywhere;line-height:1.7}
+@container (min-width:420px){.dash-event-feature-schedule{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.dash-event-row-sub{display:flex;align-items:center;flex-wrap:wrap;gap:4px 7px;min-width:0}
+.dash-event-repeat-badge{display:inline-flex;align-items:center;min-height:19px;border-radius:6px;background:#e5f3ff;border:1px solid #c7e3fa;color:#2875a2;font-size:10px;font-weight:800;padding:2px 6px;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+@media(prefers-reduced-motion:reduce){.dash-smart-nav-arrow,.dash-smart-dot{transition:none!important}}
+
+/* Glasswork 2.33: use centered, size-stable vector icons in event facts. */
+.dash-event-fact{align-items:center}
+.dash-event-fact-icon{
+    display:inline-flex;align-items:center;justify-content:center;
+    box-sizing:border-box;flex:0 0 28px;width:28px;height:28px;
+    border-radius:8px;line-height:1;
+}
+.dash-event-fact-icon svg{display:block;flex:none;width:17px;height:17px}
+.dash-event-fact>div{flex:1;min-width:0}

@@ -1,0 +1,32 @@
+@using System.Security.Claims
+@using NTSW_CENOPS.Application.Events
+@using NTSW_CENOPS.Components.Common.Dates
+@using NTSW_CENOPS.Components.Team
+@inject ICalendarEventService Events
+
+<AppModal IsOpen="true" Title="@Item.Title" MaxWidth="35rem" OnClose="OnClose">
+    <ChildContent>
+        <div class="dash-event-detail" dir="rtl">
+            @if (Item.EventId < 0) { <div class="dash-event-birthday-banner">🎂 روزی برای تبریک و شادی</div> }
+            <p><strong>شروع</strong><span>@JalaliDate.DateTime(Item.Start)</span></p>
+            @if (Item.End.HasValue) { <p><strong>پایان</strong><span>@JalaliDate.DateTime(Item.End.Value)</span></p> }
+            <p><strong>@(Item.EventId < 0 ? "همکار" : "ثبت‌کننده")</strong><UserHoverName DisplayName="@Item.Author" /></p>
+            @if (_definition is not null)
+            { <p><strong>تکرار</strong><span>@CalendarRecurrenceLabel.Get(_definition)</span></p> }
+            @if (!string.IsNullOrWhiteSpace(Item.Description))
+            { <p class="dash-event-detail-description">@Item.Description</p> }
+            @if (Item.EventId > 0) { <a href="@($"/team/events/edit/{Item.EventId}")">مشاهده صفحه رویداد ↗</a> }
+        </div>
+    </ChildContent>
+</AppModal>
+
+@code {
+    [Parameter, EditorRequired] public CalendarOccurrence Item { get; set; } = default!;
+    [Parameter, EditorRequired] public ClaimsPrincipal Actor { get; set; } = default!;
+    [Parameter] public EventCallback OnClose { get; set; }
+    private CalendarEvent? _definition;
+    protected override async Task OnParametersSetAsync()
+    {
+        _definition = Item.EventId > 0 ? await Events.FindAsync(Item.EventId, Actor) : null;
+    }
+}

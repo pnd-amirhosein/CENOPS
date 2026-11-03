@@ -1,0 +1,101 @@
+@using NTSW_CENOPS.Components.Common.Selection
+<div class="app-dropdown @(_open ? "is-open" : "") @CssClass" dir="rtl">
+    <button type="button" class="app-dropdown-trigger" disabled="@Disabled" aria-label="@Label"
+            aria-haspopup="listbox" aria-expanded="@_open" @onclick="ToggleOpen">
+        <span class="app-dropdown-value">@DisplayValue</span>
+        @if (Multiple && SelectedValues.Count > 0) { <span class="app-dropdown-count">@SelectedValues.Count</span> }
+        <svg aria-hidden="true" viewBox="0 0 20 20"><path d="m5 7 5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    @if (_open)
+    {
+        <button type="button" class="app-dropdown-dismiss" aria-label="بستن فهرست" @onclick="Close"></button>
+        <div class="app-dropdown-menu" role="group" aria-label="@Label" @onkeydown="OnKeyDown">
+            @if (Searchable)
+            {
+                <input class="app-dropdown-search" type="search" value="@_search" @oninput="OnSearch"
+                       placeholder="جستجو در گزینه‌ها…" aria-label="جستجوی گزینه‌ها" autocomplete="off" />
+            }
+            @if (Multiple && ShowSelectAll && Options.Count > 0)
+            {
+                <label class="app-dropdown-all">
+                    <input type="checkbox" checked="@AllSelected" @onchange="async _ => await ToggleAllAsync()" />
+                    <strong>انتخاب همه</strong><small>@SelectedValues.Count / @Options.Count</small>
+                </label>
+            }
+            <div class="app-dropdown-options" role="listbox" aria-multiselectable="@(Multiple ? "true" : "false")">
+                @foreach (var option in FilteredOptions)
+                {
+                    var selected = Multiple ? SelectedValues.Contains(option.Value) : Value == option.Value;
+                    @if (Multiple)
+                    {
+                        <label class="app-dropdown-option @(selected ? "selected" : "")" role="option" aria-selected="@(selected ? "true" : "false")" @key="option.Value">
+                            <input type="checkbox" checked="@selected" @onchange="async _ => await PickAsync(option.Value)" />
+                            <span dir="auto">@option.Text</span>
+                        </label>
+                    }
+                    else
+                    {
+                        <button type="button" class="app-dropdown-option @(selected ? "selected" : "")"
+                                role="option" aria-selected="@(selected ? "true" : "false")"
+                                @key="option.Value" @onclick="() => PickAsync(option.Value)">
+                            <span dir="auto">@option.Text</span>
+                            @if (selected) { <span class="app-dropdown-tick" aria-hidden="true">✓</span> }
+                        </button>
+                    }
+                }
+                @if (FilteredOptions.Count == 0) { <p class="app-dropdown-none">گزینه‌ای پیدا نشد.</p> }
+            </div>
+            @if (Multiple)
+            {
+                <div class="app-dropdown-bottom">
+                    <button type="button" @onclick="ClearAsync" disabled="@(SelectedValues.Count == 0)">پاک کردن</button>
+                    <button type="button" class="app-dropdown-done" @onclick="Close">تأیید (@SelectedValues.Count)</button>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Label { get; set; } = "انتخاب گزینه";
+    [Parameter] public string Placeholder { get; set; } = "انتخاب کنید…";
+    [Parameter] public string CssClass { get; set; } = "";
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool Multiple { get; set; }
+    [Parameter] public bool Searchable { get; set; } = true;
+    [Parameter] public bool ShowSelectAll { get; set; } = true;
+    [Parameter] public IReadOnlyList<AppDropdownOption> Options { get; set; } = [];
+    [Parameter] public string Value { get; set; } = "";
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+    [Parameter] public IReadOnlySet<string> SelectedValues { get; set; } = new HashSet<string>();
+    [Parameter] public EventCallback<IReadOnlyList<string>> SelectedValuesChanged { get; set; }
+    private bool _open;
+    private string _search = "";
+    private IReadOnlyList<AppDropdownOption> FilteredOptions => string.IsNullOrWhiteSpace(_search)
+        ? Options : Options.Where(o => o.Text.Contains(_search, StringComparison.OrdinalIgnoreCase)).ToArray();
+    private bool AllSelected => Options.Count > 0 && Options.All(o => SelectedValues.Contains(o.Value));
+    private string DisplayValue
+    {
+        get
+        {
+            if (!Multiple) return Options.FirstOrDefault(o => o.Value == Value)?.Text ?? Placeholder;
+            var items = Options.Where(o => SelectedValues.Contains(o.Value)).Select(o => o.Text).ToArray();
+            if (items.Length == 0) return Placeholder;
+            return items.Length <= 2 ? string.Join("، ", items) : $"{items[0]} و {items.Length - 1} جدول دیگر";
+        }
+    }
+    private void ToggleOpen() { if (Disabled) return; _open = !_open; _search = ""; }
+    private void Close() { _open = false; _search = ""; }
+    private void OnSearch(ChangeEventArgs args) => _search = args.Value?.ToString() ?? "";
+    private void OnKeyDown(KeyboardEventArgs args) { if (args.Key == "Escape") Close(); }
+    private async Task PickAsync(string value)
+    {
+        if (!Multiple) { Close(); await ValueChanged.InvokeAsync(value); return; }
+        var next = new HashSet<string>(SelectedValues, StringComparer.Ordinal);
+        if (!next.Add(value)) next.Remove(value);
+        await SelectedValuesChanged.InvokeAsync(next.ToArray());
+    }
+    private Task ToggleAllAsync() => SelectedValuesChanged.InvokeAsync(
+        AllSelected ? Array.Empty<string>() : Options.Select(o => o.Value).ToArray());
+    private Task ClearAsync() => SelectedValuesChanged.InvokeAsync(Array.Empty<string>());
+}

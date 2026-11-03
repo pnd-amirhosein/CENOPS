@@ -1,0 +1,71 @@
+@using NTSW_CENOPS.Application.SourceIntelligence
+@using Microsoft.AspNetCore.Components.Web.Virtualization
+@using Microsoft.JSInterop
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+<div class="source-file-viewer" dir="ltr">
+    <div class="source-file-bar">
+        <span class="source-file-path" title="@File.File">@File.File</span>
+        <span class="source-file-stats">@File.LineCount lines</span>
+        <button type="button" class="source-jump" @onclick="JumpToLineAsync">Jump to L@ActiveLine</button>
+    </div>
+    @if (File.MayDifferFromIndex)
+    {
+        <p class="source-file-caution" dir="rtl">ممکن است فایل پس از ایندکس تغییر کرده باشد؛ شماره خطوط را با نسخه فعلی بررسی کنید.</p>
+    }
+    <div class="source-file-code" @ref="_scrollHost" aria-label="متن کامل فایل سورس">
+        <Virtualize Items="@_lines" ItemSize="26" Context="line">
+            <div class="source-file-line @(line.Number == ActiveLine ? "is-target" : "")"
+                 id="source-file-line-@line.Number">
+                <span class="source-file-number" aria-hidden="true">@line.Number</span>
+                <code class="source-file-text">@((MarkupString)line.Html)</code>
+            </div>
+        </Virtualize>
+    </div>
+    <div class="source-file-footer" dir="rtl">
+        <span>فایل فقط برای مشاهده بارگذاری شده و قابل ویرایش نیست.</span>
+        <span>نمایش مجازی خطوط برای فایل‌های بزرگ</span>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public SourceFileResult File { get; set; } = default!;
+    [Parameter] public int ActiveLine { get; set; }
+
+    private sealed record LineRow(int Number, string Html);
+    private List<LineRow> _lines = [];
+    private SourceFileResult? _previousFile;
+    private ElementReference _scrollHost;
+    private IJSObjectReference? _module;
+    private bool _needsJump;
+
+    protected override void OnParametersSet()
+    {
+        if (ReferenceEquals(File, _previousFile)) return;
+        _previousFile = File;
+        _lines = SourceSyntaxHighlighter.HighlightLines(File.Content.Split('\n'))
+            .Select((html, index) => new LineRow(index + 1, html)).ToList();
+        _needsJump = true;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_needsJump) return;
+        _needsJump = false;
+        await JumpToLineAsync();
+    }
+
+    private async Task JumpToLineAsync()
+    {
+        _module ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/source-file-viewer.js");
+        await _module.InvokeVoidAsync("jumpToLine", _scrollHost, ActiveLine);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_module is null) return;
+        try { await _module.DisposeAsync(); }
+        catch (JSDisconnectedException) { /* The circuit has already ended. */ }
+    }
+}

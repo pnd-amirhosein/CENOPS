@@ -1,0 +1,564 @@
+@page "/dashboard"
+@attribute [AccessAuthorize(AccessKeys.Dashboard)]
+@using System.Security.Claims
+@using System.Text.Json
+@using NTSW_CENOPS.Application.Dashboards
+@using NTSW_CENOPS.Application.Reports
+@using NTSW_CENOPS.Application.Events
+@using NTSW_CENOPS.Domain.Authorization
+@using NTSW_CENOPS.Components.Common.Notices
+@using Microsoft.JSInterop
+@inject IDashboardConfigurationService DashboardConfigs
+@inject IDashboardContentService DashboardContent
+@inject IMonitoringReportChartService ReportCharts
+@inject AuthenticationStateProvider AuthState
+@inject AppNoticeService Notices
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<PageTitle>داشبورد | عملیات مرکزی گمرک</PageTitle>
+
+<div class="dynamic-dashboard @(_editing ? "is-editing" : "")" dir="rtl">
+    <SectionContent SectionName="cenops-page-actions">
+        <div class="dashboard-actions" aria-label="کنترل‌های داشبورد">
+            @if (_editing)
+            {
+                @if (_workspace?.CanEditGlobal == true)
+                {
+                    <button type="button" class="dash-button dash-add" disabled="@_busy" @onclick="() => OpenPicker(true)">+ محتوای عمومی</button>
+                }
+                @if (Selected?.CanEdit == true)
+                {
+                    <button type="button" class="dash-button dash-add" disabled="@_busy" @onclick="() => OpenPicker(false)">+ محتوای داشبورد</button>
+                }
+                <button class="dash-button dash-primary" type="button" disabled="@_busy" @onclick="SaveAsync">ذخیره</button>
+                <button class="dash-button" type="button" disabled="@_busy" @onclick="CancelEdit">انصراف</button>
+            }
+            else
+            {
+                <button class="dash-button dash-default-star @(Selected?.IsDefault == true ? "is-default" : "")" type="button"
+                        title="@(Selected?.IsDefault == true ? "داشبورد پیش‌فرض فعلی" : "تنظیم پیش‌فرض برای حساب من")"
+                        aria-label="@(Selected?.IsDefault == true ? "داشبورد پیش‌فرض فعلی" : "انتخاب پیش‌فرض برای حساب من")"
+                        disabled="@(_busy || _selectedId == 0 || Selected?.IsDefault == true)" @onclick="MakeDefaultAsync">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m12 2.8 2.85 5.8 6.4.93-4.62 4.5 1.09 6.37L12 17.4l-5.72 3 1.09-6.37-4.62-4.5 6.4-.93Z" stroke-linejoin="round"/></svg>
+                </button>
+                <select class="dashboard-picker" aria-label="انتخاب داشبورد اشتراکی" value="@_selectedId" @onchange="OnSelectionChanged"
+                        disabled="@(_busy || _workspace is null || _workspace.PersonalDashboards.Count == 0)">
+                    @if (_workspace is null || _workspace.PersonalDashboards.Count == 0)
+                    { <option value="0">هنوز داشبوردی موجود نیست</option> }
+                    else
+                    {
+                        @foreach (var dashboard in _workspace.PersonalDashboards)
+                        {
+                            <option value="@dashboard.Id">@dashboard.Name · @dashboard.OwnerName @(dashboard.IsDefault ? "★" : "")</option>
+                        }
+                    }
+                </select>
+                @if (Selected is not null && (Selected.CanEdit || _workspace?.CanEditGlobal == true))
+                {
+                    <button class="dash-button dash-icon-button dash-delete-dashboard" type="button" title="حذف داشبورد انتخاب‌شده" aria-label="حذف داشبورد انتخاب‌شده" disabled="@_busy" @onclick="() => _confirmDeleteDashboard = true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5m4-5v5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </button>
+                }
+                <button class="dash-button dash-icon-button" type="button" title="ساخت داشبورد" aria-label="ساخت داشبورد جدید" disabled="@_busy" @onclick="CreateAsync">+</button>
+                <button class="dash-button" type="button" disabled="@(_busy || !CanEditAny)" @onclick="StartEdit">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m15 5 4 4M4.5 19.5l5-.9L19.1 9a2.7 2.7 0 0 0-3.8-3.8L5.4 15l-.9 4.5Z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    ویرایش
+                </button>
+            }
+        </div>
+    </SectionContent>
+
+    @if (_workspace is null)
+    { <AppLoading IsLoading="true" Variant="inline" Label="در حال آماده‌سازی داشبورد..." /> }
+    else
+    {
+        <div class="dashboard-zones">
+            <section class="dashboard-zone dashboard-global" aria-label="ناحیه عمومی داشبورد">
+                <div class="dashboard-zone-heading">
+                    <div class="dashboard-zone-identity"><h2>داشبورد عمومی</h2>
+
+                    </div>
+                    <span class="dashboard-zone-label">مشترک برای همه کاربران</span>
+                </div>
+                @if (_globalTiles.Count == 0)
+                {
+                    <div class="dashboard-placeholder"><span class="dashboard-placeholder-symbol" aria-hidden="true">◈</span>
+                        <strong>فضای عمومی آماده است</strong><p>مدیر یا مالک می‌تواند محتوای عمومی را اینجا قرار دهد.</p></div>
+                }
+                else
+                {
+                    <div class="dashboard-tile-grid" @ref="_globalGrid" data-dashboard-grid="global">
+                        @foreach (var tile in _globalTiles)
+                        {
+                            <DashboardTile @key="(tile.Type,tile.Id)" Item="tile" Layout="LayoutFor(tile, true)"
+                                           Chart="GetChart(tile)" Charts="_charts" Actor="_actor" Global="true"
+                                           OnConfigure="@(item => ConfigureSmart(item, true))" OnEventChanged="@(id => ChangeSelectedEvent(tile, true, id))" Editable="@(_editing && _workspace.CanEditGlobal)"
+                                           OnRemove="@(item => RequestRemove(item, true))" OnPreview="OpenCardPreview" OnEventDetails="ShowEventDetails" />
+                        }
+                        <div class="dashboard-canvas-indicator" hidden aria-hidden="true"></div>
+                    </div>
+                }
+            </section>
+            <section class="dashboard-zone dashboard-personal" aria-label="ناحیه داشبورد انتخاب‌شده">
+                <div class="dashboard-zone-heading">
+                    <div class="dashboard-zone-identity">
+                        @if (_editing && Selected?.CanEdit == true)
+                        { <input class="dashboard-name-input" maxlength="120" aria-label="نام داشبورد" @bind="_personalName" @bind:event="oninput" /> }
+                        else { <h2>@(Selected?.Name ?? "داشبورد اشتراکی")</h2> }
+
+                    </div>
+                    @if (Selected is not null)
+                    { <span class="dashboard-zone-label">@(Selected.IsDefault ? "★ پیش‌فرض شما · " : "")<UserHoverName DisplayName="@Selected.OwnerName" /></span> }
+                </div>
+                @if (_personalTiles.Count == 0)
+                {
+                    <div class="dashboard-placeholder"><span class="dashboard-placeholder-symbol" aria-hidden="true">▦</span>
+                        <strong>@(_selectedId == 0 ? "داشبورد بسازید" : "این داشبورد هنوز محتوایی ندارد")</strong>
+                        <p>@(_selectedId == 0 ? "با دکمه + یک داشبورد ایجاد کنید." : "صاحب داشبورد می‌تواند از بخش ویرایش، محتوای جدید اضافه کند.")</p></div>
+                }
+                else
+                {
+                    <div class="dashboard-tile-grid" @ref="_personalGrid" data-dashboard-grid="personal">
+                        @foreach (var tile in _personalTiles)
+                        {
+                            <DashboardTile @key="(tile.Type,tile.Id)" Item="tile" Layout="LayoutFor(tile, false)"
+                                           Chart="GetChart(tile)" Charts="_charts" Actor="_actor" Global="false"
+                                           OnConfigure="@(item => ConfigureSmart(item, false))" OnEventChanged="@(id => ChangeSelectedEvent(tile, false, id))" Editable="@(_editing && Selected?.CanEdit == true)"
+                                           OnRemove="@(item => RequestRemove(item, false))" OnPreview="OpenCardPreview" OnEventDetails="ShowEventDetails" />
+                        }
+                        <div class="dashboard-canvas-indicator" hidden aria-hidden="true"></div>
+                    </div>
+                }
+            </section>
+        </div>
+    }
+</div>
+
+@if (_pickerOpen && _workspace is not null && _actor is not null)
+{
+    <DashboardContentPicker Actor="_actor" TargetGlobal="_pickerGlobal"
+                            PersonalItems="_personalRefs" GlobalItems="_globalRefs"
+                            OnAdded="AddFromPickerAsync" OnCancel="ClosePicker" />
+}
+@if (_smartEditor is { } smart && _actor is not null)
+{
+    <DashboardSmartConfigModal @key="(smart.Item.Id, smart.Global)" Actor="_actor" Layout="LayoutFor(smart.Item, smart.Global)" Global="smart.Global"
+                               OnSave="SaveSmartOptions" OnCancel="CloseSmartEditor" />
+}
+@if (_previewItem is not null && _actor is not null)
+{ <DashboardContentPreview Item="_previewItem" Actor="_actor" OnClose="CloseCardPreview" /> }
+@if (_eventDetails is not null && _actor is not null)
+{ <DashboardEventDetails Item="_eventDetails" Actor="_actor" OnClose="CloseEventDetails" /> }
+@if (_confirmDeleteDashboard && Selected is not null)
+{
+    <div class="dashboard-confirm-backdrop" @onclick="() => _confirmDeleteDashboard = false">
+        <section class="dashboard-confirm" role="alertdialog" aria-modal="true" aria-label="حذف داشبورد" @onclick:stopPropagation="true">
+            <h3>داشبورد «@Selected.Name» حذف شود؟</h3>
+            <p>این داشبورد برای تمام کاربران حذف می‌شود و انتخاب پیش‌فرض کسانی که از آن استفاده کرده‌اند بازنشانی خواهد شد. محتوای اصلی کارت‌ها حذف نمی‌شود.</p>
+            <div class="dashboard-confirm-actions"><button type="button" class="dash-button" data-dashboard-confirm-dismiss @onclick="() => _confirmDeleteDashboard = false">انصراف</button><button type="button" class="dash-button dash-danger" disabled="@_busy" @onclick="DeleteDashboardAsync">حذف داشبورد</button></div>
+        </section>
+    </div>
+}
+<AppModal IsOpen="_confirmRestrictedSave" Title="تأیید ذخیره داشبورد"
+          Description="برخی کارت‌های موجود خصوصی یا حذف شده‌اند و ممکن است برای شما یا سایر کاربران قابل مشاهده نباشند."
+          MaxWidth="450px" OnClose="DismissRestrictedSave">
+    <ChildContent>
+        <p>چیدمان این کارت‌ها حفظ می‌شود و افراد فاقد مجوز فقط یک کارت قفل‌شده می‌بینند. آیا ذخیره ادامه پیدا کند؟</p>
+    </ChildContent>
+    <Footer>
+        <button type="button" class="dash-button" @onclick="DismissRestrictedSave">بازگشت</button>
+        <button type="button" class="dash-button dash-primary" disabled="@_busy" @onclick="ConfirmRestrictedSaveAsync">ادامه و ذخیره</button>
+    </Footer>
+</AppModal>
+@if (_pendingRemoval is { } pending)
+{
+    <div class="dashboard-confirm-backdrop" @onclick="DismissRemove">
+        <section class="dashboard-confirm" role="alertdialog" aria-modal="true" aria-labelledby="dashboard-confirm-title" @onclick:stopPropagation="true">
+            <div class="dashboard-confirm-icon" aria-hidden="true">♢</div>
+            <h3 id="dashboard-confirm-title">کارت از داشبورد حذف شود؟</h3>
+            <p>«@pending.Item.Title» فقط از چیدمان این داشبورد حذف می‌شود؛ محتوای اصلی حذف نخواهد شد.</p>
+            <div class="dashboard-confirm-actions"><button class="dash-button" type="button" data-dashboard-confirm-dismiss @onclick="DismissRemove">انصراف</button><button class="dash-button dash-danger" type="button" @onclick="ConfirmRemove">حذف کارت</button></div>
+        </section>
+    </div>
+}
+
+@code {
+    private DashboardWorkspaceModel? _workspace;
+    private UserDashboardModel? Selected => _workspace?.PersonalDashboards.FirstOrDefault(x => x.Id == _selectedId);
+    private bool CanEditAny => (_workspace?.CanEditGlobal ?? false) || Selected?.CanEdit == true;
+    private ClaimsPrincipal? _actor;
+    private int _selectedId;
+    private int _selectionVersion;
+    private bool _editing, _busy, _pickerOpen, _pickerGlobal, _chartsLoaded, _confirmDeleteDashboard;
+    private bool _confirmRestrictedSave, _restrictedSaveAcknowledged;
+    private string _personalName = "";
+    private List<DashboardContentReference> _globalRefs = [], _personalRefs = [];
+    private IReadOnlyList<DashboardContentItem> _globalTiles = [], _personalTiles = [];
+    private Dictionary<long, MonitoringChartData> _charts = [];
+    private DashboardContentItem? _previewItem;
+    private CalendarOccurrence? _eventDetails;
+    private (DashboardContentItem Item, bool Global)? _smartEditor;
+    private (DashboardContentItem Item, bool Global)? _pendingRemoval;
+    private ElementReference _globalGrid, _personalGrid;
+    private DotNetObjectReference<Home>? _jsReference;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_workspace is null) return;
+        _jsReference ??= DotNetObjectReference.Create(this);
+        try
+        {
+            // Read-only cards need placement too: persisted geometry is independent of edit mode.
+            if (_globalTiles.Count > 0)
+                await JS.InvokeVoidAsync("cenopsDashboardCanvas.mount", _globalGrid, _jsReference,
+                    "global", _editing && _workspace.CanEditGlobal);
+            if (_personalTiles.Count > 0)
+                await JS.InvokeVoidAsync("cenopsDashboardCanvas.mount", _personalGrid, _jsReference,
+                    "personal", _editing && Selected?.CanEdit == true);
+        }
+        catch (JSException) { Notices.Error("فعال‌سازی ابزار چیدمان انجام نشد."); }
+    }
+    public ValueTask DisposeAsync()
+    {
+        _jsReference?.Dispose();
+        return ValueTask.CompletedTask;
+    }
+    private async Task<ClaimsPrincipal> ActorAsync() => (await AuthState.GetAuthenticationStateAsync()).User;
+    private static List<DashboardContentReference> ParseRefs(string layout)
+    {
+        try { return (JsonSerializer.Deserialize<List<DashboardContentReference>>(layout) ?? []).Select(x => x.Normalized()).ToList(); }
+        catch (JsonException) { return []; }
+    }
+    private DashboardContentReference LayoutFor(DashboardContentItem item, bool global) =>
+        (global ? _globalRefs : _personalRefs).FirstOrDefault(x => x.Type == item.Type && x.Id == item.Id)
+        ?? new DashboardContentReference(item.Type, item.Id);
+    private MonitoringChartData? GetChart(DashboardContentItem tile) =>
+        !tile.IsRestricted && tile.Type == "report" && _charts.TryGetValue(tile.Id, out var chart) ? chart : null;
+
+    private async Task LoadAsync(int? selectedOverride = null)
+    {
+        ++_selectionVersion; // Invalidates any in-flight dropdown request.
+        try
+        {
+            _actor = await ActorAsync();
+            _workspace = await DashboardConfigs.GetWorkspaceAsync(_actor);
+            _selectedId = selectedOverride is int id && _workspace.PersonalDashboards.Any(x => x.Id == id)
+                ? id : _workspace.SelectedDashboardId;
+            _personalName = Selected?.Name ?? "";
+            _globalRefs = ParseRefs(_workspace.Global.LayoutJson);
+            _personalRefs = ParseRefs(Selected?.LayoutJson ?? "[]");
+            await ResolveTilesAsync();
+        }
+        catch (Exception) { Notices.Error("دریافت تنظیمات داشبورد ممکن نشد."); }
+    }
+    private async Task ResolveTilesAsync()
+    {
+        if (_actor is null) return;
+        _globalTiles = await DashboardContent.ResolveAsync(_globalRefs, true, _actor);
+        _personalTiles = await DashboardContent.ResolveAsync(_personalRefs, false, _actor);
+        if (!_chartsLoaded && (_globalTiles.Any(x => x.Type == "report") || _personalTiles.Any(x => x.Type == "report") ||
+            _globalRefs.Concat(_personalRefs).Any(x => x.Options?.Items?.Any(i => i.Type == "report") == true)))
+        {
+            try { _charts = (await ReportCharts.GetGalleryAsync(_actor)).ToDictionary(x => x.ReportId); _chartsLoaded = true; }
+            catch (Exception) { /* Render report metadata until chart data can be loaded. */ }
+        }
+    }
+    private async Task OnSelectionChanged(ChangeEventArgs e)
+    {
+        if (_editing || !int.TryParse(e.Value?.ToString(), out var id) ||
+            _workspace?.PersonalDashboards.Any(x => x.Id == id) != true) return;
+        // Resolve with temporary references before swapping the visible dashboard.
+        // Never render tiles from dashboard A against references for dashboard B.
+        var request = ++_selectionVersion;
+        var next = _workspace.PersonalDashboards.First(x => x.Id == id);
+        var nextRefs = ParseRefs(next.LayoutJson);
+        try
+        {
+            var nextTiles = await DashboardContent.ResolveAsync(nextRefs, false, _actor!);
+            if (request != _selectionVersion) return; // Ignore an older response.
+            _personalRefs = nextRefs;
+            _personalTiles = nextTiles;
+            _selectedId = id;
+            _personalName = next.Name;
+            if (!_chartsLoaded && (nextTiles.Any(x => x.Type == "report") ||
+                nextRefs.Any(x => x.Options?.Items?.Any(i => i.Type == "report") == true)))
+            {
+                try { _charts = (await ReportCharts.GetGalleryAsync(_actor!)).ToDictionary(x => x.ReportId); _chartsLoaded = true; }
+                catch (Exception) { /* Metadata still renders if charts cannot load. */ }
+            }
+        }
+        catch (Exception) { Notices.Error("دریافت محتوای داشبورد انجام نشد."); }
+    }
+    private async Task DeleteDashboardAsync()
+    {
+        if (_busy || !_confirmDeleteDashboard || Selected is not { } selected ||
+            !(selected.CanEdit || _workspace?.CanEditGlobal == true)) return;
+        _busy = true;
+        try
+        {
+            await DashboardConfigs.DeletePersonalAsync(selected.Id, await ActorAsync());
+            _confirmDeleteDashboard = false;
+            _editing = false;
+            await LoadAsync();
+            Notices.Success("داشبورد حذف شد.");
+        }
+        catch (Exception ex) { Notices.Error(ex is UnauthorizedAccessException ? ex.Message : "حذف داشبورد انجام نشد."); }
+        finally { _busy = false; }
+    }
+
+    private async Task CreateAsync()
+    {
+        if (_busy) return;
+        _busy = true;
+        try
+        {
+            var number = (_workspace?.PersonalDashboards.Count(x => x.CanEdit) ?? 0) + 1;
+            var dashboard = await DashboardConfigs.CreatePersonalAsync($"داشبورد جدید {number}", await ActorAsync());
+            await LoadAsync(dashboard.Id);
+            Notices.Success("داشبورد جدید ساخته شد و برای همه قابل انتخاب است.");
+        }
+        catch (Exception e) { Notices.Error(e is UnauthorizedAccessException ? e.Message : "ساخت داشبورد ممکن نشد."); }
+        finally { _busy = false; }
+    }
+    private void ConfigureSmart(DashboardContentItem item, bool global)
+    {
+        if (!_editing || item.Type != "smart" || EditableRefs(global ? "global" : "personal") is null) return;
+        _smartEditor = (item, global);
+    }
+    private void CloseSmartEditor() => _smartEditor = null;
+    private async Task SaveSmartOptions(DashboardCardOptions options)
+    {
+        if (_smartEditor is not { } edit) return;
+        var target = EditableRefs(edit.Global ? "global" : "personal");
+        if (target is null) return;
+        var index = target.FindIndex(x => x.Type == edit.Item.Type && x.Id == edit.Item.Id);
+        if (index >= 0) target[index] = target[index] with { Options = options };
+        if (!_chartsLoaded && options.Items?.Any(item => item.Type == "report") == true && _actor is not null)
+        {
+            try { _charts = (await ReportCharts.GetGalleryAsync(_actor)).ToDictionary(x => x.ReportId); _chartsLoaded = true; }
+            catch (Exception) { /* Content remains visible if chart data cannot be loaded. */ }
+        }
+        _smartEditor = null;
+    }
+    private Task ChangeSelectedEvent(DashboardContentItem item, bool global, int? eventId)
+    {
+        var target = EditableRefs(global ? "global" : "personal");
+        if (target is null || item.Type != "event") return Task.CompletedTask;
+        var index = target.FindIndex(x => x.Type == item.Type && x.Id == item.Id);
+        if (index >= 0)
+        {
+            var current = target[index];
+            target[index] = current with { Options = (current.Options ?? new DashboardCardOptions()) with { EventId = eventId } };
+        }
+        return Task.CompletedTask;
+    }
+    private void StartEdit()
+    {
+        if (_workspace is null || !CanEditAny) return;
+        _personalName = Selected?.Name ?? "";
+        _editing = true;
+    }
+    private void OpenPicker(bool global)
+    {
+        if (!_editing || _busy || (global ? _workspace?.CanEditGlobal != true : Selected?.CanEdit != true)) return;
+        _pickerGlobal = global;
+        _pickerOpen = true;
+    }
+    private void ClosePicker() => _pickerOpen = false;
+    private void OpenCardPreview(DashboardContentItem item) { if (!item.IsRestricted && item.Type != "announcement") _previewItem = item; }
+    private void CloseCardPreview() => _previewItem = null;
+    private void ShowEventDetails(CalendarOccurrence item) => _eventDetails = item;
+    private void CloseEventDetails() => _eventDetails = null;
+    private async Task AddFromPickerAsync(DashboardContentPickerResult result)
+    {
+        if (!_editing || _workspace is null || (result.Global && !_workspace.CanEditGlobal)) return;
+        if (!result.Global && Selected?.CanEdit != true) { Notices.Error("فقط صاحب داشبورد می‌تواند به آن محتوا اضافه کند."); return; }
+        var target = result.Global ? _globalRefs : _personalRefs;
+        var previous = target.ToList();
+        var requestedKeys = result.Items.Select(x => (x.Type, x.Id)).ToHashSet();
+        var retained = previous.Where(x => requestedKeys.Contains((x.Type, x.Id))).ToList();
+        var newItems = result.Items.Where(x => !retained.Any(t => t.Type == x.Type && t.Id == x.Id) &&
+            (result.Global || !_globalRefs.Any(g => g.Type == x.Type && g.Id == x.Id)))
+            .Select(x => x.Normalized()).ToList();
+        if (retained.Count + newItems.Count > 60) { Notices.Error("هر ناحیه حداکثر ۶۰ کارت دارد."); return; }
+        target.Clear();
+        target.AddRange(retained);
+        target.AddRange(newItems);
+        try
+        {
+            await ResolveTilesAsync();
+            _pickerOpen = false;
+            // Prompt for configuration immediately when a fresh smart card is added.
+            var newSmart = newItems.FirstOrDefault(x => x.Type == "smart");
+            if (newSmart is not null)
+            {
+                var card = (result.Global ? _globalTiles : _personalTiles)
+                    .FirstOrDefault(x => x.Type == "smart" && x.Id == newSmart.Id);
+                if (card is not null) ConfigureSmart(card, result.Global);
+            }
+            Notices.Success("انتخاب‌ها اعمال شدند؛ برای ثبت نهایی داشبورد را ذخیره کنید.");
+        }
+        catch (Exception)
+        {
+            target.Clear(); target.AddRange(previous);
+            Notices.Error("بارگذاری کارت‌ها ممکن نشد.");
+        }
+    }
+    private void RequestRemove(DashboardContentItem item, bool global)
+    {
+        if (!_editing || (global ? !(_workspace?.CanEditGlobal ?? false) : Selected?.CanEdit != true)) return;
+        _pendingRemoval = (item, global);
+    }
+    private void DismissRemove() => _pendingRemoval = null;
+    private void ConfirmRemove()
+    {
+        if (_pendingRemoval is not { } pending) return;
+        var target = pending.Global ? _globalRefs : _personalRefs;
+        target.RemoveAll(x => x.Type == pending.Item.Type && x.Id == pending.Item.Id);
+        if (pending.Global) _globalTiles = _globalTiles.Where(x => x.Type != pending.Item.Type || x.Id != pending.Item.Id).ToArray();
+        else _personalTiles = _personalTiles.Where(x => x.Type != pending.Item.Type || x.Id != pending.Item.Id).ToArray();
+        _pendingRemoval = null;
+    }
+    private List<DashboardContentReference>? EditableRefs(string zone) => zone switch
+    {
+        "global" when _workspace?.CanEditGlobal == true => _globalRefs,
+        "personal" when Selected?.CanEdit == true => _personalRefs,
+        _ => null
+    };
+    private static int FindIndex(List<DashboardContentReference> references, string key) =>
+        references.FindIndex(x => $"{x.Type}:{x.Id}" == key);
+    /// <summary>One atomic geometry update for drag, swap or resize (and collision displacement).</summary>
+    public sealed record DashboardTileGeometry(string Key, int X, int Y, int Width, int Height, int CanvasWidth);
+
+    private static void ApplyGeometry(List<DashboardContentReference> references,
+        IReadOnlyList<DashboardTileGeometry> changes)
+    {
+        foreach (var change in changes)
+        {
+            var index = FindIndex(references, change.Key);
+            if (index < 0 || change.CanvasWidth is < 200 or > 10000 ||
+                change.Width is < 40 or > 10000 || change.Height is < 40 or > 10000 ||
+                change.X < 0 || (long)change.X + change.Width > change.CanvasWidth + 1 ||
+                change.Y is < 0 or > 1000000) continue;
+            references[index] = references[index] with
+            {
+                X = change.X, Y = change.Y,
+                PixelWidth = change.Width, PixelHeight = change.Height, CanvasWidth = change.CanvasWidth
+            };
+        }
+    }
+
+    [JSInvokable]
+    public Task ApplyTileGeometryAsync(string zone, DashboardTileGeometry[] changes)
+    {
+        if (!_editing || _busy || _pendingRemoval is not null || changes is null)
+            return Task.CompletedTask;
+        var references = EditableRefs(zone);
+        if (references is null) return Task.CompletedTask;
+        ApplyGeometry(references, changes);
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private async Task SyncCanvasAsync()
+    {
+        // Persist even unmodified legacy cards as pixel geometry so the next load
+        // doesn't need to derive their layout from old span units.
+        if (_workspace?.CanEditGlobal == true && _globalTiles.Count > 0)
+        {
+            var layout = await JS.InvokeAsync<DashboardTileGeometry[]>("cenopsDashboardCanvas.snapshot", _globalGrid);
+            ApplyGeometry(_globalRefs, layout);
+        }
+        if (Selected?.CanEdit == true && _personalTiles.Count > 0)
+        {
+            var layout = await JS.InvokeAsync<DashboardTileGeometry[]>("cenopsDashboardCanvas.snapshot", _personalGrid);
+            ApplyGeometry(_personalRefs, layout);
+        }
+    }
+    private async Task CancelEdit()
+    {
+        _confirmRestrictedSave = _restrictedSaveAcknowledged = false;
+        _editing = _pickerOpen = false;
+        _smartEditor = null;
+        _pendingRemoval = null;
+        _personalName = Selected?.Name ?? "";
+        _globalRefs = ParseRefs(_workspace?.Global.LayoutJson ?? "[]");
+        _personalRefs = ParseRefs(Selected?.LayoutJson ?? "[]");
+        try { await ResolveTilesAsync(); }
+        catch (Exception) { Notices.Error("بازگردانی چیدمان انجام نشد."); }
+    }
+    private void DismissRestrictedSave() => _confirmRestrictedSave = false;
+
+    private async Task ConfirmRestrictedSaveAsync()
+    {
+        if (!_confirmRestrictedSave) return;
+        _confirmRestrictedSave = false;
+        _restrictedSaveAcknowledged = true;
+        await SaveAsync();
+    }
+
+    private async Task<bool> HasUnavailableCardsAsync(ClaimsPrincipal actor)
+    {
+        // Only the selected, editable user dashboard participates in this warning.
+        // Global cards are resolved and saved independently; their visibility must
+        // not trigger a warning while saving the selected dashboard.
+        if (Selected?.CanEdit != true)
+            return false;
+
+        // Re-resolve at save time because an existing reference may have been
+        // made private or deleted while the editor was open.
+        if ((await DashboardContent.ResolveAsync(_personalRefs, false, actor))
+            .Any(item => item.IsRestricted))
+            return true;
+
+        // Smart-card slides use the same permission-aware resolver. Warn about
+        // inaccessible slides in this selected dashboard, but never inspect global slides.
+        foreach (var smart in _personalRefs.Where(item => item.Type == "smart" && item.Options?.Items?.Count > 0))
+        {
+            if ((await DashboardContent.ResolveAsync(smart.Options!.Items!, false, actor))
+                .Any(item => item.IsRestricted))
+                return true;
+        }
+        return false;
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_workspace is null || !_editing || _busy) return;
+        _busy = true;
+        try
+        {
+            await SyncCanvasAsync();
+            var actor = await ActorAsync();
+            if (!_restrictedSaveAcknowledged && await HasUnavailableCardsAsync(actor))
+            {
+                _confirmRestrictedSave = true;
+                return;
+            }
+            if (_workspace.CanEditGlobal && !Same(_globalRefs, ParseRefs(_workspace.Global.LayoutJson)))
+                await DashboardConfigs.SaveGlobalAsync("داشبورد عمومی", JsonSerializer.Serialize(_globalRefs), actor);
+            var selected = Selected;
+            if (selected?.CanEdit == true && (selected.Name != _personalName || !Same(_personalRefs, ParseRefs(selected.LayoutJson))))
+                await DashboardConfigs.SavePersonalAsync(selected.Id, _personalName, JsonSerializer.Serialize(_personalRefs), actor);
+            _editing = false;
+            _confirmRestrictedSave = _restrictedSaveAcknowledged = false;
+            await LoadAsync(_selectedId);
+            Notices.Success("چیدمان و تنظیمات داشبورد ذخیره شد.");
+        }
+        catch (Exception e) { Notices.Error(e is ArgumentException or UnauthorizedAccessException ? e.Message : "ذخیره داشبورد ممکن نشد."); }
+        finally { _busy = false; }
+    }
+    // Smart card nested references are value objects held by IReadOnlyList.
+    // Record equality would compare those lists by instance instead of their content.
+    private static bool Same(List<DashboardContentReference> a, List<DashboardContentReference> b) =>
+        JsonSerializer.Serialize(a) == JsonSerializer.Serialize(b);
+    private async Task MakeDefaultAsync()
+    {
+        if (_selectedId <= 0 || _busy) return;
+        _busy = true;
+        try { await DashboardConfigs.SetDefaultAsync(_selectedId, await ActorAsync()); await LoadAsync(_selectedId); Notices.Success("داشبورد پیش‌فرض شما تغییر کرد."); }
+        catch (Exception e) { Notices.Error(e is UnauthorizedAccessException ? e.Message : "تعیین داشبورد پیش‌فرض ممکن نشد."); }
+        finally { _busy = false; }
+    }
+}

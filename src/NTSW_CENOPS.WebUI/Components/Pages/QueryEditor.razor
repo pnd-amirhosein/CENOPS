@@ -1,0 +1,8 @@
+@page "/wiki/queries/new"
+@page "/wiki/queries/edit/{Id:int}"
+@attribute [AccessAuthorize(AccessKeys.SqlQueries)]
+@using NTSW_CENOPS.Components.Knowledge
+<PageTitle>ویرایش پرس‌وجوی SQL</PageTitle>
+<KnowledgeEditor DraftToken="@DraftToken" IsCurl="false" ItemId="@(Id ?? 0)" />
+@code { [Parameter] public int? Id { get; set; }
+    [SupplyParameterFromQuery(Name = "draft")] public string? DraftToken { get; set; } }

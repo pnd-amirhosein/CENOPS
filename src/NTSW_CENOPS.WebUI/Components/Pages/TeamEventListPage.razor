@@ -1,0 +1,124 @@
+@page "/team/events/list"
+@attribute [AccessAuthorize(AccessKeys.Events)]
+@rendermode InteractiveServer
+@using NTSW_CENOPS.Application.Events
+@using NTSW_CENOPS.Components.Common
+@using NTSW_CENOPS.Components.Common.Dates
+@using NTSW_CENOPS.Components.DataTable.Core
+@using NTSW_CENOPS.Components.DataTable.Models
+@inject ICalendarEventService Events
+@inject AuthenticationStateProvider AuthState
+@inject NavigationManager Nav
+
+<PageTitle>فهرست رویدادها</PageTitle>
+<div class="administration-page" dir="rtl">
+    <SectionContent SectionName="cenops-page-actions">
+        <a href="/team/events" class="page-action-button">تقویم</a>
+    </SectionContent>
+    <div class="administration-header"><h1>مدیریت رویدادها</h1></div>
+    @if (!string.IsNullOrEmpty(_error)) { <div class="report-alert report-alert-error" role="alert">@_error</div> }
+    <div class="administration-table">
+        <DataTableToolbar T="CalendarEvent" Controller="_controller" Columns="_columns"
+                          ActiveFilters="_filters" FiltersChanged="UpdateFilters"
+                          ShowNewButton="false" ShowEditButton="false" ShowDeleteButton="false">
+            <LeadingToolbarContent>
+                <button type="button" class="success outline-button flex gap-2 items-center border-1 border-green-700 small-button" @onclick="NewEvent">
+                    <span class="icon text-green-700" aria-hidden="true">＋</span><span class="text text-green-700">جدید</span>
+                </button>
+                <button type="button" class="warning text-button flex gap-2 items-center small-button"
+                        disabled="@(!CanEditSelected)" @onclick="EditEvent">
+                    <span class="icon" aria-hidden="true">✎</span><span class="text">ویرایش</span>
+                </button>
+                <button type="button" class="danger text-button flex small-button" title="حذف رویداد انتخاب‌شده"
+                        aria-label="حذف رویداد انتخاب‌شده" disabled="@(!CanEditSelected)" @onclick="ConfirmDelete">
+                    <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 7h16M10 4h4M7 7l.8 13h8.4L17 7M10 11v6M14 11v6"/></svg></span>
+                </button>
+            </LeadingToolbarContent>
+        </DataTableToolbar>
+        <DataTable T="CalendarEvent" Controller="_controller" Items="_filtered" Columns="_columns" EnableRowContextMenu="false" />
+        <AppLoading IsLoading="@_loading" Variant="inline" Label="در حال آماده‌سازی رویدادها..." />
+        @if (!_loading && _events.Count == 0) { <p class="jobs-table-hint">هنوز رویدادی ثبت نشده است.</p> }
+    </div>
+</div>
+<AppModal IsOpen="@(_deleteTarget is not null)" Title="حذف رویداد" MaxWidth="420px"
+          Description="تمام تکرارهای رویداد انتخاب‌شده حذف می‌شوند."
+          OnClose="() => _deleteTarget = null">
+    <ChildContent><p>آیا از حذف <strong>@_deleteTarget?.Title</strong> مطمئن هستید؟</p></ChildContent>
+    <Footer>
+        <button type="button" class="knowledge-button secondary" disabled="@_deleting" @onclick="() => _deleteTarget = null">انصراف</button>
+        <button type="button" class="knowledge-button danger" disabled="@_deleting" @onclick="DeleteAsync">@(_deleting ? "در حال حذف..." : "تأیید حذف")</button>
+    </Footer>
+</AppModal>
+@code {
+    private readonly DataTableController<CalendarEvent> _controller = new();
+    private readonly List<ColumnDefinition<CalendarEvent>> _columns =
+    [
+        new() { Title="عنوان", PropertyName=nameof(CalendarEvent.Title), Value=x=>x.Title, Type=ColumnType.Text, width="25%" },
+        new() { Title="سازنده", PropertyName=nameof(CalendarEvent.CreatedByName), Value=x=>x.CreatedByName, Type=ColumnType.Text, width="16%" },
+        new() { Title="شروع", PropertyName=nameof(CalendarEvent.StartsAt), Value=x=>x.StartsAt, DisplayValue=x=>JalaliDate.DateTime(x.StartsAt), Type=ColumnType.Text, width="19%" },
+        new() { Title="پایان", PropertyName=nameof(CalendarEvent.EndsAt), Value=x=>x.EndsAt, DisplayValue=x=>x.EndsAt.HasValue ? JalaliDate.DateTime(x.EndsAt.Value) : "—", Type=ColumnType.Text, width="19%" },
+        new() { Title="تکرار", PropertyName=nameof(CalendarEvent.Repeat), Value=x=>x.Repeat.ToString(), DisplayValue=x=>RepeatText(x.Repeat), Type=ColumnType.Text, width="21%" }
+    ];
+    private List<CalendarEvent> _events = new();
+    private List<CalendarEvent> _filtered = new();
+    private List<FilterDefinition> _filters = new();
+    private CalendarEvent? _deleteTarget;
+    private bool _deleting, _loading = true, _isManager;
+    private int _userId;
+    private string? _error;
+    private bool CanEditSelected => _controller.SelectedItem is { } selected && (_isManager || selected.CreatedById == _userId);
+    private static string RepeatText(EventRepeatKind repeat) => repeat switch
+    { EventRepeatKind.Daily=>"روزانه", EventRepeatKind.Weekly=>"هفتگی", EventRepeatKind.Monthly=>"ماهانه", EventRepeatKind.Yearly=>"سالانه", _=>"بدون تکرار" };
+
+    protected override async Task OnInitializedAsync()
+    {
+        _controller.SetPageSize(10);
+        _controller.OnRefresh = LoadAsync;
+        try
+        {
+            var user = (await AuthState.GetAuthenticationStateAsync()).User;
+            int.TryParse(user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out _userId);
+            _isManager = user.IsInRole("admin") || user.IsInRole("owner") || user.IsInRole("Admin") || user.IsInRole("Owner");
+            await LoadAsync();
+        }
+        catch (Exception) { _error = "دریافت رویدادها انجام نشد."; }
+        finally { _loading = false; }
+    }
+    private async Task LoadAsync()
+    {
+        var user = (await AuthState.GetAuthenticationStateAsync()).User;
+        _events = (await Events.ListAsync(user)).ToList();
+        ApplyFilters();
+    }
+    private Task UpdateFilters(List<FilterDefinition> filters)
+    {
+        _filters = filters.Select(x => new FilterDefinition { PropertyName = x.PropertyName, Value = x.Value }).ToList();
+        _controller.SetPage(1);
+        ApplyFilters();
+        return Task.CompletedTask;
+    }
+    private void ApplyFilters()
+    {
+        _filtered = _events.Where(e => _filters.All(f => DataTableFilterMatcher.Matches(e, f))).ToList();
+        _controller.SetTotal(_filtered.Count);
+    }
+    private void NewEvent() => Nav.NavigateTo("/team/events/new");
+    private void EditEvent() { if (CanEditSelected) Nav.NavigateTo($"/team/events/edit/{_controller.SelectedItem!.Id}"); }
+    private void ConfirmDelete() { if (CanEditSelected) _deleteTarget = _controller.SelectedItem; }
+    private async Task DeleteAsync()
+    {
+        if (_deleting || _deleteTarget is null) return;
+        _deleting = true;
+        try
+        {
+            var user = (await AuthState.GetAuthenticationStateAsync()).User;
+            var result = await Events.DeleteAsync(_deleteTarget.Id, user);
+            if (!result.Succeeded) { _error = result.Error; return; }
+            _deleteTarget = null;
+            _error = null;
+            await LoadAsync();
+        }
+        catch (Exception) { _error = "حذف رویداد انجام نشد."; }
+        finally { _deleting = false; }
+    }
+}
